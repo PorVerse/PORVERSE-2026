@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 // app/[lang]/auth/callback/page.tsx - Enhanced callback handler
 'use client'
 

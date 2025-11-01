@@ -17,7 +17,7 @@ async function readRawBody(req: NextRequest): Promise<string> {
   if (!reader) return ''
   const chunks: Uint8Array[] = []
   // @ts-ignore
-  for await (const chunk of (function* () { while (true) { const { done, value } = Atomics.waitAsync ? await reader.read() : await reader.read(); if (done) break; yield value } })()) {
+for await (const chunk of (async function* () { while (true) { const { done, value } = await reader.read(); if (done) break; yield value } })()) {
     chunks.push(chunk)
   }
   const merged = Buffer.concat(chunks.map((c) => Buffer.from(c)))

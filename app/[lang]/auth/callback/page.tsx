@@ -1,7 +1,8 @@
+'use client'
+
 export const dynamic = 'force-dynamic'
 
 // app/[lang]/auth/callback/page.tsx - Enhanced callback handler
-'use client'
 
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'

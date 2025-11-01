@@ -1,3 +1,5 @@
+'use client'  // Adaugă această linie la început
+
 // pages/test-wave1.tsx
 import { useState } from 'react'
 import { createPortalManager } from '../lib/services'

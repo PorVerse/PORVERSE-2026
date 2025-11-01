@@ -1,0 +1,136 @@
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  reactStrictMode: true,
+  
+  // Image optimization
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'bqwarnullrxhfisohkel.supabase.co',
+      },
+      {
+        protocol: 'https',
+        hostname: 'porverse-storage.sfo3.digitaloceanspaces.com',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.cloudflare.com',
+      },
+    ],
+    formats: ['image/avif', 'image/webp'],
+    minimumCacheTTL: 60,
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+  },
+
+  // Webpack configuration
+  webpack: (config, { isServer }) => {
+    // Add support for WASM
+    config.experiments = {
+      ...config.experiments,
+      asyncWebAssembly: true,
+      layers: true,
+    }
+
+    // Add rules for ML models
+    config.module.rules.push({
+      test: /\.(wasm|onnx)$/,
+      type: 'asset/resource',
+    })
+
+    // Fallbacks for client-side
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        net: false,
+        tls: false,
+      }
+    }
+
+    return config
+  },
+
+  // Security headers
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          {
+            key: 'X-DNS-Prefetch-Control',
+            value: 'on',
+          },
+          {
+            key: 'Strict-Transport-Security',
+            value: 'max-age=63072000; includeSubDomains; preload',
+          },
+          {
+            key: 'X-Frame-Options',
+            value: 'SAMEORIGIN',
+          },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+          {
+            key: 'X-XSS-Protection',
+            value: '1; mode=block',
+          },
+          {
+            key: 'Referrer-Policy',
+            value: 'strict-origin-when-cross-origin',
+          },
+          {
+            key: 'Permissions-Policy',
+            value: 'camera=(), microphone=(), geolocation=()',
+          },
+        ],
+      },
+    ]
+  },
+
+  // Redirects
+  async redirects() {
+    return [
+      {
+        source: '/',
+        destination: '/en/portal-dashboard',
+        permanent: false,
+      },
+      {
+        source: '/portal',
+        destination: '/en/portal-dashboard',
+        permanent: true,
+      },
+    ]
+  },
+
+  // Experimental features
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '2mb',
+    },
+    optimizeCss: true,
+    optimizePackageImports: [
+      '@radix-ui/react-icons',
+      'lucide-react',
+      'date-fns',
+      'framer-motion',
+    ],
+  },
+
+  // Compiler optimizations
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production',
+  },
+
+  // Output configuration for production
+  output: process.env.STANDALONE === 'true' ? 'standalone' : undefined,
+
+  // Powered by header
+  poweredByHeader: false,
+}
+
+export default nextConfig

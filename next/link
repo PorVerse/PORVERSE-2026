@@ -1,0 +1,15 @@
+import Link from 'next/link'
+
+// ...
+function QuickActionCard({...}) {
+  return (
+    <Link
+      href={href}
+      className={`block p-6 rounded-2xl bg-gradient-to-br ${gradient} text-white hover:scale-105 transition-transform duration-200 shadow-lg`}
+    >
+      <div className="text-4xl mb-4">{icon}</div>
+      <h3 className="text-xl font-bold mb-2">{title}</h3>
+      <p className="text-purple-100">{description}</p>
+    </Link>
+  )
+}

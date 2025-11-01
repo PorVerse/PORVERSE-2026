@@ -1,0 +1,264 @@
+/* app/globals.css */
+/* IMPORTANT:
+   - NU folosi @import aici (Turbopack este strict).
+   - Fontul "Inter" este încărcat via next/font în layout și aplicat pe <body>.
+*/
+
+/* ────────────────────────────────────────────────────────────
+   Tailwind layers
+   (aceste directive TREBUIE să fie la începutul fișierului)
+──────────────────────────────────────────────────────────────*/
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ────────────────────────────────────────────────────────────
+   BASE LAYER — Theme tokens, resets, a11y defaults
+──────────────────────────────────────────────────────────────*/
+@layer base {
+  :root {
+    color-scheme: dark;
+
+    /* ====== Portal Brand Colors (RGB triples) ====== */
+    --p0-primary: 139 92 246;      /* Purple - Self Discovery */
+    --p0-secondary: 167 139 250;
+
+    --p1-primary: 236 72 153;      /* Pink - Relationships */
+    --p1-secondary: 244 114 182;
+
+    --p2-primary: 234 179 8;       /* Yellow - Career */
+    --p2-secondary: 250 204 21;
+
+    --p3-primary: 34 197 94;       /* Green - Health */
+    --p3-secondary: 74 222 128;
+
+    --p4-primary: 59 130 246;      /* Blue - Finances */
+    --p4-secondary: 96 165 250;
+
+    --p5-primary: 249 115 22;      /* Orange - Life Purpose */
+    --p5-secondary: 251 146 60;
+
+    --quantum-primary: 168 85 247; /* Quantum Vault */
+    --quantum-secondary: 192 132 252;
+
+    /* ====== Semantic Neutrals (HSL) ====== */
+    --background: 222 47% 11%;
+    --foreground: 210 40% 98%;
+
+    --card: 222 47% 11%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222 47% 11%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 210 40% 98%;
+    --primary-foreground: 222 47% 11%;
+
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 217 33% 17%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217 33% 17%;
+    --input: 217 33% 17%;
+    --ring: 212 95% 68%;
+
+    --radius: 0.5rem;
+
+    /* Shadows & backdrops */
+    --elevation-1: 0 1px 2px rgb(0 0 0 / 0.25);
+    --elevation-2: 0 10px 30px rgb(0 0 0 / 0.25);
+
+    /* Selection */
+    --selection: 79 70 229; /* indigo-600 */
+  }
+
+  /* Light theme tokens (dacă vrei mod light per .light) */
+  .light {
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    --primary: 222 47% 11%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
+
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+
+    --accent: 210 40% 96%;
+    --accent-foreground: 222 47% 11%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 222 47% 11%;
+  }
+
+  /* Reset global + font settings
+     (font-family Inter vine din layout; aici doar fallback & feature flags) */
+  * { @apply border-border; }
+
+  html, body {
+    min-height: 100%;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    font-feature-settings: "rlig" 1, "calt" 1, "kern" 1, "liga" 1;
+    font-kerning: normal;
+    hanging-punctuation: first last;
+  }
+
+  ::selection {
+    background: rgb(var(--selection) / 0.35);
+    color: hsl(var(--foreground));
+  }
+
+  h1,h2,h3,h4,h5,h6 { @apply font-semibold tracking-tight; }
+}
+
+/* ────────────────────────────────────────────────────────────
+   UTILITIES LAYER — utilities de proiect (gradients, glows etc.)
+──────────────────────────────────────────────────────────────*/
+@layer utilities {
+  /* ====== Portal Gradients ====== */
+  .portal-gradient-p0 { @apply bg-gradient-to-br; background-image: linear-gradient(to bottom right, rgb(var(--p0-primary)), rgb(var(--p0-secondary))); }
+  .portal-gradient-p1 { @apply bg-gradient-to-br; background-image: linear-gradient(to bottom right, rgb(var(--p1-primary)), rgb(var(--p1-secondary))); }
+  .portal-gradient-p2 { @apply bg-gradient-to-br; background-image: linear-gradient(to bottom right, rgb(var(--p2-primary)), rgb(var(--p2-secondary))); }
+  .portal-gradient-p3 { @apply bg-gradient-to-br; background-image: linear-gradient(to bottom right, rgb(var(--p3-primary)), rgb(var(--p3-secondary))); }
+  .portal-gradient-p4 { @apply bg-gradient-to-br; background-image: linear-gradient(to bottom right, rgb(var(--p4-primary)), rgb(var(--p4-secondary))); }
+  .portal-gradient-p5 { @apply bg-gradient-to-br; background-image: linear-gradient(to bottom right, rgb(var(--p5-primary)), rgb(var(--p5-secondary))); }
+  .portal-gradient-quantum { @apply bg-gradient-to-br; background-image: linear-gradient(to bottom right, rgb(var(--quantum-primary)), rgb(var(--quantum-secondary))); }
+
+  /* ====== Portal Glow Effects ====== */
+  .portal-glow-p0 { box-shadow: 0 0 20px rgb(var(--p0-primary) / 0.5); }
+  .portal-glow-p1 { box-shadow: 0 0 20px rgb(var(--p1-primary) / 0.5); }
+  .portal-glow-p2 { box-shadow: 0 0 20px rgb(var(--p2-primary) / 0.5); }
+  .portal-glow-p3 { box-shadow: 0 0 20px rgb(var(--p3-primary) / 0.5); }
+  .portal-glow-p4 { box-shadow: 0 0 20px rgb(var(--p4-primary) / 0.5); }
+  .portal-glow-p5 { box-shadow: 0 0 20px rgb(var(--p5-primary) / 0.5); }
+  .portal-glow-quantum { box-shadow: 0 0 30px rgb(var(--quantum-primary) / 0.6); }
+
+  /* ====== Glass Morphism ====== */
+  .glass { @apply border backdrop-blur-lg; background-color: rgb(255 255 255 / 0.10); border-color: rgb(255 255 255 / 0.20); }
+  .glass-dark { @apply border backdrop-blur-lg; background-color: rgb(0 0 0 / 0.10); border-color: rgb(255 255 255 / 0.10); }
+
+  /* ====== Animations ====== */
+  .animate-glow { animation: pv-glow 2s ease-in-out infinite alternate; }
+  @keyframes pv-glow {
+    from { box-shadow: 0 0 10px rgb(var(--p0-primary) / 0.50); }
+    to   { box-shadow: 0 0 20px rgb(var(--p0-primary) / 0.80); }
+  }
+
+  .animate-float { animation: pv-float 3s ease-in-out infinite; }
+  @keyframes pv-float {
+    0%,100% { transform: translateY(0); }
+    50%     { transform: translateY(-10px); }
+  }
+
+  .animate-pulse-slow { animation: pv-pulse 3s cubic-bezier(0.4,0,0.6,1) infinite; }
+  @keyframes pv-pulse {
+    0%,100% { opacity: .6; }
+    50%     { opacity: 1; }
+  }
+
+  /* ====== Scrollbar Styling (Chromium + Firefox) ====== */
+  .scrollbar-thin { scrollbar-width: thin; scrollbar-color: rgb(var(--p0-primary) / 0.3) transparent; }
+  .scrollbar-thin::-webkit-scrollbar { width: 6px; height: 6px; }
+  .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+  .scrollbar-thin::-webkit-scrollbar-thumb { background-color: rgb(var(--p0-primary) / 0.3); border-radius: 3px; }
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover { background-color: rgb(var(--p0-primary) / 0.5); }
+
+  /* Small helpers */
+  .text-muted { color: hsl(var(--muted-foreground)); }
+  .border-muted { border-color: hsl(var(--border)); }
+  .bg-card { background-color: hsl(var(--card)); }
+}
+
+/* ────────────────────────────────────────────────────────────
+   COMPONENTS LAYER — primitive reusable styles
+──────────────────────────────────────────────────────────────*/
+@layer components {
+  .pv-card {
+    @apply rounded-2xl px-6 py-5 shadow-md;
+    border: 1px solid hsl(var(--border));
+    background-color: hsl(var(--card) / 0.60);
+    box-shadow: var(--elevation-1);
+  }
+
+  .pv-button {
+    @apply inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-medium;
+    background-color: #4f46e5; /* indigo-600 */
+    color: white;
+    transition: background-color .2s ease, box-shadow .2s ease, transform .06s ease;
+  }
+  .pv-button:hover { background-color: #6366f1; } /* indigo-500 */
+  .pv-button:active { transform: translateY(1px); }
+  .pv-button:disabled { @apply opacity-60 cursor-not-allowed; }
+
+  /* Skeleton & Spinner */
+  .skeleton { @apply animate-pulse rounded; background-color: rgb(229 231 235 / .35); }
+  .dark .skeleton { background-color: rgb(31 41 55 / .65); }
+
+  .spinner {
+    @apply inline-block h-6 w-6 rounded-full;
+    border: 4px solid rgb(229 231 235 / .4);
+    border-top-color: #8b5cf6;
+    animation: pv-spin .9s linear infinite;
+  }
+  @keyframes pv-spin { to { transform: rotate(360deg); } }
+}
+
+/* ────────────────────────────────────────────────────────────
+   Radix UI overrides (non-invasive)
+──────────────────────────────────────────────────────────────*/
+@layer base {
+  [data-radix-dialog-overlay] { @apply bg-black/50 backdrop-blur-sm; }
+  [data-radix-toast-viewport] { @apply fixed bottom-0 right-0 flex max-w-md flex-col gap-2 p-4; }
+  [data-radix-tooltip-content] { @apply rounded-md bg-gray-900 px-3 py-2 text-sm text-white; }
+}
+
+/* ────────────────────────────────────────────────────────────
+   Accessibility
+──────────────────────────────────────────────────────────────*/
+@layer base {
+  :focus-visible { outline: none; box-shadow: 0 0 0 2px #8b5cf6, 0 0 0 4px rgb(255 255 255 / 0.15); }
+
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+  }
+}
+
+/* ────────────────────────────────────────────────────────────
+   Reduced motion & Print
+──────────────────────────────────────────────────────────────*/
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+}
+
+@media print {
+  .no-print { display: none !important; }
+  body { color: #000; background: #fff; }
+}

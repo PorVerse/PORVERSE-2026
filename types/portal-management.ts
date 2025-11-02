@@ -1,26 +1,18 @@
-// types/portal-management.ts
 /**
  * 🎯 PorVerse V2 - Portal Management Types
- * Comprehensive TypeScript types for portal-based spiritual operating system
+ * Comprehensive TypeScript type definitions for portal system
  * 
  * @version 2.0.0
  * @author PorVerse Development Team
- * @description Core types for portal progression, user management, and spiritual guidance
+ * @description Core types for portal-based spiritual operating system
  */
 
-import type { Database } from './database.types'
-
 // ============================================================================
-// CORE PORTAL TYPES
+// ENUMS & LITERAL TYPES
 // ============================================================================
 
 /**
- * Portal subscription tiers defining access levels
- */
-export type PortalSubscriptionTier = 'free' | 'basic' | 'premium' | 'quantum'
-
-/**
- * Portal progression states
+ * Portal progress status states
  */
 export type PortalProgressStatus = 
   | 'locked'        // Portal not accessible yet
@@ -31,74 +23,154 @@ export type PortalProgressStatus =
   | 'expired'       // Access expired (subscription ended)
 
 /**
- * Step completion status types
+ * Portal subscription tiers
  */
-export type StepStatus = 
-  | 'not_started'   // Step not yet attempted
-  | 'in_progress'   // Step currently being worked on
-  | 'completed'     // Step successfully completed
-  | 'skipped'       // Step skipped (if optional)
+export type PortalSubscriptionTier = 
+  | 'free'          // Free tier (P0 only)
+  | 'basic'         // Basic tier (P0-P3)
+  | 'premium'       // Premium tier (P0-P5)
+  | 'quantum'       // Quantum tier (All portals + Quantum Vault)
 
 /**
- * Portal difficulty levels for dynamic adjustment
+ * Portal difficulty levels
  */
-export type PortalDifficulty = 'beginner' | 'intermediate' | 'advanced' | 'master'
+export type PortalDifficulty = 
+  | 'beginner'      // Level 1-2
+  | 'intermediate'  // Level 3
+  | 'advanced'      // Level 4
+  | 'expert'        // Level 5
 
 /**
- * Portal categories for organization and filtering
+ * Portal categories
  */
 export type PortalCategory = 
-  | 'activation'    // P0 - Personal Activation
-  | 'foundation'    // P1 - Foundation Portal
-  | 'health'        // P2 - PorHealth Gateway
-  | 'mind'          // P3 - PorMind Portal
-  | 'flow'          // P4 - PorFlow Channel
-  | 'well'          // P5 - PorWell Sanctuary
+  | 'activation'    // Personal Activation (P0)
+  | 'foundation'    // Foundation Portal (P1)
+  | 'health'        // PorHealth Gateway (P2)
+  | 'mind'          // PorMind Portal (P3)
+  | 'flow'          // PorFlow Channel (P4)
+  | 'well'          // PorWell Sanctuary (P5)
   | 'quantum'       // Quantum Vault
 
+/**
+ * Portal types
+ */
+export type PortalType = 
+  | 'standard'      // Regular portal
+  | 'quantum'       // Quantum Vault special portal
+  | 'bonus'         // Bonus content portal
+  | 'event'         // Time-limited event portal
+
+/**
+ * Step types
+ */
+export type StepType = 
+  | 'scan'              // Biometric scan
+  | 'questionnaire'     // Data collection form
+  | 'action'            // Action item to complete
+  | 'habit'             // Habit tracking
+  | 'reflection'        // Reflection exercise
+  | 'ai_conversation'   // AI coaching session
+  | 'exercise'          // Physical or mental exercise
+  | 'meditation'        // Meditation or mindfulness
+  | 'video'             // Video content
+  | 'reading'           // Reading material
+
+/**
+ * Analytics time periods
+ */
+export type AnalyticsTimePeriod = 
+  | 'day' 
+  | 'week' 
+  | 'month' 
+  | 'quarter' 
+  | 'year' 
+  | 'all_time'
+
 // ============================================================================
-// PORTAL DATA STRUCTURES
+// CORE PORTAL INTERFACES
 // ============================================================================
 
 /**
- * Core portal definition interface
+ * Portal definition
  */
 export interface Portal {
   id: string
   name: string
   description: string
+  long_description: string | null
   category: PortalCategory
+  portal_type: PortalType
+  
+  // Progression
   order_index: number
-  subscription_tier: PortalSubscriptionTier
-  difficulty_level: PortalDifficulty
+  required_previous_portal: string | null
   estimated_duration_days: number
-  required_previous_portal?: string
-  icon_name: string
-  color_theme: string
+  difficulty_level: number
+  
+  // Access & Pricing
+  subscription_tier: PortalSubscriptionTier
   is_active: boolean
-  unlock_criteria: PortalUnlockCriteria
-  completion_criteria: PortalCompletionCriteria
+  
+  // Unlock & Completion Criteria
+  unlock_criteria: PortalUnlockCriteria | null
+  completion_criteria: PortalCompletionCriteria | null
+  
+  // UI & Experience
+  color_scheme: PortalColorScheme | null
+  icon_name: string | null
+  background_animation: string | null
+  
+  // Features
+  features: PortalFeatures | null
+  ai_specialization: string | null
+  recommended_session_duration: number | null
+  max_daily_sessions: number
+  
+  // Gamification
+  achievement_rewards: AchievementReward[] | null
+  social_sharing_templates: SocialSharingTemplate[] | null
+  
+  // Metadata
   created_at: string
   updated_at: string
 }
 
 /**
- * Portal step definition interface
+ * Portal step definition
  */
 export interface PortalStep {
   id: string
   portal_id: string
   step_number: number
-  title: string
-  description: string
-  step_type: PortalStepType
-  content: PortalStepContent
-  estimated_duration_minutes: number
+  name: string
+  description: string | null
+  step_type: StepType
+  
+  // Data specifications
+  required_data: StepDataSpecification | null
+  output_data: StepDataSpecification | null
+  
+  // AI Integration
+  ai_prompt_template: string | null
+  ai_coaching_intensity: 'light' | 'moderate' | 'intensive'
+  
+  // Requirements
   is_required: boolean
-  unlock_criteria?: StepUnlockCriteria
-  completion_criteria: StepCompletionCriteria
-  biometric_requirements?: BiometricRequirement[]
-  is_active: boolean
+  unlock_criteria: StepUnlockCriteria | null
+  completion_criteria: StepCompletionCriteria | null
+  prerequisite_steps: number[] | null
+  
+  // Estimates & Gamification
+  estimated_duration_minutes: number | null
+  gamification_points: number
+  achievements: StepAchievement[] | null
+  difficulty_modifier: number
+  
+  // Integration
+  biometric_integration: boolean
+  
+  // Metadata
   created_at: string
   updated_at: string
 }
@@ -110,198 +182,101 @@ export interface UserPortalProgress {
   id: string
   user_id: string
   portal_id: string
+  
+  // Status & Progress
+  status: PortalProgressStatus
+  progress_percentage: number
   current_step: number
   total_steps: number
-  completion_percentage: number
-  status: PortalProgressStatus
-  started_at?: string
-  completed_at?: string
-  last_activity_at: string
+  
+  // Timing
+  unlocked_at: string | null
+  started_at: string | null
+  completed_at: string | null
+  expires_at: string | null
   time_spent_minutes: number
-  quality_score?: number
-  difficulty_adjustment: PortalDifficulty
+  
+  // Quality & Performance
+  completion_score: number | null
   session_count: number
-  achievement_points: number
   streak_days: number
-  metadata: Record<string, any>
+  
+  // Data & Insights
+  completion_data: PortalCompletionData | null
+  ai_insights: AIInsights | null
+  quantum_vault_contribution: QuantumVaultData | null
+  difficulty_adjustments: DifficultyAdjustment[] | null
+  
+  // Payment & Access
+  payment_method: 'stripe' | 'paypal' | 'free' | 'trial' | null
+  subscription_id: string | null
+  unlock_reason: UnlockReason | null
+  
+  // Social
+  social_sharing_data: SocialSharingData | null
+  
+  // Metadata
   created_at: string
   updated_at: string
 }
 
 /**
- * Individual step progress tracking
+ * User step progress tracking
  */
 export interface UserStepProgress {
   id: string
   user_id: string
   portal_id: string
   step_id: string
-  status: StepStatus
-  started_at?: string
-  completed_at?: string
+  step_number: number
+  
+  // Status
+  status: 'not_started' | 'in_progress' | 'completed' | 'skipped'
+  
+  // Progress
+  progress_percentage: number
+  attempts: number
+  
+  // Data
+  step_data: Record<string, any> | null
+  quality_score: number | null
+  
+  // Timing
+  started_at: string | null
+  completed_at: string | null
   time_spent_minutes: number
-  quality_score?: number
-  attempts_count: number
-  data: Record<string, any>
-  biometric_data?: BiometricReading[]
-  ai_interaction_count: number
-  notes?: string
+  
+  // Metadata
   created_at: string
   updated_at: string
 }
 
-// ============================================================================
-// STEP TYPE DEFINITIONS
-// ============================================================================
-
 /**
- * Types of portal steps available
+ * Portal session tracking
  */
-export type PortalStepType = 
-  | 'scan'              // Biometric scanning step
-  | 'questionnaire'     // Multi-question assessment
-  | 'action'            // Physical or digital action
-  | 'habit'             // Habit tracking/formation
-  | 'reflection'        // Self-reflection exercise
-  | 'ai_conversation'   // AI-guided conversation
-  | 'meditation'        // Guided meditation/mindfulness
-  | 'challenge'         // Gamified challenge
-  | 'assessment'        // Progress assessment
-  | 'integration'       // Knowledge integration
-
-/**
- * Step content structure (varies by type)
- */
-export interface PortalStepContent {
-  type: PortalStepType
-  title: string
-  description: string
-  instructions: string[]
-  resources?: StepResource[]
-  configuration: Record<string, any>
-}
-
-/**
- * Step resource definition
- */
-export interface StepResource {
-  type: 'video' | 'audio' | 'text' | 'image' | 'link' | 'download'
-  title: string
-  url: string
-  description?: string
-  duration_seconds?: number
-  file_size_mb?: number
-}
-
-// ============================================================================
-// UNLOCK & COMPLETION CRITERIA
-// ============================================================================
-
-/**
- * Portal unlock criteria configuration
- */
-export interface PortalUnlockCriteria {
-  required_portals_completed: string[]
-  subscription_tier_required: PortalSubscriptionTier
-  minimum_total_points?: number
-  minimum_streak_days?: number
-  special_conditions?: SpecialUnlockCondition[]
-  payment_required?: boolean
-}
-
-/**
- * Portal completion criteria configuration
- */
-export interface PortalCompletionCriteria {
-  required_steps_completion_percentage: number
-  minimum_quality_score?: number
-  minimum_time_spent_minutes?: number
-  required_ai_interactions?: number
-  required_biometric_improvements?: BiometricImprovement[]
-  special_achievements?: string[]
-}
-
-/**
- * Step unlock criteria
- */
-export interface StepUnlockCriteria {
-  required_previous_steps: string[]
-  minimum_portal_progress_percentage?: number
-  required_achievements?: string[]
-  time_gate_hours?: number
-}
-
-/**
- * Step completion criteria
- */
-export interface StepCompletionCriteria {
-  auto_complete_on_action?: boolean
-  minimum_time_spent_minutes?: number
-  required_data_fields?: string[]
-  quality_threshold?: number
-  biometric_improvement_required?: boolean
-}
-
-/**
- * Special unlock conditions for advanced features
- */
-export interface SpecialUnlockCondition {
-  type: 'biometric_baseline' | 'cultural_assessment' | 'payment_verification' | 'community_milestone'
-  description: string
-  criteria: Record<string, any>
-}
-
-// ============================================================================
-// BIOMETRIC INTEGRATION TYPES
-// ============================================================================
-
-/**
- * Biometric requirements for steps
- */
-export interface BiometricRequirement {
-  type: BiometricType
-  required: boolean
-  quality_threshold: number
-  frequency: 'once' | 'daily' | 'per_session'
-}
-
-/**
- * Supported biometric types
- */
-export type BiometricType = 
-  | 'face_emotion'      // Facial emotion analysis
-  | 'face_micro'        // Micro-expression detection
-  | 'voice_tone'        // Voice tone analysis
-  | 'heart_rate'        // Heart rate variability
-  | 'stress_level'      // Stress indicator
-  | 'energy_level'      // Energy/vitality reading
-
-/**
- * Biometric reading data structure
- */
-export interface BiometricReading {
+export interface PortalSession {
   id: string
   user_id: string
-  type: BiometricType
-  timestamp: string
-  values: Record<string, number>
-  confidence_score: number
-  processing_duration_ms: number
-  device_info?: Record<string, any>
-}
-
-/**
- * Required biometric improvements for completion
- */
-export interface BiometricImprovement {
-  metric: BiometricType
-  baseline_value: number
-  target_improvement_percentage: number
-  measurement_window_days: number
+  portal_id: string
+  
+  // Session info
+  session_start: string
+  session_end: string | null
+  duration_minutes: number | null
+  
+  // Progress
+  steps_completed: number
+  completion_status: 'in_progress' | 'completed' | 'interrupted'
+  
+  // Data
+  session_data: SessionData | null
+  
+  // Metadata
+  created_at: string
 }
 
 // ============================================================================
-// ACHIEVEMENT & GAMIFICATION TYPES
+// ACHIEVEMENT SYSTEM
 // ============================================================================
 
 /**
@@ -311,40 +286,23 @@ export interface Achievement {
   id: string
   name: string
   description: string
-  icon: string
   category: AchievementCategory
+  
+  // Requirements
+  requirement_type: string
+  requirement_value: number
+  
+  // Rewards
   points: number
+  badge_icon: string | null
   rarity: AchievementRarity
-  unlock_criteria: AchievementCriteria
+  
+  // Visibility
   is_hidden: boolean
   is_active: boolean
+  
+  // Metadata
   created_at: string
-}
-
-/**
- * Achievement categories
- */
-export type AchievementCategory = 
-  | 'completion'        // Portal/step completion
-  | 'streak'           // Consistency achievements
-  | 'quality'          // High-quality performance
-  | 'speed'            // Fast completion
-  | 'improvement'      // Personal growth metrics
-  | 'social'           // Community engagement
-  | 'special'          // Special event achievements
-
-/**
- * Achievement rarity levels
- */
-export type AchievementRarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary'
-
-/**
- * Achievement unlock criteria
- */
-export interface AchievementCriteria {
-  type: 'portal_completion' | 'streak' | 'points' | 'time' | 'quality' | 'biometric' | 'social'
-  target_value: number
-  additional_conditions?: Record<string, any>
 }
 
 /**
@@ -354,15 +312,121 @@ export interface UserAchievement {
   id: string
   user_id: string
   achievement_id: string
+  
+  // Progress
   progress_value: number
   is_completed: boolean
-  completed_at?: string
-  notified_at?: string
+  completed_at: string | null
+  
+  // Display
+  is_showcased: boolean
+  
+  // Metadata
+  earned_at: string
   created_at: string
 }
 
+/**
+ * Achievement categories
+ */
+export type AchievementCategory = 
+  | 'progress'      // Portal completions, milestones
+  | 'quality'       // High scores, excellence
+  | 'consistency'   // Streaks, regular engagement
+  | 'special'       // Hidden, unique patterns
+  | 'social'        // Community, sharing
+
+/**
+ * Achievement rarity tiers
+ */
+export type AchievementRarity = 
+  | 'common'        // Easy to achieve
+  | 'rare'          // Moderate difficulty
+  | 'epic'          // Hard to achieve
+  | 'legendary'     // Very rare
+
 // ============================================================================
-// ANALYTICS & INSIGHTS TYPES
+// BIOMETRIC INTEGRATION
+// ============================================================================
+
+/**
+ * Biometric reading data
+ */
+export interface BiometricReading {
+  id: string
+  user_id: string
+  
+  // Type & Context
+  type: BiometricType
+  portal_context: string | null
+  session_id: string | null
+  
+  // Measurements
+  values: BiometricValues
+  confidence: number
+  
+  // Analysis
+  emotional_state: string | null
+  recommendations: string[] | null
+  baseline_deviation: number | null
+  
+  // Environment
+  environmental_factors: EnvironmentalFactors | null
+  
+  // Metadata
+  created_at: string
+}
+
+/**
+ * Biometric measurement types
+ */
+export type BiometricType = 
+  | 'face_emotion'      // Facial expression analysis
+  | 'eye_fatigue'       // Eye tracking and fatigue
+  | 'voice_stress'      // Voice stress analysis
+  | 'heart_rate'        // Heart rate (from wearables)
+  | 'hrv'               // Heart rate variability
+  | 'sleep_quality'     // Sleep analysis
+  | 'activity_level'    // Physical activity
+
+/**
+ * Biometric measurement values
+ */
+export interface BiometricValues {
+  overall: number           // 0-100 overall score
+  fatigue?: number          // 0-1 scale
+  stress?: number           // 0-1 scale
+  focus?: number            // 0-1 scale
+  energy?: number           // 0-1 scale
+  mood?: {
+    valence: number         // -1 to 1
+    arousal: number         // 0 to 1
+    dominance: number       // 0 to 1
+  }
+  emotions?: {
+    happiness?: number
+    sadness?: number
+    anger?: number
+    fear?: number
+    surprise?: number
+    disgust?: number
+    neutral?: number
+  }
+}
+
+/**
+ * Environmental factors during measurement
+ */
+export interface EnvironmentalFactors {
+  lighting_quality?: 'poor' | 'fair' | 'good' | 'excellent'
+  noise_level?: 'quiet' | 'moderate' | 'noisy'
+  time_of_day?: 'morning' | 'afternoon' | 'evening' | 'night'
+  location?: string
+  device_quality?: 'low' | 'medium' | 'high'
+}
+
+// ============================================================================
+// ANALYTICS & INSIGHTS
 // ============================================================================
 
 /**
@@ -370,46 +434,240 @@ export interface UserAchievement {
  */
 export interface PortalAnalytics {
   portal_id: string
-  time_period: AnalyticsTimePeriod
-  total_users: number
+  user_id: string
+  
+  // Metrics
+  total_time_spent: number
+  average_session_duration: number
   completion_rate: number
-  average_completion_time_days: number
-  average_quality_score: number
-  dropout_step_analysis: StepDropoutData[]
-  user_satisfaction_score: number
-  improvement_metrics: ImprovementMetric[]
-  generated_at: string
+  quality_score_average: number
+  
+  // Patterns
+  optimal_time_of_day: string | null
+  engagement_trend: 'increasing' | 'stable' | 'decreasing'
+  success_factors: string[] | null
+  
+  // Comparisons
+  percentile_rank: number | null
+  compared_to_average: number | null
+  
+  // Period
+  period_start: string
+  period_end: string
+  
+  // Metadata
+  calculated_at: string
 }
 
 /**
- * Analytics time periods
- */
-export type AnalyticsTimePeriod = 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'yearly' | 'all_time'
-
-/**
- * Step dropout analysis
- */
-export interface StepDropoutData {
-  step_id: string
-  step_number: number
-  dropout_rate: number
-  average_time_before_dropout_minutes: number
-  common_issues: string[]
-}
-
-/**
- * Improvement metrics tracking
+ * Improvement metrics
  */
 export interface ImprovementMetric {
   metric_name: string
-  baseline_average: number
-  current_average: number
+  baseline_value: number
+  current_value: number
   improvement_percentage: number
-  statistical_significance: number
+  trend: 'improving' | 'stable' | 'declining'
+  confidence: number
+  measurement_count: number
 }
 
 // ============================================================================
-// SERVICE RESPONSE TYPES
+// UNLOCK SYSTEM
+// ============================================================================
+
+/**
+ * Portal unlock result
+ */
+export interface PortalUnlockResult {
+  success: boolean
+  portal_id: string
+  unlocked: boolean
+  
+  // Criteria evaluation
+  criteria_met: boolean
+  missing_criteria: UnlockCriterion[] | null
+  
+  // Actions needed
+  recommended_actions: RecommendedAction[] | null
+  estimated_unlock_time: number | null
+  
+  // Payment
+  payment_required: PaymentRequirement | null
+  
+  // Special conditions
+  special_conditions: SpecialUnlockCondition[] | null
+  
+  // Metadata
+  evaluated_at: string
+}
+
+/**
+ * Unlock criterion
+ */
+export interface UnlockCriterion {
+  type: UnlockCriterionType
+  description: string
+  current_value: any
+  required_value: any
+  satisfied: boolean
+  weight: number
+}
+
+/**
+ * Unlock criterion types
+ */
+export type UnlockCriterionType = 
+  | 'subscription'      // Subscription tier requirement
+  | 'progress'          // Previous portal completion
+  | 'achievement'       // Achievement points or badges
+  | 'biometric'         // Biometric baseline completion
+  | 'time'              // Time-based unlock
+  | 'payment'           // One-time payment
+  | 'special'           // Special conditions
+
+/**
+ * Recommended action for unlocking
+ */
+export interface RecommendedAction {
+  action: string
+  description: string
+  priority: 'high' | 'medium' | 'low'
+  estimated_time_hours: number
+  url?: string
+}
+
+/**
+ * Payment requirement
+ */
+export interface PaymentRequirement {
+  required: boolean
+  amount: number
+  currency: string
+  payment_type: 'subscription' | 'one_time'
+  subscription_tier?: PortalSubscriptionTier
+}
+
+/**
+ * Special unlock condition
+ */
+export interface SpecialUnlockCondition {
+  type: string
+  description: string
+  met: boolean
+  unlock_date?: string
+}
+
+/**
+ * Unlock reason
+ */
+export type UnlockReason = 
+  | 'payment'           // Paid subscription or one-time
+  | 'trial'             // Trial period
+  | 'admin'             // Admin granted access
+  | 'achievement'       // Unlocked through achievements
+  | 'referral'          // Referral reward
+  | 'promo'             // Promotional access
+  | 'completion'        // Auto-unlocked after previous portal
+
+// ============================================================================
+// CULTURAL CONTEXT
+// ============================================================================
+
+/**
+ * User cultural context for AI adaptation
+ */
+export interface CulturalContext {
+  user_id: string
+  
+  // Language & Location
+  primary_language: string
+  secondary_languages: string[]
+  country_code: string
+  timezone: string
+  
+  // Cultural Values
+  cultural_values: CulturalValue[]
+  communication_style: 'direct' | 'indirect' | 'formal' | 'informal'
+  
+  // Beliefs & Practices
+  religious_preferences: string[] | null
+  spiritual_practices: string[] | null
+  cultural_traditions: string[] | null
+  
+  // Time & Scheduling
+  preferred_time_of_day: string[] | null
+  work_schedule: WorkSchedule | null
+  holidays: string[] | null
+  
+  // Adaptation preferences
+  adaptation_level: 'minimal' | 'moderate' | 'extensive'
+}
+
+/**
+ * Cultural value
+ */
+export interface CulturalValue {
+  category: string
+  importance: 'low' | 'medium' | 'high'
+  description?: string
+}
+
+/**
+ * Work schedule
+ */
+export interface WorkSchedule {
+  work_days: number[]           // 0-6 (Sunday-Saturday)
+  start_time: string            // HH:mm format
+  end_time: string              // HH:mm format
+  break_times: string[] | null  // Break periods
+}
+
+// ============================================================================
+// OFFLINE SYNC
+// ============================================================================
+
+/**
+ * Offline operation queue item
+ */
+export interface OfflineOperation {
+  id: string
+  user_id: string
+  
+  // Operation details
+  operation_type: OfflineOperationType
+  portal_id: string | null
+  step_id: string | null
+  
+  // Data
+  data: Record<string, any>
+  
+  // Retry logic
+  timestamp: string
+  retry_count: number
+  max_retries: number
+  last_error: string | null
+  
+  // Priority
+  priority: number  // Higher = more important
+  
+  // Status
+  status: 'pending' | 'processing' | 'completed' | 'failed'
+}
+
+/**
+ * Offline operation types
+ */
+export type OfflineOperationType = 
+  | 'progress_update'
+  | 'step_completion'
+  | 'session_update'
+  | 'biometric_upload'
+  | 'achievement_claim'
+  | 'conversation_sync'
+
+// ============================================================================
+// SERVICE RESPONSE PATTERN
 // ============================================================================
 
 /**
@@ -423,13 +681,14 @@ export interface ServiceResponse<T = any> {
 }
 
 /**
- * Service error definition
+ * Service error details
  */
 export interface ServiceError {
   code: string
   message: string
   details?: Record<string, any>
   timestamp: string
+  requestId?: string
 }
 
 /**
@@ -437,205 +696,245 @@ export interface ServiceError {
  */
 export interface ResponseMetadata {
   execution_time_ms: number
-  cache_hit: boolean
-  data_freshness: string
-  api_version: string
+  cache_hit?: boolean
+  data_freshness?: 'fresh' | 'stale' | 'cached'
+  api_version?: string
+  rate_limit_remaining?: number
+  rate_limit_reset?: string
 }
 
 // ============================================================================
-// PORTAL MANAGEMENT SERVICE TYPES
+// NESTED DATA STRUCTURES
 // ============================================================================
 
 /**
- * Portal unlock result
+ * Portal unlock criteria
  */
-export interface PortalUnlockResult {
-  success: boolean
-  portal_id: string
-  unlocked: boolean
-  missing_criteria?: string[]
-  payment_required?: PaymentRequirement
-  special_conditions?: SpecialUnlockCondition[]
+export interface PortalUnlockCriteria {
+  previous_portal_required: boolean
+  minimum_total_points?: number
+  minimum_streak_days?: number
+  minimum_quality_score?: number
+  biometric_baseline_required?: boolean
+  special_requirements?: string[]
 }
 
 /**
- * Payment requirement for premium portals
+ * Portal completion criteria
  */
-export interface PaymentRequirement {
-  required_tier: PortalSubscriptionTier
-  price_monthly: number
-  price_yearly: number
-  currency: string
-  benefits: string[]
-  trial_available: boolean
+export interface PortalCompletionCriteria {
+  minimum_steps_completed: number
+  minimum_quality_score?: number
+  minimum_time_spent_minutes?: number
+  required_step_ids?: string[]
+  biometric_improvement_required?: boolean
 }
 
 /**
- * Portal session tracking
+ * Portal color scheme
  */
-export interface PortalSession {
-  id: string
-  user_id: string
-  portal_id: string
-  session_start: string
-  session_end?: string
-  duration_minutes?: number
-  steps_completed: number
-  quality_score?: number
-  biometric_readings: BiometricReading[]
-  ai_interactions: number
-  session_data: Record<string, any>
+export interface PortalColorScheme {
+  primary: string
+  secondary: string
+  accent: string
+  gradient: string[]
 }
 
 /**
- * Progress update request
+ * Portal features
  */
-export interface ProgressUpdateRequest {
-  user_id: string
-  portal_id: string
-  step_id?: string
-  progress_data: Record<string, any>
-  biometric_reading?: BiometricReading
-  quality_score?: number
-  session_id?: string
+export interface PortalFeatures {
+  ai_coaching: boolean
+  biometric_tracking: boolean
+  habit_tracking: boolean
+  meditation_guides: boolean
+  community_features: boolean
+  offline_mode: boolean
 }
 
 /**
- * Unlock check request
+ * Achievement reward
  */
-export interface UnlockCheckRequest {
-  user_id: string
-  portal_id: string
-  subscription_tier: PortalSubscriptionTier
-  current_progress: Record<string, UserPortalProgress>
+export interface AchievementReward {
+  achievement_id: string
+  points: number
+  badge_icon: string
+  description: string
 }
 
-// ============================================================================
-// DIFFICULTY ADJUSTMENT TYPES
-// ============================================================================
+/**
+ * Social sharing template
+ */
+export interface SocialSharingTemplate {
+  platform: 'twitter' | 'facebook' | 'instagram' | 'linkedin'
+  template: string
+  image_url?: string
+}
 
 /**
- * Difficulty adjustment parameters
+ * Step data specification
+ */
+export interface StepDataSpecification {
+  fields: DataField[]
+  validation_rules?: ValidationRule[]
+}
+
+/**
+ * Data field
+ */
+export interface DataField {
+  name: string
+  type: 'string' | 'number' | 'boolean' | 'date' | 'array' | 'object'
+  required: boolean
+  description?: string
+}
+
+/**
+ * Validation rule
+ */
+export interface ValidationRule {
+  field: string
+  rule: string
+  value: any
+  message: string
+}
+
+/**
+ * Step unlock criteria
+ */
+export interface StepUnlockCriteria {
+  prerequisite_steps_completed?: number[]
+  minimum_quality_score?: number
+  time_requirement?: number
+}
+
+/**
+ * Step completion criteria
+ */
+export interface StepCompletionCriteria {
+  required_data_fields: string[]
+  minimum_quality_score?: number
+  validation_rules?: ValidationRule[]
+}
+
+/**
+ * Step achievement
+ */
+export interface StepAchievement {
+  condition: string
+  achievement_id: string
+  points: number
+}
+
+/**
+ * Portal completion data
+ */
+export interface PortalCompletionData {
+  total_steps: number
+  completed_steps: number
+  quality_scores: number[]
+  key_insights: string[]
+  improvements_noted: string[]
+  next_recommendations: string[]
+}
+
+/**
+ * AI insights
+ */
+export interface AIInsights {
+  personality_analysis?: string
+  strength_areas?: string[]
+  growth_opportunities?: string[]
+  recommended_focus?: string[]
+  predicted_success_rate?: number
+}
+
+/**
+ * Quantum vault data contribution
+ */
+export interface QuantumVaultData {
+  identity_markers: string[]
+  consciousness_patterns: string[]
+  timeline_data: any
+  future_self_projection: any
+}
+
+/**
+ * Difficulty adjustment
  */
 export interface DifficultyAdjustment {
-  user_id: string
-  portal_id: string
-  current_difficulty: PortalDifficulty
-  suggested_difficulty: PortalDifficulty
-  adjustment_reason: DifficultyAdjustmentReason
-  confidence_score: number
-  adjustment_data: Record<string, any>
-}
-
-/**
- * Reasons for difficulty adjustments
- */
-export type DifficultyAdjustmentReason = 
-  | 'performance_below_threshold'
-  | 'performance_above_threshold'
-  | 'biometric_stress_detected'
-  | 'rapid_completion'
-  | 'frequent_failures'
-  | 'user_request'
-  | 'ai_recommendation'
-
-// ============================================================================
-// OFFLINE SYNC TYPES
-// ============================================================================
-
-/**
- * Offline operation queue item
- */
-export interface OfflineOperation {
-  id: string
-  user_id: string
-  operation_type: OfflineOperationType
-  portal_id?: string
-  step_id?: string
-  data: Record<string, any>
   timestamp: string
-  retry_count: number
-  max_retries: number
-  priority: number
+  previous_difficulty: PortalDifficulty
+  new_difficulty: PortalDifficulty
+  reason: string
+  performance_metrics: Record<string, number>
 }
 
 /**
- * Types of operations that can be queued for offline sync
+ * Social sharing data
  */
-export type OfflineOperationType = 
-  | 'progress_update'
-  | 'step_completion'
-  | 'biometric_reading'
-  | 'achievement_unlock'
-  | 'session_tracking'
-  | 'ai_conversation'
-
-// ============================================================================
-// CULTURAL ADAPTATION TYPES
-// ============================================================================
-
-/**
- * Cultural context for portal customization
- */
-export interface CulturalContext {
-  user_id: string
-  primary_language: string
-  country_code: string
-  cultural_values: CulturalValue[]
-  religious_preferences?: string[]
-  accessibility_needs?: AccessibilityNeed[]
-  communication_style: CommunicationStyle
+export interface SocialSharingData {
+  shared_on: string[]
+  share_count: number
+  last_shared_at: string | null
 }
 
 /**
- * Cultural values that affect portal presentation
+ * Session data
  */
-export interface CulturalValue {
-  category: 'individualism' | 'collectivism' | 'hierarchy' | 'spirituality' | 'tradition'
-  intensity: number // 1-10 scale
-  influence_areas: string[]
-}
-
-/**
- * Communication style preferences
- */
-export interface CommunicationStyle {
-  directness: number        // 1-10 (direct vs indirect)
-  formality: number         // 1-10 (casual vs formal)
-  detail_preference: number // 1-10 (brief vs detailed)
-  emotional_expression: number // 1-10 (reserved vs expressive)
-}
-
-/**
- * Accessibility requirements
- */
-export interface AccessibilityNeed {
-  type: 'visual' | 'auditory' | 'motor' | 'cognitive'
-  severity: 'mild' | 'moderate' | 'severe'
-  accommodations: string[]
+export interface SessionData {
+  steps_attempted: string[]
+  steps_completed: string[]
+  quality_scores: Record<string, number>
+  biometric_readings: string[]
+  notes: string | null
+  interruption_reason: string | null
 }
 
 // ============================================================================
-// EXPORT ALL TYPES
+// UTILITY TYPES
 // ============================================================================
 
-export type {
-  // Database types (imported)
-  Database,
-  
-  // Re-export all defined types for easy importing
-  Portal,
-  PortalStep,
-  UserPortalProgress,
-  UserStepProgress,
-  PortalSession,
-  Achievement,
-  UserAchievement,
-  BiometricReading,
-  PortalAnalytics,
-  ServiceResponse,
-  PortalUnlockResult,
-  DifficultyAdjustment,
-  OfflineOperation,
-  CulturalContext
+/**
+ * Paginated response
+ */
+export interface PaginatedResponse<T> {
+  data: T[]
+  pagination: {
+    total: number
+    page: number
+    page_size: number
+    total_pages: number
+    has_next: boolean
+    has_previous: boolean
+  }
+}
+
+/**
+ * Sort options
+ */
+export interface SortOptions {
+  field: string
+  direction: 'asc' | 'desc'
+}
+
+/**
+ * Filter options
+ */
+export interface FilterOptions {
+  field: string
+  operator: 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'in' | 'contains'
+  value: any
+}
+
+/**
+ * Query options
+ */
+export interface QueryOptions {
+  sort?: SortOptions[]
+  filters?: FilterOptions[]
+  limit?: number
+  offset?: number
+  include?: string[]
+  exclude?: string[]
 }

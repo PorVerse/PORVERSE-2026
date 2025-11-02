@@ -17,9 +17,11 @@
         "name": "next"
       }
     ],
-    "paths": {
-      "@/*": ["./*"]
-    },
+   "paths": {
+  "@/*": ["./*"],
+  "@/types": ["./types"],
+  "@/types/*": ["./types/*"]
+}
     "target": "ES2020",
     "forceConsistentCasingInFileNames": true,
     "noUnusedLocals": true,

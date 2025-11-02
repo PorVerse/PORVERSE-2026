@@ -20,6 +20,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+      "db:generate": "supabase gen types typescript --project-id bqwarnullrxhfisohkel > types/database.types.ts",
+
     "start": "next start",
     "lint": "next lint --fix",
     "lint:check": "next lint",

@@ -34,7 +34,7 @@ export interface OfflineManagerOptions {
 const DB_NAME = 'PorVerseOfflineDB';
 const DB_VERSION = 1;
 const STORE_QUEUE = 'syncQueue';
-const SYNC_TAG = 'porverse-background-sync';
+const _SYNC_TAG = 'porverse-background-sync';
 
 // Simple logger
 const log = (...args: unknown[]) => {
@@ -160,7 +160,8 @@ export class OfflineManager {
         clearTimeout(timer);
         resolve({ ok: true, sw: ev.data?.sw, app: ev.data?.app });
       };
-      navigator.serviceWorker.controller.postMessage({ type: 'PING' }, [mc.port2]);
+      navigator.serviceWorker.controller?.postMessage({ type: 'PING' }, [mc.port2] as any)
+
     });
   }
 

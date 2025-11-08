@@ -257,7 +257,7 @@ export function getFloatEnv(key: OptionalEnvVar, defaultValue: number): number {
 export const env = {
   // ===== APPLICATION =====
   app: {
-    url: getEnv('NEXT_PUBLIC_APP_URL', 'http://localhost:3000'),
+    url: getEnv(| 'NEXT_PUBLIC_APP_URL', 'http://localhost:3000'),
     apiUrl: getEnv('NEXT_PUBLIC_API_URL', 'http://localhost:3000/api'),
     env: (process.env.NODE_ENV || 'development') as 'development' | 'production' | 'test',
     isDevelopment: process.env.NODE_ENV === 'development',

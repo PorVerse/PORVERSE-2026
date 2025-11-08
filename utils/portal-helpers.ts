@@ -33,7 +33,7 @@ export function getPortalById(portals: Portal[], portalId: string): Portal | und
  * Get portal by code (e.g., 'p0', 'p1')
  */
 export function getPortalByCode(portals: Portal[], code: string): Portal | undefined {
-  return portals.find(p => p.portal_code === code)
+  return portals.find(p as any).portal_code)
 }
 
 /**

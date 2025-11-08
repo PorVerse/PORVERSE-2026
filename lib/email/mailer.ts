@@ -29,7 +29,7 @@ export async function sendMail(params: MailSendParams) {
     to: Array.isArray(params.to) ? params.to : [params.to],
     subject: params.subject,
     html: params.html,
-    reply_to: params.replyTo,
+    replyTo: params.replyTo,
   })
   return res
 }

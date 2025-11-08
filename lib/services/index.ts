@@ -74,10 +74,10 @@ export type {
  * Call this once at app startup
  */
 export function initializePortalServices(userId?: string) {
-  const portalManager = getPortalManager()
-  const progressTracker = createProgressTracker()
-  const unlockEngine = createUnlockEngine()
-  const aiServiceManager = createAIServiceManager()
+  // const portalManager = getPortalManager()
+// const progressTracker = createProgressTracker()
+// const unlockEngine = createUnlockEngine()
+// const aiServiceManager = createAIServiceManager()
 
   return {
     portalManager,

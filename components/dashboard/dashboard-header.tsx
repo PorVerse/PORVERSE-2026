@@ -34,10 +34,10 @@ export function DashboardHeader({ user, profile }: DashboardHeaderProps) {
 
   const getSubscriptionBadge = () => {
     const tier = profile?.subscription_tier || 'free'
-    const colors = {
-      free: 'bg-gray-100 text-gray-800',
-      pro: 'bg-purple-100 text-purple-800',
-      elite: 'bg-gradient-to-r from-yellow-400 to-orange-400 text-white',
+    const colors = { free: '...', pro: '...', elite: '...' } as const
+    const key = (tier ?? 'free') as keyof typeof colors
+className={`px-3 py-1 rounded-full text-xs font-medium ${colors[key]}`}
+,
     }
 
     return (

@@ -169,7 +169,8 @@ export async function getSubscriptionTier(
   userId: string
 ): Promise<'free' | 'pro' | 'elite'> {
   const profile = await getUserProfile(userId)
-  return profile?.subscription_tier || 'free'
+  return (profile?.subscription_tier as 'free' | 'pro' | 'elite') || 'free'
+
 }
 
 export async function canAccessFeature(

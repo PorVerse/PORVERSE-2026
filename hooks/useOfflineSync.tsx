@@ -64,7 +64,8 @@ export function useOfflineSync(options?: UseOfflineSyncOptions) {
         isReady: true,
         isOnline: mgrRef.current!.isOnline(),
         queuedCount: q.length,
-        versions: ping.ok ? { sw: ping.sw, app: ping.app } : null,
+        versions: ping.ok && 'sw' in ping && 'app' in ping ? { sw: (ping as any).sw, app: (ping as any).app } : null,
+
       }));
 
       // Subscribe to online/offline changes

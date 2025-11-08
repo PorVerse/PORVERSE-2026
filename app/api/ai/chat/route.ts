@@ -60,11 +60,11 @@ USER CONTEXT:
       return acc
     }, {})
 
-    Object.entries(responsesByPortal).forEach(([code, resps]: [string, any]) => {
+    Object.entries(responsesByPortal).forEach(([_, resps]: [string, any]) => {
       prompt += `\n${resps[0].portal}:\n`
       resps.forEach((r: any) => {
         prompt += `  Step ${r.step} - ${r.stepTitle}:\n`
-        Object.entries(r.answers).forEach(([key, value]: [string, any]) => {
+        Object.entries(r.answers).forEach(([_, value]: [string, any]) => {
           if (value && value.trim()) {
             prompt += `    • ${value.substring(0, 200)}${value.length > 200 ? '...' : ''}\n`
           }

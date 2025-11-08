@@ -205,7 +205,7 @@ export default function PortalPage({
 
         if (mounted) {
           setPortalData({
-            user,
+            user as unknown as import('@supabase/auth-helpers-nextjs').User,
             portal,
             steps,
             progress,
@@ -282,29 +282,32 @@ export default function PortalPage({
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
       {/* Portal Header */}
-      <PortalHeader portal={portalData.portal} progress={portalData.progress} />
+      <PortalHeader
+  portal={portalData.portal as any}
+  progress={portalData.progress as any}
+/>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content - Steps */}
           <div className="lg:col-span-2 space-y-6">
             {/* Progress Overview */}
-            <PortalProgress 
-              portal={portalData.portal} 
-              progress={portalData.progress} 
-              steps={portalData.steps} 
-            />
+            <PortalProgress
+  portal={portalData.portal as any}
+  progress={portalData.progress as any}
+  steps={portalData.steps as any}
+/>
 
             {/* Portal Steps */}
             <PortalSteps
-              portal={portalData.portal}
-              steps={portalData.steps}
-              progress={portalData.progress}
-              userId={portalData.user.id}
-            />
+  portal={portalData.portal as any}
+  steps={portalData.steps as any}
+  progress={portalData.progress as any}
+/>
           </div>
 
           {/* Sidebar - AI Guidance */}
+          <AIGuidancePanel portal={portalData.portal as any} />
           <div className="lg:col-span-1">
             <AIGuidancePanel 
               portal={portalData.portal} 

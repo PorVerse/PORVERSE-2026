@@ -31,8 +31,7 @@ function parseStepContent(content: any) {
 }
 
 function InteractiveStepContent({ 
-  content, 
-  stepId,
+  content,
   responses,
   onResponseChange 
 }: { 

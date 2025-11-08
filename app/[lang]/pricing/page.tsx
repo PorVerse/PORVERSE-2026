@@ -17,7 +17,7 @@ const PLANS: Plan[] = [
   { id: 'pro_monthly', name: 'Pro Monthly', desc: 'Monthly Pro features' },
 ]
 
-export default function PricingPage({ params }: { params: { lang: 'en' | 'ro' } }) {
+export default function PricingPage(_: { params: { lang: 'en' | 'ro' } }) {
   const { language, pricingTier, currency, isLoading } = useLocalization()
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null)
 

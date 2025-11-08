@@ -208,7 +208,7 @@ export function useLocalization() {
             source,
             confidence: data?.confidence,
           })
-          metrics.inc('i18n.locale.applied', 1, { language, pricingTier })
+          metrics.inc('i18n.locale.applied', 1), { language, pricingTier })
         } catch {}
 
         // 6) Persistență DOAR dacă există sesiune și avem cel puțin timezone valid

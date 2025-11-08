@@ -7,7 +7,7 @@ import Link from 'next/link'
 import { useLocalization } from '@/hooks/useLocalization'
 import { useState } from 'react'
 
-export default function BillingReturnPage({ params }: { params: { lang: 'en' | 'ro' } }) {
+export default function BillingReturnPage(_: { params: { lang: 'en' | 'ro' } }) {
   const { language } = useLocalization()
   const sp = useSearchParams()
   const status = sp.get('status') // success | cancel | null

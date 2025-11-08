@@ -1,7 +1,7 @@
 // app/[lang]/billing/success/page.tsx
 import Link from 'next/link'
 
-export default function SuccessPage({ params, searchParams }: { params: { lang: 'en' | 'ro' }, searchParams: { session_id?: string } }) {
+export default function SuccessPage({ params }: { params: { lang: 'en' | 'ro' } }) {
   const { lang } = params
   return (
     <div className="mx-auto max-w-xl p-6 text-white">

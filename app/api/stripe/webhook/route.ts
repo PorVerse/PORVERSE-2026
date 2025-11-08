@@ -40,14 +40,13 @@ export async function POST(req: Request) {
 
     switch (event.type) {
       case 'checkout.session.completed': {
-        // @ts-expect-error Stripe types are unioned; we guard at runtime
         const session: Stripe.Checkout.Session = event.data.object
         const amount = session.amount_total ?? session.amount_subtotal ?? 0
         const currency = session.currency?.toUpperCase() ?? 'USD'
-        const email =
-          session.customer_details?.email ||
-          (typeof session.customer === 'string' ? undefined : session.customer?.email) ||
-          null
+        const customerEmail =
+          typeof session.customer === 'string'
+          ? undefined
+          : ('email' in (session.customer ?? {}) ? (session.customer as any)?.email : undefined)
 
         await svLog('billing.checkout.completed', {
           sessionId: session.id,
@@ -86,7 +85,6 @@ export async function POST(req: Request) {
       }
 
       case 'customer.subscription.updated': {
-        // @ts-expect-error runtime guarded
         const sub: Stripe.Subscription = event.data.object
         await svLog('billing.subscription.updated', {
           id: sub.id,
@@ -99,7 +97,6 @@ export async function POST(req: Request) {
       }
 
       case 'invoice.payment_succeeded': {
-        // @ts-expect-error runtime guarded
         const inv: Stripe.Invoice = event.data.object
         await svLog('billing.invoice.paid', {
           id: inv.id,

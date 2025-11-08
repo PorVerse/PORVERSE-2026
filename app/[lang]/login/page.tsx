@@ -5,10 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useLocalization } from '@/hooks/useLocalization'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import { 
-  Eye, EyeOff, Mail, Lock, Loader2, AlertCircle, CheckCircle, 
-  Shield, Fingerprint, Smartphone, ArrowLeft, RefreshCw, Zap,
-  Info, Clock, Globe
+import {
+  Shield, ArrowLeft, Zap, Info
 } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
@@ -377,14 +375,11 @@ export default function EnterpriseLoginPage({ params }: { params: { lang: Lang }
       console.log('⏱️ Remember me:', formData.rememberMe)
       
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: formData.email.trim().toLowerCase(),
-        password: formData.password,
-        options: {
-          persistSession: true,
-          // Set session duration based on remember me
-          sessionTimeout: formData.rememberMe ? SESSION_TIMEOUT : undefined
-        }
-      })
+  emailemail: authState.email,
+,
+  password: authState.password
+
+})
       
       if (error) {
         console.error('❌ Authentication failed:', error)
@@ -656,8 +651,8 @@ export default function EnterpriseLoginPage({ params }: { params: { lang: Lang }
                     ? 'bg-purple-600 text-white'
                     : 'text-purple-200 hover:text-white'
                 }`}
-              >
-                <Lock className="w-4 h-4 inline mr-2" />
+              <LockIcon className="w-4 h-4 inline mr-2" />
+                <LockIcon className="w-4 h-4 inline mr-2" />
                 Password
               </button>
               <button
@@ -708,7 +703,8 @@ export default function EnterpriseLoginPage({ params }: { params: { lang: Lang }
                   {t.passwordLabel}
                 </label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-3 h-5 w-5 text-purple-300" />
+                  <LockIcon className="absolute left-3 top-3 h-5 w-5 text-purple-300" />
+
                   <input
                     id="password"
                     type={authState.passwordVisible ? 'text' : 'password'}
@@ -731,6 +727,7 @@ export default function EnterpriseLoginPage({ params }: { params: { lang: Lang }
                     tabIndex={-1}
                   >
                     {authState.passwordVisible ? <EyeOff size={20} /> : <Eye size={20} />}
+
                   </button>
                 </div>
               </div>

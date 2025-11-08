@@ -184,7 +184,6 @@ export type {
 export type {
   // Core Database Type
   Database,
-  SupabaseDatabase,
   Json,
   
   // Helper Types

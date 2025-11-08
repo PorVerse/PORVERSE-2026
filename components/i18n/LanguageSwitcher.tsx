@@ -20,6 +20,7 @@ const LANGS: Array<{ code: Lang; label: string; flag: React.ReactNode }> = [
 ]
 
 export function LanguageSwitcher({ compact = true }: { compact?: boolean }) {
+  void compact
   const { language, changeLanguage, isLoading } = useLocalization()
   const [open, setOpen] = React.useState(false)
 

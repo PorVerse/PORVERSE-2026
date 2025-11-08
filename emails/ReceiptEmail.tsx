@@ -1,6 +1,11 @@
-await resend.emails.send({
-  from: 'PorVerse <onboarding@resend.dev>',
-  to: toEmail,
-  subject: 'Your PorVerse subscription is active',
-  react: ReceiptEmail({ /* props */ }), // Aici cere @react-email/render (de asta trebuia instalat)
-})
+import * as React from 'react'
+import { Html, Heading, Text } from '@react-email/components'
+
+export default function ReceiptEmail() {
+  return (
+    <Html>
+      <Heading>Receipt</Heading>
+      <Text>Mulțumim!</Text>
+    </Html>
+  )
+}

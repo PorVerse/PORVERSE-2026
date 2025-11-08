@@ -719,12 +719,60 @@ export type Database = {
           },
         ]
       }
+      portal_sessions: {
+        Row: {
+          created_at: string
+          duration_minutes: number | null
+          id: string
+          portal_id: string
+          quality_score: number | null
+          session_data: Json | null
+          session_end: string | null
+          session_start: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          duration_minutes?: number | null
+          id?: string
+          portal_id: string
+          quality_score?: number | null
+          session_data?: Json | null
+          session_end?: string | null
+          session_start?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          duration_minutes?: number | null
+          id?: string
+          portal_id?: string
+          quality_score?: number | null
+          session_data?: Json | null
+          session_end?: string | null
+          session_start?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "portal_sessions_portal_id_fkey"
+            columns: ["portal_id"]
+            isOneToOne: false
+            referencedRelation: "portals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       portal_steps: {
         Row: {
           content: Json
           created_at: string
           description: string
           estimated_duration: number
+          estimated_duration_minutes: number | null
           id: string
           is_active: boolean
           portal_id: string
@@ -737,6 +785,7 @@ export type Database = {
           created_at?: string
           description: string
           estimated_duration: number
+          estimated_duration_minutes?: number | null
           id?: string
           is_active?: boolean
           portal_id: string
@@ -749,6 +798,7 @@ export type Database = {
           created_at?: string
           description?: string
           estimated_duration?: number
+          estimated_duration_minutes?: number | null
           id?: string
           is_active?: boolean
           portal_id?: string
@@ -839,45 +889,86 @@ export type Database = {
       }
       portals: {
         Row: {
+          category: string | null
           color_primary: string
           color_secondary: string
           created_at: string
           description: string
+          difficulty_level: number | null
+          estimated_duration_minutes: number | null
           icon: string
           id: string
           is_active: boolean
+          learning_objectives: Json | null
+          long_description: string | null
+          name: string | null
           order_index: number
           portal_code: string
+          portal_type: string | null
+          prerequisites: Json | null
+          required_previous_portal: string | null
+          subscription_tier: string | null
           title: string
+          unlock_criteria: Json | null
           updated_at: string
         }
         Insert: {
+          category?: string | null
           color_primary: string
           color_secondary: string
           created_at?: string
           description: string
+          difficulty_level?: number | null
+          estimated_duration_minutes?: number | null
           icon: string
           id?: string
           is_active?: boolean
+          learning_objectives?: Json | null
+          long_description?: string | null
+          name?: string | null
           order_index: number
           portal_code: string
+          portal_type?: string | null
+          prerequisites?: Json | null
+          required_previous_portal?: string | null
+          subscription_tier?: string | null
           title: string
+          unlock_criteria?: Json | null
           updated_at?: string
         }
         Update: {
+          category?: string | null
           color_primary?: string
           color_secondary?: string
           created_at?: string
           description?: string
+          difficulty_level?: number | null
+          estimated_duration_minutes?: number | null
           icon?: string
           id?: string
           is_active?: boolean
+          learning_objectives?: Json | null
+          long_description?: string | null
+          name?: string | null
           order_index?: number
           portal_code?: string
+          portal_type?: string | null
+          prerequisites?: Json | null
+          required_previous_portal?: string | null
+          subscription_tier?: string | null
           title?: string
+          unlock_criteria?: Json | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "portals_required_previous_portal_fkey"
+            columns: ["required_previous_portal"]
+            isOneToOne: false
+            referencedRelation: "portals"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -890,8 +981,10 @@ export type Database = {
           i18n_updated_at: string
           id: string
           language: string
+          paypal_customer_id: string | null
           preferred_language: string
           pricing_tier: string
+          quantum_vault_unlocked: boolean | null
           stripe_current_period_end: string | null
           stripe_customer_id: string | null
           stripe_price_id: string | null
@@ -916,8 +1009,10 @@ export type Database = {
           i18n_updated_at?: string
           id: string
           language?: string
+          paypal_customer_id?: string | null
           preferred_language?: string
           pricing_tier?: string
+          quantum_vault_unlocked?: boolean | null
           stripe_current_period_end?: string | null
           stripe_customer_id?: string | null
           stripe_price_id?: string | null
@@ -942,8 +1037,10 @@ export type Database = {
           i18n_updated_at?: string
           id?: string
           language?: string
+          paypal_customer_id?: string | null
           preferred_language?: string
           pricing_tier?: string
+          quantum_vault_unlocked?: boolean | null
           stripe_current_period_end?: string | null
           stripe_customer_id?: string | null
           stripe_price_id?: string | null
@@ -1371,44 +1468,68 @@ export type Database = {
       }
       user_portal_progress: {
         Row: {
+          achievement_points: number | null
           completed_at: string | null
           completion_percentage: number
           created_at: string
           current_step: number
+          expires_at: string | null
           id: string
           last_activity_at: string
+          metadata: Json | null
           portal_id: string
+          progress_percentage: number | null
+          quality_score: number | null
+          session_count: number | null
           started_at: string | null
           status: string
+          time_spent_minutes: number | null
           total_steps: number
+          unlocked_at: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          achievement_points?: number | null
           completed_at?: string | null
           completion_percentage?: number
           created_at?: string
           current_step?: number
+          expires_at?: string | null
           id?: string
           last_activity_at?: string
+          metadata?: Json | null
           portal_id: string
+          progress_percentage?: number | null
+          quality_score?: number | null
+          session_count?: number | null
           started_at?: string | null
           status?: string
+          time_spent_minutes?: number | null
           total_steps: number
+          unlocked_at?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          achievement_points?: number | null
           completed_at?: string | null
           completion_percentage?: number
           created_at?: string
           current_step?: number
+          expires_at?: string | null
           id?: string
           last_activity_at?: string
+          metadata?: Json | null
           portal_id?: string
+          progress_percentage?: number | null
+          quality_score?: number | null
+          session_count?: number | null
           started_at?: string | null
           status?: string
+          time_spent_minutes?: number | null
           total_steps?: number
+          unlocked_at?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -1531,6 +1652,72 @@ export type Database = {
             columns: ["id"]
             isOneToOne: true
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_step_progress: {
+        Row: {
+          attempts_count: number | null
+          completed_at: string | null
+          created_at: string
+          data: Json | null
+          id: string
+          portal_id: string
+          quality_score: number | null
+          started_at: string | null
+          status: string
+          step_id: string
+          step_number: number
+          time_spent_minutes: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          attempts_count?: number | null
+          completed_at?: string | null
+          created_at?: string
+          data?: Json | null
+          id?: string
+          portal_id: string
+          quality_score?: number | null
+          started_at?: string | null
+          status?: string
+          step_id: string
+          step_number: number
+          time_spent_minutes?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          attempts_count?: number | null
+          completed_at?: string | null
+          created_at?: string
+          data?: Json | null
+          id?: string
+          portal_id?: string
+          quality_score?: number | null
+          started_at?: string | null
+          status?: string
+          step_id?: string
+          step_number?: number
+          time_spent_minutes?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_step_progress_portal_id_fkey"
+            columns: ["portal_id"]
+            isOneToOne: false
+            referencedRelation: "portals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_step_progress_step_id_fkey"
+            columns: ["step_id"]
+            isOneToOne: false
+            referencedRelation: "portal_steps"
             referencedColumns: ["id"]
           },
         ]

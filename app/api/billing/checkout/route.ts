@@ -109,7 +109,17 @@ export async function POST(req: Request) {
         .select('stripe_customer_id')
         .eq('id', user.id)
         .single()
-        .catch(() => ({ data: null as any }))
+        let customerRow: any = null
+try {
+  const { data } = await supabase
+    .from('profiles')
+    .select('stripe_customer_id')
+    .eq('id', user.id)
+    .single()
+  customerRow = data
+} catch {
+  customerRow = null
+}
 
       stripeCustomerId = profile?.stripe_customer_id ?? null
     }

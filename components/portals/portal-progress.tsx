@@ -112,7 +112,7 @@ export function PortalProgress({ portal, progress, steps }: PortalProgressProps)
           Step Timeline
         </h3>
         <div className="flex items-center gap-2">
-          {steps.map((step, index) => {
+          {steps.map((step) => {
             const isCompleted = step.step_number < currentStep
             const isCurrent = step.step_number === currentStep
 

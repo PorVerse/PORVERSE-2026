@@ -1,12 +1,8 @@
 // lib/supabase/supabase-browser.ts
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import type { SupabaseClient } from '@supabase/supabase-js'
+import { createClientComponentClient, type SupabaseClient } from '@supabase/auth-helpers-nextjs'
 
-let _client: SupabaseClient | null = null
-
-export function supabaseBrowser(): SupabaseClient {
-  if (_client) return _client
-  // Important: single instance per browser context
-  _client = createClientComponentClient()
-  return _client
+let _client: SupabaseClient<any, 'public', 'public'> | null = null
+export function getSupabaseBrowserClient() {
+  if (!_client) _client = createClientComponentClient()
+  return _client!
 }

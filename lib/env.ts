@@ -26,6 +26,9 @@ const requiredEnvVars = [
  * Optional environment variables that enhance functionality but aren't required
  */
 const optionalEnvVars = [
+  // Application
+  'NEXT_PUBLIC_APP_URL',
+  
   // AI Services
   'ANTHROPIC_API_KEY',
   'OPENAI_ORG_ID',
@@ -195,7 +198,7 @@ export function getEnv(key: AllEnvVar, defaultValue?: string): string | undefine
   const value = process.env[key]
   
   // Required variable
-  if (requiredEnvVars.includes(key as RequiredEnvVar)) {
+  if ((requiredEnvVars as readonly string[]).includes(key as string)) {
     if (!value) {
       throw new EnvironmentError(
         `Required environment variable ${key} is not set. ` +
@@ -206,7 +209,7 @@ export function getEnv(key: AllEnvVar, defaultValue?: string): string | undefine
   }
   
   // Optional variable
-  return value || defaultValue
+  return value ?? defaultValue
 }
 
 /**
@@ -222,8 +225,9 @@ export function hasEnv(key: OptionalEnvVar): boolean {
  */
 export function getBooleanEnv(key: OptionalEnvVar, defaultValue = false): boolean {
   const value = process.env[key]
-  if (!value) return defaultValue
-  return value.toLowerCase() === 'true' || value === '1'
+  if (value == null) return defaultValue
+  const v = value.toLowerCase().trim()
+  return v === 'true' || v === '1' || v === 'yes' || v === 'on'
 }
 
 /**
@@ -231,9 +235,9 @@ export function getBooleanEnv(key: OptionalEnvVar, defaultValue = false): boolea
  */
 export function getNumberEnv(key: OptionalEnvVar, defaultValue: number): number {
   const value = process.env[key]
-  if (!value) return defaultValue
-  const num = parseInt(value, 10)
-  return isNaN(num) ? defaultValue : num
+  if (value == null) return defaultValue
+  const num = Number.parseInt(value, 10)
+  return Number.isNaN(num) ? defaultValue : num
 }
 
 /**
@@ -241,9 +245,9 @@ export function getNumberEnv(key: OptionalEnvVar, defaultValue: number): number 
  */
 export function getFloatEnv(key: OptionalEnvVar, defaultValue: number): number {
   const value = process.env[key]
-  if (!value) return defaultValue
-  const num = parseFloat(value)
-  return isNaN(num) ? defaultValue : num
+  if (value == null) return defaultValue
+  const num = Number.parseFloat(value)
+  return Number.isNaN(num) ? defaultValue : num
 }
 
 // ============================================================================
@@ -257,7 +261,7 @@ export function getFloatEnv(key: OptionalEnvVar, defaultValue: number): number {
 export const env = {
   // ===== APPLICATION =====
   app: {
-    url: getEnv(| 'NEXT_PUBLIC_APP_URL', 'http://localhost:3000'),
+    url: getEnv('NEXT_PUBLIC_APP_URL', 'http://localhost:3000'),
     apiUrl: getEnv('NEXT_PUBLIC_API_URL', 'http://localhost:3000/api'),
     env: (process.env.NODE_ENV || 'development') as 'development' | 'production' | 'test',
     isDevelopment: process.env.NODE_ENV === 'development',
@@ -403,9 +407,13 @@ if (typeof window === 'undefined') {
   } catch (error) {
     if (error instanceof EnvironmentError) {
       console.error(error.message)
-      process.exit(1)
+      // Avoid hard exit in Next.js dev to preserve HMR; still fail builds in prod CI
+      if (process.env.NODE_ENV === 'production') {
+        process.exit(1)
+      }
+    } else {
+      throw error
     }
-    throw error
   }
 }
 
@@ -481,8 +489,8 @@ export function checkServiceHealth(): {
     sentry: env.analytics.sentry.enabled,
   }
 
-  const requiredServices = ['supabase', 'openai']
-  const healthy = requiredServices.every(service => services[service as keyof typeof services])
+  const requiredServices = ['supabase', 'openai'] as const
+  const healthy = requiredServices.every(service => services[service])
 
   const warnings: string[] = []
   if (!env.ai.anthropic.enabled) {

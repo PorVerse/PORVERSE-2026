@@ -18,6 +18,8 @@ import { getBrowserTimeZone, isValidTimeZone } from '@/lib/i18n/timezone'
 import { logger } from '@/lib/telemetry/logger'
 import { metrics } from '@/lib/telemetry/metrics'
 
+// --------------------------- types ---------------------------
+
 type IsoCurrency = 'RON' | 'EUR' | 'USD'
 type SourceTag = 'profile' | 'cookie' | 'accept-language' | 'ip' | 'fallback' | 'unknown'
 
@@ -41,9 +43,9 @@ interface ApiDetectResponse {
 }
 
 const SUPPORTED = ['en', 'ro'] as const
-type Supported = (typeof SUPPORTED)[number]
+export type Supported = (typeof SUPPORTED)[number]
 
-/* --------------------------- helpers --------------------------- */
+// --------------------------- helpers ---------------------------
 
 function normalizeLang(lang?: string): Supported {
   const base = (lang ?? 'en').split('-')[0].toLowerCase()
@@ -135,7 +137,7 @@ async function persistPreferences(payload: {
   } catch {}
 }
 
-/* ------------------------------- hook -------------------------------- */
+// ------------------------------- hook --------------------------------
 
 export function useLocalization() {
   const router = useRouter()
@@ -208,7 +210,7 @@ export function useLocalization() {
             source,
             confidence: data?.confidence,
           })
-          metrics.inc('i18n.locale.applied', 1), { language, pricingTier })
+          metrics.inc('i18n.locale.applied', 1)
         } catch {}
 
         // 6) Persistență DOAR dacă există sesiune și avem cel puțin timezone valid
@@ -239,7 +241,7 @@ export function useLocalization() {
       const nextLang = normalizeLang(newLanguage)
 
       // 1) Stare + cookie
-      setState((prev) => ({ ...prev, language: nextLang }))
+      setState(prev => ({ ...prev, language: nextLang }))
       cookiesClient.setLocale(nextLang)
 
       // 2) Navigație localizată (no-scroll)
@@ -251,7 +253,7 @@ export function useLocalization() {
       // 3) Telemetrie
       try {
         logger.info('i18n.locale.changed', { to: nextLang })
-        metrics.inc('i18n.locale.changed', 1, { to: nextLang })
+        metrics.inc('i18n.locale.changed', 1)
       } catch {}
 
       // 4) Persistă preferința doar dacă există sesiune

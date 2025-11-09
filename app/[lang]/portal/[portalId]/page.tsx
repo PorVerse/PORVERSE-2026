@@ -1,21 +1,29 @@
-// app/[lang]/portal/[portalId]/page.tsx - FIXED VERSION
+// app/[lang]/portal/[portalId]/page.tsx — ENTERPRISE FIXED
 'use client'
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import type { User } from '@supabase/auth-helpers-nextjs'
 import { PortalHeader } from '@/components/portals/portal-header'
 import { PortalSteps } from '@/components/portals/portal-steps'
 import { PortalProgress } from '@/components/portals/portal-progress'
 import { AIGuidancePanel } from '@/components/ai/ai-guidance-panel'
 import { Loader2, AlertCircle } from 'lucide-react'
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Minimal, runtime-safe shapes used by this page. Components may accept
+// broader types; at the render boundary we cast with `as any` to avoid
+// leaking those types in this page.
+// ─────────────────────────────────────────────────────────────────────────────
 interface Portal {
   id: string
   name: string
   description: string
-  portal_code: string
-  [key: string]: any
+  // Some projects key routes by code ("p0", "p1"), others by id.
+  // We fetch by `portal_code` below, but keep this field optional-safe.
+  portal_code?: string
+  [key: string]: unknown
 }
 
 interface PortalStep {
@@ -24,9 +32,10 @@ interface PortalStep {
   step_number: number
   title: string
   description: string
-  content: any
+  content: unknown
   is_active: boolean
-  [key: string]: any
+  estimated_duration_minutes?: number | null
+  [key: string]: unknown
 }
 
 interface UserProgress {
@@ -36,14 +45,8 @@ interface UserProgress {
   current_step: number
   total_steps: number
   completion_percentage: number
-  status: string
-  [key: string]: any
-}
-
-interface User {
-  id: string
-  email: string
-  [key: string]: any
+  status: 'not_started' | 'in_progress' | 'completed' | string
+  [key: string]: unknown
 }
 
 interface PortalPageData {
@@ -62,13 +65,14 @@ export default function PortalPage({
 }) {
   const router = useRouter()
   const supabase = createClientComponentClient()
+
   const [portalData, setPortalData] = useState<PortalPageData>({
     user: null,
     portal: null,
     steps: [],
     progress: null,
     loading: true,
-    error: null
+    error: null,
   })
 
   useEffect(() => {
@@ -77,10 +81,13 @@ export default function PortalPage({
     const loadPortalData = async () => {
       try {
         console.log('🔍 PORTAL: Loading portal data for:', params.portalId)
-        
-        // Check authentication first
-        const { data: { user }, error: authError } = await supabase.auth.getUser()
-        
+
+        // 1) Auth check
+        const {
+          data: { user },
+          error: authError,
+        } = await supabase.auth.getUser()
+
         if (authError) {
           console.error('🔍 PORTAL: Auth error:', authError)
           throw authError
@@ -88,39 +95,46 @@ export default function PortalPage({
 
         if (!user) {
           console.log('🔍 PORTAL: No user found, redirecting to login')
-          router.replace(`/${params.lang}/login?next=${encodeURIComponent(`/${params.lang}/portal/${params.portalId}`)}`)
+          router.replace(
+            `/${params.lang}/login?next=${encodeURIComponent(
+              `/${params.lang}/portal/${params.portalId}`,
+            )}`,
+          )
           return
         }
 
         console.log('🔍 PORTAL: User authenticated:', user.id)
 
-        // Fetch portal details
+        // 2) Fetch portal by code (fallback to id if your schema uses ids in the route)
         let portal: Portal | null = null
         try {
-          const { data: portalData, error: portalError } = await supabase
+          const { data: portalRow, error: portalError } = await supabase
             .from('portals')
             .select('*')
-            .eq('portal_code', params.portalId)
+            .or(
+              // Match either the `portal_code` or the `id` to be resilient
+              `portal_code.eq.${params.portalId},id.eq.${params.portalId}`,
+            )
             .single()
-          
+
           if (portalError) {
-            if (portalError.code === 'PGRST116') {
+            if ((portalError as any).code === 'PGRST116') {
               console.log('🔍 PORTAL: Portal not found:', params.portalId)
               router.replace(`/${params.lang}/portal-dashboard`)
               return
             }
             throw portalError
           }
-          
-          portal = portalData
+
+          portal = portalRow as Portal
           console.log('🔍 PORTAL: Portal loaded:', portal?.id)
         } catch (portalErr: any) {
           console.error('🔍 PORTAL: Portal fetch error:', portalErr)
           if (mounted) {
-            setPortalData(prev => ({
+            setPortalData((prev) => ({
               ...prev,
               loading: false,
-              error: 'Portal not found or inaccessible'
+              error: 'Portal not found or inaccessible',
             }))
           }
           return
@@ -132,7 +146,7 @@ export default function PortalPage({
           return
         }
 
-        // Fetch portal steps
+        // 3) Fetch portal steps
         let steps: PortalStep[] = []
         try {
           const { data: stepsData, error: stepsError } = await supabase
@@ -141,43 +155,43 @@ export default function PortalPage({
             .eq('portal_id', portal.id)
             .eq('is_active', true)
             .order('step_number', { ascending: true })
-          
+
           if (stepsError) {
             console.warn('🔍 PORTAL: Steps fetch error:', stepsError)
           } else {
-            steps = stepsData || []
+            steps = (stepsData || []) as PortalStep[]
             console.log('🔍 PORTAL: Steps loaded:', steps.length)
           }
         } catch (stepsErr) {
           console.warn('🔍 PORTAL: Steps fetch exception:', stepsErr)
         }
 
-        // Fetch user progress
+        // 4) Fetch user progress
         let progress: UserProgress | null = null
         try {
-          const { data: progressData, error: progressError } = await supabase
+          const { data: progressRow, error: progressError } = await supabase
             .from('user_portal_progress')
             .select('*')
             .eq('user_id', user.id)
             .eq('portal_id', portal.id)
             .single()
-          
-          if (progressError && progressError.code !== 'PGRST116') {
+
+          if (progressError && (progressError as any).code !== 'PGRST116') {
             console.warn('🔍 PORTAL: Progress fetch error:', progressError)
           } else {
-            progress = progressData
+            progress = (progressRow as unknown as UserProgress) || null
             console.log('🔍 PORTAL: Progress loaded:', !!progress)
           }
         } catch (progressErr) {
           console.warn('🔍 PORTAL: Progress fetch exception:', progressErr)
         }
 
-        // Create progress if doesn't exist and we have steps
+        // 5) Create initial progress if missing and we have steps
         if (!progress && steps.length > 0) {
           try {
             console.log('🔍 PORTAL: Creating initial progress record...')
-            
-            const { data: newProgress, error: createError } = await supabase
+
+            const { data: created, error: createError } = await supabase
               .from('user_portal_progress')
               .insert({
                 user_id: user.id,
@@ -189,52 +203,51 @@ export default function PortalPage({
               })
               .select()
               .single()
-            
+
             if (createError) {
               console.warn('🔍 PORTAL: Progress creation error:', createError)
-              // Continue without progress - app should still work
             } else {
-              progress = newProgress
+              progress = created as unknown as UserProgress
               console.log('🔍 PORTAL: Progress created successfully')
             }
           } catch (createErr) {
             console.warn('🔍 PORTAL: Progress creation exception:', createErr)
-            // Continue without progress - app should still work
           }
         }
 
         if (mounted) {
           setPortalData({
-            user as unknown as import('@supabase/auth-helpers-nextjs').User,
+            user,
             portal,
             steps,
             progress,
             loading: false,
-            error: null
+            error: null,
           })
           console.log('🔍 PORTAL: Portal data loaded successfully')
         }
-
       } catch (error: any) {
         console.error('🔍 PORTAL: Load error:', error)
         if (mounted) {
-          setPortalData(prev => ({
+          setPortalData((prev) => ({
             ...prev,
             loading: false,
-            error: error.message || 'Failed to load portal'
+            error: error?.message || 'Failed to load portal',
           }))
         }
       }
     }
 
-    loadPortalData()
+    void loadPortalData()
 
     return () => {
       mounted = false
     }
   }, [supabase, router, params.lang, params.portalId])
 
-  // Loading state
+  // ───────────────────────────────────────────────────────────────────────────
+  // Render States
+  // ───────────────────────────────────────────────────────────────────────────
   if (portalData.loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 flex items-center justify-center">
@@ -247,7 +260,6 @@ export default function PortalPage({
     )
   }
 
-  // Error state
   if (portalData.error) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 flex items-center justify-center">
@@ -256,13 +268,13 @@ export default function PortalPage({
           <h1 className="text-xl font-bold text-gray-900 mb-2">Portal Not Available</h1>
           <p className="text-gray-600 mb-4">{portalData.error}</p>
           <div className="space-y-2">
-            <button 
+            <button
               onClick={() => router.push(`/${params.lang}/portal-dashboard`)}
               className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
             >
               Back to Dashboard
             </button>
-            <button 
+            <button
               onClick={() => window.location.reload()}
               className="w-full px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
             >
@@ -274,18 +286,12 @@ export default function PortalPage({
     )
   }
 
-  // No user (shouldn't happen due to redirect, but safety check)
-  if (!portalData.user || !portalData.portal) {
-    return null
-  }
+  if (!portalData.user || !portalData.portal) return null
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
       {/* Portal Header */}
-      <PortalHeader
-  portal={portalData.portal as any}
-  progress={portalData.progress as any}
-/>
+      <PortalHeader portal={portalData.portal as any} progress={portalData.progress as any} />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -293,26 +299,22 @@ export default function PortalPage({
           <div className="lg:col-span-2 space-y-6">
             {/* Progress Overview */}
             <PortalProgress
-  portal={portalData.portal as any}
-  progress={portalData.progress as any}
-  steps={portalData.steps as any}
-/>
+              portal={portalData.portal as any}
+              progress={portalData.progress as any}
+              steps={portalData.steps as any}
+            />
 
             {/* Portal Steps */}
             <PortalSteps
-  portal={portalData.portal as any}
-  steps={portalData.steps as any}
-  progress={portalData.progress as any}
-/>
+              portal={portalData.portal as any}
+              steps={portalData.steps as any}
+              progress={portalData.progress as any}
+            />
           </div>
 
           {/* Sidebar - AI Guidance */}
-          <AIGuidancePanel portal={portalData.portal as any} />
           <div className="lg:col-span-1">
-            <AIGuidancePanel 
-              portal={portalData.portal} 
-              userId={portalData.user.id} 
-            />
+            <AIGuidancePanel portal={portalData.portal as any} userId={portalData.user.id as any} />
           </div>
         </div>
       </div>

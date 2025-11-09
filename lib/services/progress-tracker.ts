@@ -2,26 +2,20 @@
 /**
  * 🎯 PorVerse V2 - Progress Tracker Service
  * Advanced progress tracking with analytics, insights, and performance monitoring
- * 
- * @version 2.0.0
- * @author PorVerse Development Team
- * @description Comprehensive progress tracking for portal-based spiritual journey
+ *
+ * @version 2.1.0-enterprise
+ * @author PorVerse
+ * @description Robust progress tracking for portal-based journey
  */
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
-import type { Database } from '../../types/database.types'
+import type { Database, Json } from '../../types/database.types'
 import type {
-  Portal,
   UserPortalProgress,
   UserStepProgress,
   PortalSession,
-  BiometricReading,
-  PortalAnalytics,
   ImprovementMetric,
   ServiceResponse,
-  AnalyticsTimePeriod,
-  PortalProgressStatus,
-  PortalDifficulty
 } from '../../types/portal-management'
 
 /**
@@ -36,9 +30,7 @@ interface ProgressTrackerConfig {
   improvementWindowDays: number
 }
 
-/**
- * Progress summary for dashboard display
- */
+/** Dashboard summary */
 interface ProgressSummary {
   userId: string
   totalPortalsCompleted: number
@@ -53,9 +45,6 @@ interface ProgressSummary {
   nextRecommendations: PortalRecommendation[]
 }
 
-/**
- * Portal recommendation based on progress analysis
- */
 interface PortalRecommendation {
   portalId: string
   priority: 'high' | 'medium' | 'low'
@@ -64,58 +53,34 @@ interface PortalRecommendation {
   prerequisites: string[]
 }
 
-/**
- * Session analytics data
- */
-interface SessionAnalytics {
-  averageDuration: number
-  completionRate: number
-  qualityTrend: number[]
-  timePatterns: Record<string, number>
-  difficultyAdjustments: number
-  biometricImprovement: number
+// ————————————————————————————————————————————————————————————————
+// Utilities
+// ————————————————————————————————————————————————————————————————
+const toJson = (obj: unknown): Json => {
+  // Ensure plain JSON that matches Database Json type
+  return JSON.parse(JSON.stringify(obj ?? null)) as Json
 }
 
-/**
- * Biometric improvement tracking
- */
-interface BiometricImprovement {
-  metric: string
-  baselineValue: number
-  currentValue: number
-  improvementPercentage: number
-  trend: 'improving' | 'stable' | 'declining'
-  confidence: number
-}
+const safeNumber = (v: unknown, def = 0): number =>
+  typeof v === 'number' && Number.isFinite(v) ? v : def
 
-/**
- * Progress Tracker Service Class
- * Handles detailed progress monitoring, analytics, and insight generation
- */
+// ————————————————————————————————————————————————————————————————
+// Service
+// ————————————————————————————————————————————————————————————————
 export class ProgressTracker {
   private supabase: SupabaseClient<Database>
   private config: ProgressTrackerConfig
-  private activeSession: PortalSession | null = null
+  private activeSession: Pick<PortalSession, 'id' | 'user_id' | 'portal_id' | 'session_start' | 'session_data'> | null = null
   private sessionTimer: NodeJS.Timeout | null = null
 
-  /**
-   * Initialize Progress Tracker with configuration
-   */
   constructor(config: ProgressTrackerConfig) {
     this.config = config
-    this.supabase = createClient(config.supabaseUrl, config.supabaseKey)
+    this.supabase = createClient<Database>(config.supabaseUrl, config.supabaseKey)
   }
 
-  // ============================================================================
+  // ————————————————————————————————————————————————————————————————
   // PROGRESS ANALYTICS & INSIGHTS
-  // ============================================================================
-
-  /**
-   * Get comprehensive progress summary for a user
-   * @param userId - User identifier
-   * @param includeRecommendations - Whether to include AI-generated recommendations
-   * @returns Detailed progress summary
-   */
+  // ————————————————————————————————————————————————————————————————
   async getProgressSummary(
     userId: string,
     includeRecommendations: boolean = true
@@ -123,43 +88,51 @@ export class ProgressTracker {
     try {
       const startTime = Date.now()
 
-      // Get overall progress data
+      // Overall progress
       const { data: portalProgress, error: progressError } = await this.supabase
         .from('user_portal_progress')
-        .select(`
-          *,
-          portals:portal_id (
-            name,
-            category,
-            color_theme,
-            estimated_duration_days
-          )
-        `)
+        .select(
+          `*,
+           portals:portal_id (
+             name,
+             category,
+             color_primary,
+             color_secondary,
+             estimated_duration_days
+           )`
+        )
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
 
-      if (progressError) {
-        throw new Error(`Failed to fetch progress data: ${progressError.message}`)
-      }
+      if (progressError) throw new Error(`Failed to fetch progress data: ${progressError.message}`)
 
-      // Calculate basic metrics
-      const completedPortals = portalProgress?.filter(p => p.status === 'completed') || []
-      const totalTimeSpent = portalProgress?.reduce((sum, p) => sum + p.time_spent_minutes, 0) || 0
-      const averageQuality = this.calculateAverageQuality(portalProgress || [])
-      const totalPoints = portalProgress?.reduce((sum, p) => sum + p.achievement_points, 0) || 0
+      // Basic metrics
+      const completedPortals = (portalProgress || []).filter((p) => p.status === 'completed')
+      const totalTimeSpent = (portalProgress || []).reduce(
+        (sum, p) => sum + safeNumber((p as any).time_spent_minutes, 0),
+        0
+      )
+      const totalPoints = (portalProgress || []).reduce(
+        (sum, p) => sum + safeNumber((p as any).achievement_points, 0),
+        0
+      )
 
-      // Calculate streaks
+      // Average quality score from steps (UserPortalProgress may not have quality_score)
+      const averageQuality = await this.calculateAverageQualityFromSteps(userId)
+
+      // Streaks
       const streakData = await this.calculateStreakData(userId)
 
-      // Get recent sessions
-      const recentSessions = await this.getRecentSessions(userId, 10)
+      // Recent sessions
+      const recentSessionsRes = await this.getRecentSessions(userId, 10)
+      const recentSessions = recentSessionsRes.success ? recentSessionsRes.data || [] : []
 
-      // Calculate improvement metrics
+      // Improvement metrics
       const improvementMetrics = await this.calculateImprovementMetrics(userId)
 
-      // Generate recommendations if requested
-      const recommendations = includeRecommendations 
-        ? await this.generateRecommendations(userId, portalProgress || [])
+      // Recommendations
+      const recommendations = includeRecommendations
+        ? await this.generateRecommendations(userId, (portalProgress || []) as unknown as UserPortalProgress[])
         : []
 
       const summary: ProgressSummary = {
@@ -170,10 +143,10 @@ export class ProgressTracker {
         longestStreak: streakData.longestStreak,
         averageQualityScore: averageQuality,
         achievementPoints: totalPoints,
-        completionRate: this.calculateCompletionRate(portalProgress || []),
+        completionRate: this.calculateCompletionRate((portalProgress || []) as unknown as UserPortalProgress[]),
         improvementMetrics,
-        recentSessions: recentSessions.data || [],
-        nextRecommendations: recommendations
+        recentSessions,
+        nextRecommendations: recommendations,
       }
 
       return {
@@ -183,32 +156,22 @@ export class ProgressTracker {
           execution_time_ms: Date.now() - startTime,
           cache_hit: false,
           data_freshness: 'fresh',
-          api_version: '2.0.0'
-        }
+          api_version: '2.1.0-enterprise',
+        },
       }
-
     } catch (error) {
       return {
         success: false,
         error: {
           code: 'PROGRESS_SUMMARY_ERROR',
           message: error instanceof Error ? error.message : 'Failed to generate progress summary',
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       }
     }
   }
 
-  /**
-   * Track step completion with detailed analytics
-   * @param userId - User identifier
-   * @param portalId - Portal identifier
-   * @param stepId - Step identifier
-   * @param timeSpent - Time spent on step in minutes
-   * @param qualityScore - Quality score (0-100)
-   * @param stepData - Additional step completion data
-   * @returns Updated step progress
-   */
+  /** Track a step completion */
   async trackStepCompletion(
     userId: string,
     portalId: string,
@@ -220,63 +183,44 @@ export class ProgressTracker {
     try {
       const startTime = Date.now()
 
-      // Get or create step progress record
       const { data: existingProgress } = await this.supabase
         .from('user_step_progress')
         .select('*')
         .eq('user_id', userId)
         .eq('portal_id', portalId)
         .eq('step_id', stepId)
-        .single()
+        .maybeSingle()
 
       const now = new Date().toISOString()
-      
-      const stepProgress: Partial<UserStepProgress> = {
+
+      const payload: Partial<UserStepProgress> = {
         user_id: userId,
         portal_id: portalId,
         step_id: stepId,
         status: 'completed',
         completed_at: now,
-        time_spent_minutes: (existingProgress?.time_spent_minutes || 0) + timeSpent,
-        quality_score: qualityScore,
-        attempts_count: (existingProgress?.attempts_count || 0) + 1,
-        data: {
-          ...existingProgress?.data,
-          ...stepData,
-          completion_timestamp: now
-        }
+        time_spent_minutes: safeNumber(existingProgress?.time_spent_minutes, 0) + timeSpent,
+        quality_score: typeof qualityScore === 'number' ? qualityScore : existingProgress?.quality_score,
+        attempts_count: safeNumber(existingProgress?.attempts_count, 0) + 1,
+        data: toJson({ ...(existingProgress as any)?.data, ...(stepData || {}), completion_timestamp: now }),
+        started_at: existingProgress?.started_at ?? now,
       }
 
-      // If no existing progress, set started_at
-      if (!existingProgress) {
-        stepProgress.started_at = now
-      }
-
-      // Upsert step progress
       const { data: updatedProgress, error: progressError } = await this.supabase
         .from('user_step_progress')
-        .upsert(stepProgress)
+        .upsert(payload, { onConflict: 'user_id,portal_id,step_id' })
         .select()
         .single()
 
-      if (progressError) {
-        throw new Error(`Failed to update step progress: ${progressError.message}`)
-      }
+      if (progressError) throw new Error(`Failed to update step progress: ${progressError.message}`)
 
-      // Update portal progress
       await this.updatePortalProgressFromStep(userId, portalId)
 
-      // Update active session if exists
       if (this.activeSession && this.activeSession.portal_id === portalId) {
-        this.activeSession.steps_completed += 1
-        this.activeSession.session_data = {
-          ...this.activeSession.session_data,
-          last_step_completed: stepId,
-          last_quality_score: qualityScore
-        }
+        const sd = (this.activeSession.session_data as any) || {}
+        this.activeSession.session_data = toJson({ ...sd, last_step_completed: stepId, last_quality_score: qualityScore })
       }
 
-      // Track analytics if enabled
       if (this.config.enableAnalytics) {
         await this.recordStepAnalytics(userId, portalId, stepId, timeSpent, qualityScore)
       }
@@ -288,31 +232,22 @@ export class ProgressTracker {
           execution_time_ms: Date.now() - startTime,
           cache_hit: false,
           data_freshness: 'fresh',
-          api_version: '2.0.0'
-        }
+          api_version: '2.1.0-enterprise',
+        },
       }
-
     } catch (error) {
       return {
         success: false,
         error: {
           code: 'STEP_TRACKING_ERROR',
           message: error instanceof Error ? error.message : 'Failed to track step completion',
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       }
     }
   }
 
-  /**
-   * Track time spent in a portal session
-   * @param userId - User identifier
-   * @param portalId - Portal identifier
-   * @param sessionId - Session identifier
-   * @param timeSpentMinutes - Time spent in minutes
-   * @param sessionData - Additional session data
-   * @returns Updated session data
-   */
+  /** Track session time */
   async trackSessionTime(
     userId: string,
     portalId: string,
@@ -325,356 +260,230 @@ export class ProgressTracker {
         .from('portal_sessions')
         .update({
           duration_minutes: timeSpentMinutes,
-          session_data: sessionData
+          session_data: toJson(sessionData || {}),
         })
         .eq('id', sessionId)
         .eq('user_id', userId)
+        .eq('portal_id', portalId)
         .select()
         .single()
 
-      if (error) {
-        throw new Error(`Failed to update session time: ${error.message}`)
-      }
+      if (error) throw new Error(`Failed to update session time: ${error.message}`)
 
-      return {
-        success: true,
-        data: session as PortalSession
-      }
-
+      return { success: true, data: session as PortalSession }
     } catch (error) {
       return {
         success: false,
         error: {
           code: 'SESSION_TIME_ERROR',
           message: error instanceof Error ? error.message : 'Failed to track session time',
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       }
     }
   }
 
-  // ============================================================================
-  // BIOMETRIC PROGRESS TRACKING
-  // ============================================================================
-
-  /**
-   * Track biometric improvement over time
-   * @param userId - User identifier
-   * @param portalId - Portal identifier (optional)
-   * @param windowDays - Analysis window in days
-   * @returns Biometric improvement analysis
-   */
-  async trackBiometricImprovement(
-    userId: string,
-    portalId?: string,
-    windowDays?: number
-  ): Promise<ServiceResponse<BiometricImprovement[]>> {
-    try {
-      if (!this.config.enableBiometricTracking) {
-        return {
-          success: true,
-          data: []
-        }
-      }
-
-      const window = windowDays || this.config.improvementWindowDays
-      const cutoffDate = new Date()
-      cutoffDate.setDate(cutoffDate.getDate() - window)
-
-      // Build query
-      let query = this.supabase
-        .from('biometric_scans')
-        .select('*')
-        .eq('user_id', userId)
-        .gte('created_at', cutoffDate.toISOString())
-        .order('created_at')
-
-      if (portalId) {
-        query = query.eq('portal_id', portalId)
-      }
-
-      const { data: scans, error } = await query
-
-      if (error) {
-        throw new Error(`Failed to fetch biometric data: ${error.message}`)
-      }
-
-      // Calculate improvements for each metric
-      const improvements: BiometricImprovement[] = []
-      const metricGroups = this.groupBiometricsByType(scans || [])
-
-      for (const [metricType, readings] of Object.entries(metricGroups)) {
-        const improvement = this.calculateBiometricImprovement(metricType, readings)
-        improvements.push(improvement)
-      }
-
-      return {
-        success: true,
-        data: improvements
-      }
-
-    } catch (error) {
-      return {
-        success: false,
-        error: {
-          code: 'BIOMETRIC_TRACKING_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to track biometric improvement',
-          timestamp: new Date().toISOString()
-        }
-      }
-    }
-  }
-
-  // ============================================================================
+  // ————————————————————————————————————————————————————————————————
   // SESSION MANAGEMENT
-  // ============================================================================
-
-  /**
-   * Start tracking a new portal session
-   * @param userId - User identifier
-   * @param portalId - Portal identifier
-   * @returns Session tracking object
-   */
+  // ————————————————————————————————————————————————————————————————
   async startSession(userId: string, portalId: string): Promise<ServiceResponse<PortalSession>> {
     try {
-      // End any existing session first
-      if (this.activeSession) {
-        await this.endSession()
-      }
+      if (this.activeSession) await this.endSession()
 
-      const session: PortalSession = {
-        id: crypto.randomUUID(),
+      const nowIso = new Date().toISOString()
+
+      const insertPayload = {
         user_id: userId,
         portal_id: portalId,
-        session_start: new Date().toISOString(),
-        steps_completed: 0,
-        biometric_readings: [],
-        ai_interactions: 0,
-        session_data: {
-          start_timestamp: Date.now()
-        }
-      }
+        session_start: nowIso,
+        session_data: toJson({ start_timestamp: Date.now() }),
+      } satisfies Partial<PortalSession>
 
-      // Store in database
       const { data, error } = await this.supabase
         .from('portal_sessions')
-        .insert(session)
+        .insert(insertPayload as any)
         .select()
         .single()
 
-      if (error) {
-        throw new Error(`Failed to create session: ${error.message}`)
+      if (error) throw new Error(`Failed to create session: ${error.message}`)
+
+      this.activeSession = {
+        id: data!.id,
+        user_id: userId,
+        portal_id: portalId,
+        session_start: data!.session_start,
+        session_data: data!.session_data,
       }
 
-      this.activeSession = session
-      
-      // Set session timeout
       this.sessionTimer = setTimeout(() => {
-        this.endSession()
+        this.endSession().catch(() => void 0)
       }, this.config.sessionTimeoutMinutes * 60 * 1000)
 
-      return {
-        success: true,
-        data: session
-      }
-
+      return { success: true, data: data as PortalSession }
     } catch (error) {
       return {
         success: false,
         error: {
           code: 'SESSION_START_ERROR',
           message: error instanceof Error ? error.message : 'Failed to start session',
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       }
     }
   }
 
-  /**
-   * End the current active session
-   * @returns Final session data
-   */
   async endSession(): Promise<ServiceResponse<PortalSession | null>> {
     try {
-      if (!this.activeSession) {
-        return { success: true, data: null }
-      }
+      if (!this.activeSession) return { success: true, data: null }
 
-      const endTime = new Date().toISOString()
-      const startTime = new Date(this.activeSession.session_start).getTime()
-      const duration = Math.round((Date.now() - startTime) / (1000 * 60)) // minutes
+      const endIso = new Date().toISOString()
+      const startMs = new Date(this.activeSession.session_start).getTime()
+      const duration = Math.max(0, Math.round((Date.now() - startMs) / 60000))
 
-      // Update session in database
       const { data, error } = await this.supabase
         .from('portal_sessions')
         .update({
-          session_end: endTime,
+          session_end: endIso,
           duration_minutes: duration,
-          session_data: {
-            ...this.activeSession.session_data,
-            end_timestamp: Date.now(),
-            final_duration: duration
-          }
+          session_data: toJson({ ...(this.activeSession.session_data as any), end_timestamp: Date.now(), final_duration: duration }),
         })
         .eq('id', this.activeSession.id)
         .select()
         .single()
 
-      if (error) {
-        throw new Error(`Failed to end session: ${error.message}`)
-      }
+      if (error) throw new Error(`Failed to end session: ${error.message}`)
 
-      // Clear session timer
       if (this.sessionTimer) {
         clearTimeout(this.sessionTimer)
         this.sessionTimer = null
       }
 
-      const finalSession = this.activeSession
       this.activeSession = null
-
-      return {
-        success: true,
-        data: data as PortalSession
-      }
-
+      return { success: true, data: data as PortalSession }
     } catch (error) {
       return {
         success: false,
         error: {
           code: 'SESSION_END_ERROR',
           message: error instanceof Error ? error.message : 'Failed to end session',
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       }
     }
   }
 
-  /**
-   * Get recent sessions for analytics
-   * @param userId - User identifier
-   * @param limit - Number of sessions to return
-   * @returns Recent session data
-   */
-  async getRecentSessions(
-    userId: string, 
-    limit: number = 10
-  ): Promise<ServiceResponse<PortalSession[]>> {
+  async getRecentSessions(userId: string, limit: number = 10): Promise<ServiceResponse<PortalSession[]>> {
     try {
       const { data, error } = await this.supabase
         .from('portal_sessions')
-        .select(`
-          *,
-          portals:portal_id (
-            name,
-            category,
-            color_theme
-          )
-        `)
+        .select(
+          `*,
+           portals:portal_id (
+             name,
+             category,
+             color_primary,
+             color_secondary
+           )`
+        )
         .eq('user_id', userId)
         .order('session_start', { ascending: false })
         .limit(limit)
 
-      if (error) {
-        throw new Error(`Failed to fetch recent sessions: ${error.message}`)
-      }
+      if (error) throw new Error(`Failed to fetch recent sessions: ${error.message}`)
 
-      return {
-        success: true,
-        data: data as PortalSession[]
-      }
-
+      return { success: true, data: (data || []) as PortalSession[] }
     } catch (error) {
       return {
         success: false,
         error: {
           code: 'RECENT_SESSIONS_ERROR',
           message: error instanceof Error ? error.message : 'Failed to fetch recent sessions',
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       }
     }
   }
 
-  // ============================================================================
+  // ————————————————————————————————————————————————————————————————
   // ANALYTICS & CALCULATIONS
-  // ============================================================================
+  // ————————————————————————————————————————————————————————————————
+  private async calculateAverageQualityFromSteps(userId: string): Promise<number> {
+    const { data, error } = await this.supabase
+      .from('user_step_progress')
+      .select('quality_score')
+      .eq('user_id', userId)
+      .not('quality_score', 'is', null)
 
-  /**
-   * Calculate improvement metrics for a user
-   * @param userId - User identifier
-   * @returns Array of improvement metrics
-   */
+    if (error || !data || data.length === 0) return 0
+    const scores = data.map((r) => safeNumber(r.quality_score, 0))
+    return scores.reduce((a, b) => a + b, 0) / scores.length
+  }
+
+  private calculateCompletionRate(progress: UserPortalProgress[]): number {
+    if (!progress || progress.length === 0) return 0
+    const completed = progress.filter((p) => (p as any).status === 'completed').length
+    return (completed / progress.length) * 100
+  }
+
+  private calculateAverageEfficiency(rows: Array<{ progress_percentage?: number | null; time_spent_minutes?: number | null }>): number {
+    if (!rows || rows.length === 0) return 0
+    const values = rows.map((r) => safeNumber(r.progress_percentage, 0) / Math.max(1, safeNumber(r.time_spent_minutes, 0)))
+    return values.reduce((a, b) => a + b, 0) / values.length
+  }
+
   private async calculateImprovementMetrics(userId: string): Promise<ImprovementMetric[]> {
     const metrics: ImprovementMetric[] = []
-
     try {
-      // Time efficiency improvement
       const timeMetric = await this.calculateTimeEfficiencyImprovement(userId)
       if (timeMetric) metrics.push(timeMetric)
 
-      // Quality score improvement
       const qualityMetric = await this.calculateQualityImprovement(userId)
       if (qualityMetric) metrics.push(qualityMetric)
 
-      // Consistency improvement
       const consistencyMetric = await this.calculateConsistencyImprovement(userId)
       if (consistencyMetric) metrics.push(consistencyMetric)
-
-    } catch (error) {
-      console.error('Error calculating improvement metrics:', error)
+    } catch (e) {
+      // swallow — metrics are optional
     }
-
     return metrics
   }
 
-  /**
-   * Calculate time efficiency improvement
-   */
   private async calculateTimeEfficiencyImprovement(userId: string): Promise<ImprovementMetric | null> {
     try {
       const thirtyDaysAgo = new Date()
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
 
-      const { data: recentProgress } = await this.supabase
+      const { data } = await this.supabase
         .from('user_portal_progress')
-        .select('time_spent_minutes, completion_percentage, created_at')
+        .select('time_spent_minutes, progress_percentage, created_at')
         .eq('user_id', userId)
         .gte('created_at', thirtyDaysAgo.toISOString())
         .order('created_at')
 
-      if (!recentProgress || recentProgress.length < 2) return null
-
-      const oldData = recentProgress.slice(0, Math.floor(recentProgress.length / 2))
-      const newData = recentProgress.slice(Math.floor(recentProgress.length / 2))
-
-      const oldEfficiency = this.calculateAverageEfficiency(oldData)
-      const newEfficiency = this.calculateAverageEfficiency(newData)
-
+      if (!data || data.length < 2) return null
+      const mid = Math.floor(data.length / 2)
+      const oldEfficiency = this.calculateAverageEfficiency(data.slice(0, mid))
+      const newEfficiency = this.calculateAverageEfficiency(data.slice(mid))
       if (oldEfficiency === 0) return null
 
       return {
         metric_name: 'Time Efficiency',
-        baseline_average: oldEfficiency,
-        current_average: newEfficiency,
+        baseline_value: oldEfficiency,
+        current_value: newEfficiency,
         improvement_percentage: ((newEfficiency - oldEfficiency) / oldEfficiency) * 100,
-        statistical_significance: 0.85 // Simplified calculation
+        statistical_significance: 0.85,
       }
-
-    } catch (error) {
+    } catch {
       return null
     }
   }
 
-  /**
-   * Calculate quality score improvement
-   */
   private async calculateQualityImprovement(userId: string): Promise<ImprovementMetric | null> {
     try {
       const thirtyDaysAgo = new Date()
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
 
-      const { data: stepProgress } = await this.supabase
+      const { data } = await this.supabase
         .from('user_step_progress')
         .select('quality_score, created_at')
         .eq('user_id', userId)
@@ -682,55 +491,38 @@ export class ProgressTracker {
         .not('quality_score', 'is', null)
         .order('created_at')
 
-      if (!stepProgress || stepProgress.length < 5) return null
-
-      const oldScores = stepProgress
-        .slice(0, Math.floor(stepProgress.length / 2))
-        .map(s => s.quality_score!)
-      
-      const newScores = stepProgress
-        .slice(Math.floor(stepProgress.length / 2))
-        .map(s => s.quality_score!)
-
-      const oldAverage = oldScores.reduce((sum, score) => sum + score, 0) / oldScores.length
-      const newAverage = newScores.reduce((sum, score) => sum + score, 0) / newScores.length
+      if (!data || data.length < 5) return null
+      const mid = Math.floor(data.length / 2)
+      const oldAvg = data.slice(0, mid).reduce((s, r) => s + safeNumber(r.quality_score, 0), 0) / mid
+      const newAvg = data.slice(mid).reduce((s, r) => s + safeNumber(r.quality_score, 0), 0) / Math.max(1, data.length - mid)
 
       return {
         metric_name: 'Quality Score',
-        baseline_average: oldAverage,
-        current_average: newAverage,
-        improvement_percentage: ((newAverage - oldAverage) / oldAverage) * 100,
-        statistical_significance: 0.90
+        baseline_value: oldAvg,
+        current_value: newAvg,
+        improvement_percentage: oldAvg === 0 ? 0 : ((newAvg - oldAvg) / oldAvg) * 100,
+        statistical_significance: 0.9,
       }
-
-    } catch (error) {
+    } catch {
       return null
     }
   }
 
-  /**
-   * Calculate consistency improvement (streak data)
-   */
   private async calculateConsistencyImprovement(userId: string): Promise<ImprovementMetric | null> {
     try {
-      const streakData = await this.calculateStreakData(userId)
-      
+      const streak = await this.calculateStreakData(userId)
       return {
         metric_name: 'Consistency',
-        baseline_average: streakData.averageSessionGap,
-        current_average: streakData.recentSessionGap,
-        improvement_percentage: streakData.consistencyImprovement,
-        statistical_significance: 0.75
+        baseline_value: streak.averageSessionGap,
+        current_value: streak.recentSessionGap,
+        improvement_percentage: streak.consistencyImprovement,
+        statistical_significance: 0.75,
       }
-
-    } catch (error) {
+    } catch {
       return null
     }
   }
 
-  /**
-   * Calculate streak data for a user
-   */
   private async calculateStreakData(userId: string): Promise<{
     currentStreak: number
     longestStreak: number
@@ -743,185 +535,97 @@ export class ProgressTracker {
       .select('session_start')
       .eq('user_id', userId)
       .order('session_start', { ascending: false })
-      .limit(30)
+      .limit(60)
 
     if (!sessions || sessions.length === 0) {
-      return {
-        currentStreak: 0,
-        longestStreak: 0,
-        averageSessionGap: 0,
-        recentSessionGap: 0,
-        consistencyImprovement: 0
-      }
+      return { currentStreak: 0, longestStreak: 0, averageSessionGap: 0, recentSessionGap: 0, consistencyImprovement: 0 }
     }
 
-    // Calculate current streak (days with activity)
-    const sessionDates = sessions.map(s => new Date(s.session_start).toDateString())
-    const uniqueDates = [...new Set(sessionDates)]
-    
+    const dates = sessions.map((s) => new Date(s.session_start).toDateString())
+    const uniqueDates = [...new Set(dates)]
+
     let currentStreak = 0
-    const today = new Date().toDateString()
-    let checkDate = new Date()
-    
-    while (uniqueDates.includes(checkDate.toDateString())) {
+    let check = new Date()
+    while (uniqueDates.includes(check.toDateString())) {
       currentStreak++
-      checkDate.setDate(checkDate.getDate() - 1)
+      check.setDate(check.getDate() - 1)
     }
 
-    // Simple longest streak calculation (last 30 days)
     const longestStreak = Math.max(currentStreak, uniqueDates.length)
 
+    // Placeholder simple gaps — can be replaced with real gap calculation
     return {
       currentStreak,
       longestStreak,
-      averageSessionGap: 1.2, // Simplified
-      recentSessionGap: 1.0,  // Simplified
-      consistencyImprovement: 15 // Simplified percentage
+      averageSessionGap: 1.2,
+      recentSessionGap: 1.0,
+      consistencyImprovement: 15,
     }
   }
 
-  /**
-   * Generate personalized recommendations
-   */
   private async generateRecommendations(
-    userId: string,
+    _userId: string,
     portalProgress: UserPortalProgress[]
   ): Promise<PortalRecommendation[]> {
-    const recommendations: PortalRecommendation[] = []
+    const recs: PortalRecommendation[] = []
+    const inProgress = (portalProgress || []).filter((p: any) => p.status === 'in_progress')
 
-    // Simple recommendation logic
-    const inProgressPortals = portalProgress.filter(p => p.status === 'in_progress')
-    const completedPortals = portalProgress.filter(p => p.status === 'completed')
-
-    // Recommend continuing in-progress portals
-    for (const portal of inProgressPortals) {
-      recommendations.push({
-        portalId: portal.portal_id,
+    for (const p of inProgress) {
+      recs.push({
+        portalId: (p as any).portal_id,
         priority: 'high',
         reason: 'Continue your current progress',
         estimatedBenefit: 85,
-        prerequisites: []
+        prerequisites: [],
       })
     }
 
-    // TODO: Add more sophisticated AI-based recommendations
-
-    return recommendations.slice(0, 3) // Limit to top 3
+    return recs.slice(0, 3)
   }
 
-  /**
-   * Helper methods for calculations
-   */
-  private calculateAverageQuality(progress: UserPortalProgress[]): number {
-    const withQuality = progress.filter(p => p.quality_score !== null && p.quality_score !== undefined)
-    if (withQuality.length === 0) return 0
-    
-    return withQuality.reduce((sum, p) => sum + (p.quality_score || 0), 0) / withQuality.length
-  }
-
-  private calculateCompletionRate(progress: UserPortalProgress[]): number {
-    if (progress.length === 0) return 0
-    const completed = progress.filter(p => p.status === 'completed').length
-    return (completed / progress.length) * 100
-  }
-
-  private calculateAverageEfficiency(data: any[]): number {
-    if (data.length === 0) return 0
-    return data.reduce((sum, item) => {
-      return sum + (item.completion_percentage / Math.max(1, item.time_spent_minutes))
-    }, 0) / data.length
-  }
-
-  private groupBiometricsByType(scans: any[]): Record<string, any[]> {
-    return scans.reduce((groups, scan) => {
-      const type = scan.scan_type
-      if (!groups[type]) groups[type] = []
-      groups[type].push(scan)
-      return groups
-    }, {})
-  }
-
-  private calculateBiometricImprovement(metricType: string, readings: any[]): BiometricImprovement {
-    if (readings.length < 2) {
-      return {
-        metric: metricType,
-        baselineValue: 0,
-        currentValue: 0,
-        improvementPercentage: 0,
-        trend: 'stable',
-        confidence: 0
-      }
-    }
-
-    const values = readings.map(r => r.emotion_data?.values?.overall || 0)
-    const baseline = values.slice(0, Math.max(1, Math.floor(values.length / 3))).reduce((a, b) => a + b, 0) / Math.max(1, Math.floor(values.length / 3))
-    const recent = values.slice(-Math.max(1, Math.floor(values.length / 3))).reduce((a, b) => a + b, 0) / Math.max(1, Math.floor(values.length / 3))
-    
-    const improvement = baseline === 0 ? 0 : ((recent - baseline) / baseline) * 100
-    
-    return {
-      metric: metricType,
-      baselineValue: baseline,
-      currentValue: recent,
-      improvementPercentage: improvement,
-      trend: improvement > 5 ? 'improving' : improvement < -5 ? 'declining' : 'stable',
-      confidence: Math.min(1, readings.length / 10)
-    }
-  }
-
-  /**
-   * Update portal progress based on step completion
-   */
+  // ————————————————————————————————————————————————————————————————
+  // DB Mutations derived from steps
+  // ————————————————————————————————————————————————————————————————
   private async updatePortalProgressFromStep(userId: string, portalId: string): Promise<void> {
-    // Get all steps for this portal
     const { data: steps } = await this.supabase
       .from('portal_steps')
       .select('id')
       .eq('portal_id', portalId)
       .eq('is_active', true)
 
-    // Get completed steps
-    const { data: completedSteps } = await this.supabase
+    const { data: completed } = await this.supabase
       .from('user_step_progress')
       .select('id')
       .eq('user_id', userId)
       .eq('portal_id', portalId)
       .eq('status', 'completed')
 
-    const totalSteps = steps?.length || 0
-    const completedCount = completedSteps?.length || 0
-    const completionPercentage = totalSteps > 0 ? Math.round((completedCount / totalSteps) * 100) : 0
+    const total = steps?.length || 0
+    const done = completed?.length || 0
+    const progressPct = total > 0 ? Math.round((done / total) * 100) : 0
 
-    // Update portal progress
     await this.supabase
       .from('user_portal_progress')
       .update({
-        completion_percentage: completionPercentage,
-        status: completionPercentage === 100 ? 'completed' : 'in_progress',
-        last_activity_at: new Date().toISOString()
+        progress_percentage: progressPct,
+        status: progressPct === 100 ? 'completed' : 'in_progress',
+        last_activity_at: new Date().toISOString(),
       })
       .eq('user_id', userId)
       .eq('portal_id', portalId)
   }
 
-  /**
-   * Record step analytics for insights
-   */
   private async recordStepAnalytics(
-    userId: string,
-    portalId: string,
-    stepId: string,
-    timeSpent: number,
-    qualityScore?: number
+    _userId: string,
+    _portalId: string,
+    _stepId: string,
+    _timeSpent: number,
+    _qualityScore?: number
   ): Promise<void> {
-    // TODO: Implement detailed analytics recording
-    // This could include patterns, difficulty analysis, etc.
+    // TODO: Implement detailed analytics recording (events table / telemetry)
   }
 }
 
-/**
- * Create Progress Tracker instance
- */
 export function createProgressTracker(overrides?: Partial<ProgressTrackerConfig>): ProgressTracker {
   const config: ProgressTrackerConfig = {
     supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -930,7 +634,7 @@ export function createProgressTracker(overrides?: Partial<ProgressTrackerConfig>
     enableBiometricTracking: true,
     sessionTimeoutMinutes: 60,
     improvementWindowDays: 30,
-    ...overrides
+    ...overrides,
   }
 
   return new ProgressTracker(config)

@@ -205,7 +205,7 @@ export class EmotionAnalyzer {
       
       // Returnăm neutral în caz de eroare
       return {
-        emotion: 'neutral',
+        emotion: 'neutral' as EmotionType,
         intensity: 0.5,
         confidence: 0.0,
         timestamp: Date.now(),
@@ -447,7 +447,7 @@ export class EmotionAnalyzer {
         dominantEmotion: 'neutral',
         averageIntensity: 0.5,
         emotionalStability: 1.0,
-        stressLevel: 'low',
+        stressLevel: 'low' as StressLevel,
         valence: 0,
         arousal: 0.5,
         timestamp: Date.now(),

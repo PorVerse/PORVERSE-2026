@@ -1,9 +1,17 @@
 /**
  * 🔐 PorVerse V2 - Privacy Consent Modal
- * Modal pentru consimțământ biometric (GDPR compliant)
+ * GDPR-compliant consent modal for biometric data processing
  * 
- * @version 2.0.0
- * @description Modal transparent pentru consimțământ utilizator
+ * @version 2.1.0 - ENTERPRISE FIXED
+ * @author PorVerse Development Team
+ * @description Production-ready consent modal with proper validation
+ * 
+ * FIXES:
+ * ✅ Required field (biometricCapture) now auto-checked and disabled
+ * ✅ State initialization includes required=true for biometric capture
+ * ✅ Proper validation before allowing continue
+ * ✅ Enhanced UX for required vs optional permissions
+ * ✅ Enterprise-grade error handling
  */
 
 'use client'
@@ -38,8 +46,12 @@ export function PrivacyConsent({
   // 📊 STATE
   // ========================================================================
 
+  /**
+   * Consent choices state
+   * IMPORTANT: biometricCapture is REQUIRED and must be true by default
+   */
   const [consentChoices, setConsentChoices] = useState({
-    biometricCapture: false,
+    biometricCapture: true,   // ✅ FIX: REQUIRED - Always true
     emotionAnalysis: false,
     dataStorage: false,
     analytics: false,
@@ -54,24 +66,48 @@ export function PrivacyConsent({
   // 🎯 HANDLERS
   // ========================================================================
 
+  /**
+   * Toggle consent choice
+   * NOTE: biometricCapture cannot be toggled (it's required)
+   */
   const handleToggle = (key: keyof typeof consentChoices) => {
+    // Prevent toggling required fields
+    if (key === 'biometricCapture') {
+      console.warn('Cannot toggle biometricCapture - it is required')
+      return
+    }
+    
     setConsentChoices(prev => ({ ...prev, [key]: !prev[key] }))
   }
 
+  /**
+   * Accept all permissions
+   * Sets all permissions to true except sharing (must be explicit)
+   */
   const handleAcceptAll = () => {
     const fullConsent: ConsentLevel = {
-      biometricCapture: true,
+      biometricCapture: true,   // Required
       emotionAnalysis: true,
       dataStorage: true,
       analytics: true,
-      sharing: false, // Never auto-accept sharing
+      sharing: false,           // Never auto-accept sharing for security
       timestamp: Date.now(),
       version: '2.0.0',
     }
     onAccept(fullConsent)
   }
 
+  /**
+   * Accept selected permissions
+   * Validates that required permissions are granted
+   */
   const handleAcceptSelected = () => {
+    // Validation: biometricCapture must be true
+    if (!consentChoices.biometricCapture) {
+      alert('Capturarea biometrică este obligatorie pentru a continua.')
+      return
+    }
+
     const consent: ConsentLevel = {
       ...consentChoices,
       timestamp: Date.now(),
@@ -80,9 +116,19 @@ export function PrivacyConsent({
     onAccept(consent)
   }
 
+  /**
+   * Decline all permissions
+   * User chooses not to use biometric features
+   */
   const handleDecline = () => {
     onDecline()
   }
+
+  /**
+   * Check if user can proceed
+   * Required: biometricCapture must be true
+   */
+  const canProceed = consentChoices.biometricCapture
 
   // ========================================================================
   // 🎨 RENDER
@@ -185,17 +231,18 @@ export function PrivacyConsent({
               </div>
 
               <div className="space-y-3">
-                {/* Biometric Capture */}
+                {/* Biometric Capture - REQUIRED */}
                 <ConsentOption
                   checked={consentChoices.biometricCapture}
                   onChange={() => handleToggle('biometricCapture')}
                   title="Capturare Biometrică"
                   description="Permite accesul la cameră pentru detectarea feței și a expresiilor faciale."
                   required
+                  disabled={true}  // Cannot be disabled - it's required!
                   icon="📸"
                 />
 
-                {/* Emotion Analysis */}
+                {/* Emotion Analysis - RECOMMENDED */}
                 <ConsentOption
                   checked={consentChoices.emotionAnalysis}
                   onChange={() => handleToggle('emotionAnalysis')}
@@ -223,21 +270,32 @@ export function PrivacyConsent({
                   icon="📊"
                 />
 
-                {/* Sharing */}
+                {/* Sharing - WARNING */}
                 <ConsentOption
                   checked={consentChoices.sharing}
                   onChange={() => handleToggle('sharing')}
                   title="Partajare Date"
                   description="Permite partajarea datelor cu terți selectați (DEZACTIVAT implicit pentru siguranță maximă)."
-                  icon="🔗"
                   warning
+                  icon="🔗"
                 />
+              </div>
+
+              <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                <div className="flex gap-3">
+                  <div className="text-xl">💡</div>
+                  <div className="text-sm text-yellow-800 dark:text-yellow-200">
+                    <strong>Note:</strong> Capturarea biometrică este obligatorie pentru funcționarea
+                    sistemului. Celelalte permisiuni sunt opționale și pot fi modificate oricând
+                    din setările contului.
+                  </div>
+                </div>
               </div>
 
               <div className="flex gap-3">
                 <button
                   onClick={() => setStep('confirm')}
-                  disabled={!consentChoices.biometricCapture}
+                  disabled={!canProceed}
                   className="flex-1 px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Continuă →
@@ -257,15 +315,15 @@ export function PrivacyConsent({
             <div className="space-y-6">
               <div>
                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">
-                  Confirmă Consimțământul
+                  Confirmă alegerile tale
                 </h3>
-                <p className="text-gray-600 dark:text-gray-400">
-                  Prin acceptare, confirmi că ai citit și înțeles cum sunt procesate datele tale
-                  biometrice conform politicii noastre de confidențialitate și GDPR.
+                <p className="text-gray-600 dark:text-gray-400 text-sm">
+                  Verifică permisiunile selectate înainte de a continua.
                 </p>
               </div>
 
-              {mode === 'full' && (
+              {/* Summary */}
+              {Object.values(consentChoices).some(v => v) && (
                 <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
                   <h4 className="font-semibold text-green-900 dark:text-green-300 mb-3">
                     Rezumat permisiuni selectate:
@@ -279,6 +337,9 @@ export function PrivacyConsent({
                         <span className={`${value ? 'text-green-800 dark:text-green-200' : 'text-gray-500'}`}>
                           {getConsentLabel(key)}
                         </span>
+                        {key === 'biometricCapture' && (
+                          <span className="text-xs text-red-600 dark:text-red-400">(Obligatoriu)</span>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -307,8 +368,9 @@ export function PrivacyConsent({
                 {mode === 'full' && (
                   <button
                     onClick={handleAcceptSelected}
-                    disabled={!consentChoices.biometricCapture}
+                    disabled={!canProceed}
                     className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    title={!canProceed ? 'Capturarea biometrică este obligatorie' : ''}
                   >
                     Accept Permisiunile Selectate
                   </button>
@@ -362,9 +424,23 @@ interface ConsentOptionProps {
   required?: boolean
   recommended?: boolean
   warning?: boolean
+  disabled?: boolean
   icon: string
 }
 
+/**
+ * Individual consent option component
+ * 
+ * @param checked - Is the option checked?
+ * @param onChange - Handler for checkbox change
+ * @param title - Option title
+ * @param description - Option description
+ * @param required - Is this option required? (cannot be unchecked)
+ * @param recommended - Is this option recommended?
+ * @param warning - Does this option need a warning?
+ * @param disabled - Is this option disabled? (for required fields)
+ * @param icon - Emoji icon for the option
+ */
 function ConsentOption({
   checked,
   onChange,
@@ -373,11 +449,16 @@ function ConsentOption({
   required,
   recommended,
   warning,
+  disabled,
   icon,
 }: ConsentOptionProps) {
   return (
     <label
-      className={`flex items-start gap-4 p-4 rounded-lg border-2 cursor-pointer transition-all ${
+      className={`flex items-start gap-4 p-4 rounded-lg border-2 transition-all ${
+        disabled
+          ? 'cursor-not-allowed opacity-90'
+          : 'cursor-pointer'
+      } ${
         checked
           ? 'bg-green-50 dark:bg-green-900/20 border-green-500'
           : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
@@ -387,11 +468,13 @@ function ConsentOption({
         type="checkbox"
         checked={checked}
         onChange={onChange}
-        disabled={required}
-        className="mt-1 w-5 h-5 rounded border-gray-300 text-green-600 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+        disabled={disabled}
+        className={`mt-1 w-5 h-5 rounded border-gray-300 text-green-600 focus:ring-green-500 ${
+          disabled ? 'opacity-100 cursor-not-allowed' : 'cursor-pointer'
+        }`}
       />
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-1">
+        <div className="flex items-center gap-2 mb-1 flex-wrap">
           <span className="text-xl">{icon}</span>
           <h4 className="font-semibold text-gray-900 dark:text-white">
             {title}
@@ -415,6 +498,11 @@ function ConsentOption({
         <p className="text-sm text-gray-600 dark:text-gray-400">
           {description}
         </p>
+        {required && disabled && (
+          <p className="text-xs text-red-600 dark:text-red-400 mt-1">
+            Această permisiune este necesară pentru funcționarea sistemului.
+          </p>
+        )}
       </div>
     </label>
   )
@@ -424,6 +512,12 @@ function ConsentOption({
 // 🔧 HELPERS
 // ============================================================================
 
+/**
+ * Get human-readable label for consent key
+ * 
+ * @param key - Consent key (e.g., 'biometricCapture')
+ * @returns Human-readable label (e.g., 'Capturare Biometrică')
+ */
 function getConsentLabel(key: string): string {
   const labels: Record<string, string> = {
     biometricCapture: 'Capturare Biometrică',
@@ -442,6 +536,16 @@ function getConsentLabel(key: string): string {
 export default PrivacyConsent
 
 /**
+ * ✅ ENTERPRISE FIXES APPLIED:
+ * 
+ * 1. ✅ biometricCapture now starts as TRUE (required)
+ * 2. ✅ Required checkbox is checked and disabled (cannot be unchecked)
+ * 3. ✅ Proper validation before allowing continue
+ * 4. ✅ Clear UI indicators for required vs optional
+ * 5. ✅ Enhanced error messages and tooltips
+ * 6. ✅ Better state management
+ * 7. ✅ Comprehensive comments and documentation
+ * 
  * USAGE EXAMPLE:
  * 
  * ```tsx
@@ -459,7 +563,7 @@ export default PrivacyConsent
  * 
  *   const handleDecline = () => {
  *     setShowConsent(false)
- *     // Redirect sau arată mesaj
+ *     // Redirect or show message
  *   }
  * 
  *   return (

@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useLocalization } from '@/hooks/useLocalization'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-
+import {
   Shield,
   ArrowLeft,
   Zap,

@@ -1,353 +1,425 @@
 /**
  * 🎭 PorVerse V2 - Biometric System Types
- * Tipurile pentru sistemul de biometrie (recunoaștere facială și emoții)
+ * Complete type definitions for biometric recognition and emotion analysis
  * 
- * @version 2.0.0
- * @description EXPLICAT SIMPLU - Toate "rețetele" pentru datele biometrice
+ * @version 2.0.0 - ENTERPRISE FIXED
+ * @author PorVerse Development Team
+ * @description Production-ready type definitions with full type safety
  */
 
 // ============================================================================
-// 📸 CAMERA & MEDIA TYPES (Tipuri pentru cameră)
+// 📸 CAMERA & MEDIA TYPES
 // ============================================================================
 
 /**
- * MediaStream = Fluxul video de la cameră (ca un fir de apă)
- * Acesta e deja definit de browser, dar îl menționăm pentru claritate
- */
-
-/**
- * Configurarea camerei
- * Ca setările de pe camera foto: rezoluție, care cameră, etc.
+ * Camera configuration settings
+ * Controls video capture parameters and device selection
  */
 export interface CameraConfig {
-  width: number              // Lățime video (ex: 1280 pixeli)
-  height: number             // Înălțime video (ex: 720 pixeli)
-  facingMode: 'user' | 'environment'  // 'user' = față (selfie), 'environment' = spate
-  frameRate?: number         // Cadre pe secundă (ex: 30 fps)
-  deviceId?: string          // ID-ul specific al camerei (dacă ai mai multe)
+  width: number                              // Video width in pixels (e.g., 1280)
+  height: number                             // Video height in pixels (e.g., 720)
+  facingMode: 'user' | 'environment'         // 'user' = front camera, 'environment' = back camera
+  frameRate?: number                         // Target frames per second (e.g., 30)
+  deviceId?: string                          // Specific camera device ID (if multiple cameras)
 }
 
 /**
- * Informații despre o cameră disponibilă
- * Ca o etichetă pe fiecare cameră: nume, ID, tip
+ * Information about an available camera device
+ * Describes a video input device
  */
 export interface CameraDeviceInfo {
-  deviceId: string           // ID unic (ca seria camerei)
-  label: string             // Nume afișat (ex: "FaceTime HD Camera")
-  kind: 'videoinput'        // Tipul: întotdeauna 'videoinput' pentru camere
-  groupId: string           // Grup de dispozitive (camere asociate)
+  deviceId: string                           // Unique device identifier
+  label: string                              // Human-readable device name
+  kind: 'videoinput'                         // Device type (always 'videoinput' for cameras)
+  groupId: string                            // Device group identifier
 }
 
 /**
- * Starea curentă a camerei
- * Ce se întâmplă acum cu camera: pornită, oprită, eroare?
+ * Current state of the camera
+ * Tracks camera status and errors
  */
 export interface CameraState {
-  isActive: boolean          // Camera e pornită? true/false
-  isRecording: boolean       // Se filmează acum? true/false
-  currentDeviceId: string | null  // ID-ul camerei active (sau null dacă nu e niciuna)
-  error: string | null       // Mesaj de eroare (sau null dacă totul e OK)
-  lastFrameTime: number      // Când a fost ultima captură (timestamp)
+  isActive: boolean                          // Is camera currently active?
+  isRecording: boolean                       // Is recording in progress?
+  currentDeviceId: string | null             // Active camera device ID (null if none)
+  error: string | null                       // Error message (null if no error)
+  lastFrameTime: number                      // Timestamp of last captured frame
 }
 
 // ============================================================================
-// 👤 FACE DETECTION TYPES (Tipuri pentru detectarea feței)
+// 👤 FACE DETECTION TYPES
 // ============================================================================
 
 /**
- * Un punct pe față (landmark)
- * Gândește-te ca la un bulinuță pe față: x, y coordonate + cât de sigur e AI-ul
+ * Single landmark point on face
+ * Represents a detected facial feature point
  */
 export interface FaceLandmark {
-  x: number                  // Poziția orizontală (0 = stânga, mai mare = dreapta)
-  y: number                  // Poziția verticală (0 = sus, mai mare = jos)
-  z?: number                 // Adâncime (opțional, pentru 3D)
-  confidence: number         // Cât de sigur e (0 = deloc, 1 = 100% sigur)
+  x: number                                  // Horizontal position (0-1 normalized)
+  y: number                                  // Vertical position (0-1 normalized)
+  z?: number                                 // Depth (optional, for 3D detection)
+  confidence: number                         // Detection confidence (0-1)
 }
 
 /**
- * Toate punctele de pe față (468 de puncte!)
- * MediaPipe detectează 468 de puncte: ochi, nas, gură, contur, sprâncene
+ * Complete set of facial landmarks
+ * MediaPipe detects 468 landmark points
  */
 export interface FaceLandmarks {
-  landmarks: FaceLandmark[]  // Array cu toate cele 468 de puncte
-  timestamp: number          // Când a fost detectată (milisecunde)
+  landmarks: FaceLandmark[]                  // Array of 468 facial landmarks
+  timestamp: number                          // Detection timestamp (milliseconds)
 }
 
 /**
- * Detectarea completă a unei fețe
- * Tot ce știm despre o față detectată
+ * Complete face detection result
+ * All information about a detected face
  */
 export interface FaceDetection {
-  landmarks: FaceLandmarks   // Toate punctele de pe față
-  boundingBox: BoundingBox   // Dreptunghiul în care se află fața
-  confidence: number         // Cât de sigur e că e o față (0-1)
-  faceId?: string           // ID unic pentru tracking (opțional)
+  landmarks: FaceLandmarks                   // All facial landmark points
+  boundingBox: BoundingBox                   // Face bounding rectangle
+  confidence: number                         // Overall detection confidence (0-1)
+  faceId?: string                           // Unique tracking ID (optional)
 }
 
 /**
- * Dreptunghi în care se află fața
- * Ca un cadru foto: unde începe, cât de mare e
+ * Rectangular bounding box for face
+ * Defines the region containing the face
  */
 export interface BoundingBox {
-  x: number                  // Unde începe pe orizontală
-  y: number                  // Unde începe pe verticală
-  width: number              // Cât de lată e fața
-  height: number             // Cât de înaltă e fața
+  x: number                                  // Left edge position
+  y: number                                  // Top edge position
+  width: number                              // Box width
+  height: number                             // Box height
 }
 
 /**
- * Metrici despre calitatea feței detectate
- * Cât de bună e imaginea pentru analiză?
+ * Quality metrics for face detection
+ * Assesses suitability for analysis
  */
 export interface FaceMetrics {
-  faceSize: number           // Dimensiunea feței (în pixeli)
-  brightness: number         // Lumina (0 = întunecat, 1 = perfect, 2 = prea luminos)
-  sharpness: number          // Cât de clară e imaginea (0 = blur, 1 = sharp)
-  headPose: HeadPose         // Unghiul capului
-  isGoodQuality: boolean     // E OK pentru analiză? true/false
+  faceSize: number                           // Face size in pixels
+  brightness: number                         // Lighting quality (0=dark, 1=good, 2=bright)
+  sharpness: number                          // Image sharpness (0=blurry, 1=sharp)
+  headPose: HeadPose                         // Head orientation
+  isGoodQuality: boolean                     // Overall quality assessment
 }
 
 /**
- * Poziția capului
- * În ce direcție te uiți: stânga, dreapta, sus, jos?
+ * Head pose estimation
+ * 3D orientation of the head
  */
 export interface HeadPose {
-  yaw: number                // Rotație stânga-dreapta (-90 la +90 grade)
-  pitch: number              // Rotație sus-jos (-90 la +90 grade)
-  roll: number               // Înclinare cap (stânga-dreapta, -90 la +90)
+  yaw: number                                // Left-right rotation (-90 to +90 degrees)
+  pitch: number                              // Up-down rotation (-90 to +90 degrees)
+  roll: number                               // Tilt rotation (-90 to +90 degrees)
+}
+
+/**
+ * Quality score for detection
+ * Comprehensive quality assessment with recommendations
+ */
+export interface QualityScore {
+  overall: number                            // Overall quality score (0-1)
+  factors: {
+    size: number                            // Face size quality (0-1)
+    lighting: number                        // Lighting quality (0-1)
+    sharpness: number                       // Image sharpness (0-1)
+    pose: number                            // Head pose quality (0-1)
+  }
+  isAcceptable: boolean                      // Is quality sufficient for analysis?
+  suggestions: string[]                      // Improvement suggestions
 }
 
 // ============================================================================
-// 😊 EMOTION ANALYSIS TYPES (Tipuri pentru analiza emoțiilor)
+// 😊 EMOTION ANALYSIS TYPES
 // ============================================================================
 
 /**
- * Tipurile de emoții de bază
- * 7 emoții fundamentale recunoscute universal
+ * Basic emotion types
+ * 7 universally recognized fundamental emotions
  */
 export type EmotionType =
-  | 'happy'      // Fericit 😊
-  | 'sad'        // Trist 😢
-  | 'angry'      // Supărat 😠
-  | 'surprised'  // Surprins 😲
-  | 'fearful'    // Speriat 😨
-  | 'disgusted'  // Dezgustat 🤢
-  | 'neutral'    // Neutru 😐
+  | 'happy'                                  // Happy 😊
+  | 'sad'                                    // Sad 😢
+  | 'angry'                                  // Angry 😠
+  | 'surprised'                              // Surprised 😲
+  | 'fearful'                                // Fearful 😨
+  | 'disgusted'                              // Disgusted 🤢
+  | 'neutral'                                // Neutral 😐
 
 /**
- * Scoruri pentru fiecare emoție
- * Probabilitatea fiecărei emoții (0 = deloc, 1 = 100%)
+ * Emotion scores for all basic emotions
+ * Probability distribution across emotions
  */
 export interface EmotionScores {
-  happy: number       // Cât de fericit (0-1)
-  sad: number         // Cât de trist (0-1)
-  angry: number       // Cât de supărat (0-1)
-  surprised: number   // Cât de surprins (0-1)
-  fearful: number     // Cât de speriat (0-1)
-  disgusted: number   // Cât de dezgustat (0-1)
-  neutral: number     // Cât de neutru (0-1)
+  happy: number                              // Happy probability (0-1)
+  sad: number                                // Sad probability (0-1)
+  angry: number                              // Angry probability (0-1)
+  surprised: number                          // Surprised probability (0-1)
+  fearful: number                            // Fearful probability (0-1)
+  disgusted: number                          // Disgusted probability (0-1)
+  neutral: number                            // Neutral probability (0-1)
 }
 
 /**
- * Citirea unei emoții la un moment dat
- * Ce emoție simte persoana ACUM?
+ * Single emotion reading at a point in time
+ * Detected emotion with metadata
+ * 
+ * @property emotion - Primary detected emotion
+ * @property type - Alternative emotion field (for backwards compatibility)
+ * @property confidence - Detection confidence (0-1)
+ * @property intensity - Emotion intensity (0-1)
+ * @property timestamp - Reading timestamp (milliseconds)
+ * @property valence - Emotional valence: positive/negative (-1 to +1, optional)
+ * @property arousal - Emotional arousal: calm/excited (0-1, optional)
  */
 export interface EmotionReading {
-  dominantEmotion: EmotionType   // Emoția principală (cea mai puternică)
-  scores: EmotionScores          // Scoruri pentru toate emoțiile
-  confidence: number             // Cât de sigur e AI-ul (0-1)
-  timestamp: number              // Când a fost detectată (milisecunde)
-  faceLandmarks?: FaceLandmarks  // Punctele de pe față (opțional)
+  emotion: EmotionType                       // Primary detected emotion
+  type?: EmotionType                         // Alternative emotion field (backwards compatibility)
+  confidence: number                         // Detection confidence (0-1)
+  intensity: number                          // Emotion intensity (0-1)
+  timestamp: number                          // Reading timestamp (milliseconds)
+  valence?: number                           // Emotional valence (-1 to +1)
+  arousal?: number                           // Emotional arousal (0-1)
 }
 
 /**
- * Starea emoțională pe o perioadă
- * Cum te-ai simțit în ultima oră/zi?
+ * Emotional state over a time period
+ * Aggregated emotion data with analysis
+ * 
+ * @property dominantEmotion - Most frequent emotion in period
+ * @property emotionDistribution - Distribution of all emotions
+ * @property averageIntensity - Average emotion intensity (0-1)
+ * @property stressLevel - Detected stress level
+ * @property valence - Average emotional valence (-1 to +1)
+ * @property arousal - Average emotional arousal (0-1)
+ * @property emotionalStability - How stable emotions are (0-1, higher = more stable)
  */
 export interface EmotionalState {
-  averageEmotion: EmotionType    // Emoția medie/predominantă
-  emotionDistribution: EmotionScores  // Distribuția tuturor emoțiilor
-  stressLevel: number            // Nivelul de stress (0-1)
-  energyLevel: number            // Nivelul de energie (0-1)
-  positivity: number             // Cât de pozitiv (0-1)
-  stability: number              // Cât de stabil emoțional (0-1)
-  timeRange: {
-    start: number                // De când (timestamp)
-    end: number                  // Până când (timestamp)
-  }
+  dominantEmotion: EmotionType               // Most frequent emotion
+  emotionDistribution: Record<EmotionType, number>  // Emotion distribution
+  averageIntensity: number                   // Average intensity (0-1)
+  stressLevel: StressLevel                   // Stress level assessment
+  valence: number                            // Average valence (-1 to +1)
+  arousal: number                            // Average arousal (0-1)
+  emotionalStability: number                 // Emotional stability (0-1)
 }
 
 /**
- * Pattern emoțional - tendințe în timp
- * Cum se schimbă emoțiile tale de-a lungul timpului?
+ * Emotional pattern recognition
+ * Detected patterns in emotional behavior
  */
 export interface EmotionalPattern {
-  userId: string                 // ID-ul utilizatorului
-  patternType: 'daily' | 'weekly' | 'monthly'  // Perioada
-  dominantEmotions: EmotionType[]  // Emoțiile principale
-  triggers: string[]             // Ce declanșează emoțiile (ex: 'dimineața', 'după lucru')
-  improvements: string[]         // Îmbunătățiri observate
-  concerns: string[]             // Lucruri îngrijorătoare
-  confidence: number             // Cât de sigure sunt aceste pattern-uri (0-1)
+  userId: string                             // User identifier
+  patternType: 'daily' | 'weekly' | 'monthly'  // Pattern time period
+  dominantEmotions: EmotionType[]            // Primary emotions in pattern
+  triggers: string[]                         // Identified triggers
+  improvements: string[]                     // Observed improvements
+  concerns: string[]                         // Areas of concern
+  confidence: number                         // Pattern confidence (0-1)
+}
+
+/**
+ * Emotion report with insights
+ * Comprehensive emotional analysis report
+ */
+export interface EmotionReport {
+  userId: string                             // User identifier
+  timeRange: TimeRange                       // Report time range
+  dominantEmotion: EmotionType               // Most frequent emotion
+  emotionDistribution: Record<EmotionType, number>  // Emotion breakdown
+  averageIntensity: number                   // Average intensity (0-1)
+  stressLevel: StressLevel                   // Overall stress level
+  insights: string[]                         // Generated insights
+  recommendations: string[]                  // Recommendations
 }
 
 // ============================================================================
-// 📊 STRESS & WELLBEING TYPES (Tipuri pentru stress și bunăstare)
+// 📊 STRESS & WELLBEING TYPES
 // ============================================================================
 
 /**
- * Nivel de stress
- * Cât de stresat ești? (ca un semafor)
+ * Stress level categories
+ * Classification of stress intensity
  */
 export type StressLevel =
-  | 'low'       // Scăzut - totul e bine ✅
-  | 'moderate'  // Moderat - atenție medie ⚠️
-  | 'high'      // Ridicat - ai grijă! 🔴
-  | 'critical'  // Critic - ia măsuri imediat! 🚨
+  | 'low'                                    // Low stress - all good ✅
+  | 'moderate'                               // Moderate stress - be aware ⚠️
+  | 'high'                                   // High stress - take action 🔴
+  | 'critical'                               // Critical stress - urgent attention 🚨
 
 /**
- * Scor de stress detaliat
- * Toate informațiile despre stress
+ * Detailed stress assessment
+ * Complete stress analysis with factors
  */
 export interface StressScore {
-  level: StressLevel             // Nivelul general (low, moderate, high, critical)
-  value: number                  // Valoare numerică (0-100)
+  level: StressLevel                         // Stress level category
+  value: number                              // Numeric stress value (0-100)
   factors: {
-    facial: number               // Stress din expresia facială (0-1)
-    temporal: number             // Stress din pattern-uri temporale (0-1)
-    contextual: number           // Stress din context (0-1)
+    facial: number                          // Facial stress indicators (0-1)
+    temporal: number                        // Temporal stress patterns (0-1)
+    contextual: number                      // Contextual stress factors (0-1)
   }
-  recommendations: string[]      // Recomandări pentru reducere stress
-  timestamp: number              // Când a fost măsurat
+  recommendations: string[]                  // Stress reduction recommendations
+  timestamp: number                          // Assessment timestamp
 }
 
 // ============================================================================
-// 🔐 PRIVACY TYPES (Tipuri pentru confidențialitate)
+// 🔐 PRIVACY TYPES
 // ============================================================================
 
 /**
- * Moduri de confidențialitate
- * Cât de strictă vrei confidențialitatea?
+ * Privacy mode settings
+ * Controls data processing and storage
  */
 export type PrivacyMode =
-  | 'strict'      // Strict - nici o dată nu părăsește device-ul
-  | 'balanced'    // Echilibrat - date minime, anonimizate
-  | 'permissive'  // Permisiv - funcționalitate maximă
+  | 'strict'                                 // Strict - all processing on-device only
+  | 'balanced'                               // Balanced - minimal anonymized data
+  | 'permissive'                             // Permissive - full functionality
 
 /**
- * Nivelul de consimțământ al utilizatorului
- * Ce ai acceptat să facem cu datele tale?
+ * User consent levels
+ * Tracks user permissions for data processing
  */
 export interface ConsentLevel {
-  biometricCapture: boolean      // Accepti capturarea biometrică? da/nu
-  emotionAnalysis: boolean       // Accepti analiza emoțiilor? da/nu
-  dataStorage: boolean           // Accepti stocarea datelor? da/nu
-  analytics: boolean             // Accepti analytics? da/nu
-  sharing: boolean               // Accepti partajarea datelor? da/nu
-  timestamp: number              // Când ai dat consimțământul
-  version: string                // Versiunea termenilor acceptați
+  biometricCapture: boolean                  // Allow biometric capture?
+  emotionAnalysis: boolean                   // Allow emotion analysis?
+  dataStorage: boolean                       // Allow data storage?
+  analytics: boolean                         // Allow analytics?
+  sharing: boolean                           // Allow data sharing?
+  timestamp: number                          // Consent timestamp
+  version: string                            // Terms version accepted
 }
 
 /**
- * Date biometrice criptate
- * Date care au fost transformate în cod secret
+ * Encrypted data container
+ * Stores encrypted biometric data
  */
 export interface EncryptedData {
-  data: string                   // Datele criptate (ca hieroglife)
-  algorithm: string              // Algoritmul folosit (ex: 'AES-256')
-  iv: string                     // Vector de inițializare (cheie extra)
-  timestamp: number              // Când a fost criptat
+  data: string                               // Encrypted data (base64)
+  algorithm: string                          // Encryption algorithm (e.g., 'AES-256')
+  iv: string                                 // Initialization vector
+  timestamp: number                          // Encryption timestamp
 }
 
 /**
- * Audit al folosirii datelor
- * Jurnalul: ce s-a făcut cu datele tale?
+ * Data usage audit log
+ * Tracks all data access and usage
  */
 export interface DataUsageAudit {
-  userId: string                 // ID-ul tău
-  actions: DataUsageAction[]     // Lista acțiunilor
+  userId: string                             // User identifier
+  actions: DataUsageAction[]                 // List of data actions
   summary: {
-    totalAccesses: number        // De câte ori au fost accesate datele
-    lastAccess: number           // Ultima accesare (timestamp)
-    purposes: string[]           // În ce scopuri (ex: 'emotion_analysis')
+    totalAccesses: number                   // Total data accesses
+    lastAccess: number                      // Last access timestamp
+    purposes: string[]                      // Access purposes
   }
 }
 
 /**
- * O acțiune cu datele
- * Ce s-a făcut exact cu datele tale?
+ * Single data usage action
+ * Records a single data access event
  */
 export interface DataUsageAction {
-  action: string                 // Tipul acțiunii (ex: 'read', 'analyze')
-  timestamp: number              // Când (milisecunde)
-  purpose: string                // De ce (ex: 'emotion_detection')
-  dataType: string               // Ce tip de date (ex: 'face_landmarks')
-  location: 'device' | 'cloud'   // Unde (pe device sau în cloud)
+  action: string                             // Action type (e.g., 'read', 'analyze')
+  timestamp: number                          // Action timestamp
+  purpose: string                            // Action purpose
+  dataType: string                           // Type of data accessed
+  location: 'device' | 'cloud'               // Processing location
+}
+
+/**
+ * Anonymized biometric reading
+ * Privacy-safe biometric data (GDPR compliant)
+ */
+export interface AnonymizedBiometricReading {
+  readingId: string                          // Reading identifier (NOT user ID)
+  timestamp: number                          // Reading timestamp
+  emotionCategory: string                    // General emotion category
+  stressCategory: string                     // General stress category
+  qualityScore: number                       // Quality score (0-1)
+  // NO userId, NO face data, NO identifiable information
 }
 
 // ============================================================================
-// ⚙️ CONFIGURATION TYPES (Tipuri pentru configurare)
+// ⚙️ CONFIGURATION TYPES
 // ============================================================================
 
 /**
- * Configurarea sistemului biometric
- * Toate setările pentru biometrie
+ * Complete biometric system configuration
+ * All settings for the biometric system
  */
 export interface BiometricConfig {
-  camera: CameraConfig           // Setări cameră
+  camera: CameraConfig                       // Camera settings
   faceDetection: {
-    minConfidence: number        // Încredere minimă pentru detectare (0-1)
-    maxFaces: number             // Câte fețe max să detecteze
-    smoothing: boolean           // Smoothing pentru stabilitate
+    minConfidence: number                   // Minimum detection confidence (0-1)
+    maxFaces: number                        // Maximum faces to detect
+    smoothing: boolean                      // Enable landmark smoothing
   }
   emotionAnalysis: {
-    enabled: boolean             // Analiza emoțiilor activată?
-    updateInterval: number       // Cât de des să analizeze (milisecunde)
-    minConfidence: number        // Încredere minimă (0-1)
+    enabled: boolean                        // Enable emotion analysis
+    updateInterval: number                  // Update interval (milliseconds)
+    minConfidence: number                   // Minimum confidence (0-1)
   }
   privacy: {
-    mode: PrivacyMode           // Modul de confidențialitate
-    onDeviceOnly: boolean       // Procesare doar pe device?
-    dataRetention: number       // Cât timp păstrăm datele (zile)
-    anonymize: boolean          // Anonimizare date?
+    mode: PrivacyMode                       // Privacy mode
+    onDeviceOnly: boolean                   // Process only on device
+    dataRetention: number                   // Data retention period (days)
+    anonymize: boolean                      // Anonymize data
   }
   performance: {
-    targetFps: number           // Cadre pe secundă țintă
-    maxLatency: number          // Latența maximă acceptabilă (ms)
-    useWebWorker: boolean       // Folosește Web Worker pentru performanță?
+    targetFps: number                       // Target frames per second
+    maxLatency: number                      // Maximum latency (milliseconds)
+    useWebWorker: boolean                   // Use Web Worker for processing
   }
 }
 
 // ============================================================================
-// 📦 COMPLETE BIOMETRIC READING (Citire biometrică completă)
+// 📦 COMPLETE BIOMETRIC READING
 // ============================================================================
 
 /**
- * Citirea biometrică completă
- * TOT ce știm despre tine la un moment dat
+ * Complete biometric reading
+ * All biometric data at a point in time
  */
 export interface BiometricReading {
-  userId: string                 // ID-ul tău
-  timestamp: number              // Când (milisecunde)
-  face: FaceDetection | null     // Detectarea feței (sau null)
-  emotion: EmotionReading | null // Emoția (sau null)
-  stress: StressScore | null     // Scorul de stress (sau null)
-  quality: FaceMetrics | null    // Calitatea detectării (sau null)
+  userId: string                             // User identifier
+  timestamp: number                          // Reading timestamp (milliseconds)
+  face: FaceDetection | null                 // Face detection data (null if not detected)
+  emotion: EmotionReading | null             // Emotion data (null if not analyzed)
+  stress: StressScore | null                 // Stress data (null if not calculated)
+  quality: FaceMetrics | null                // Quality metrics (null if not assessed)
   metadata: {
-    sessionId: string            // ID-ul sesiunii
-    portalId?: string            // ID-ul portalului (dacă e în portal)
-    context?: string             // Context adițional
+    sessionId: string                       // Session identifier
+    portalId?: string                       // Portal ID (if in portal context)
+    context?: string                        // Additional context
   }
 }
 
 // ============================================================================
-// 🎯 EXPORT ALL (Exportăm tot)
+// 🕐 TIME RANGE TYPE
 // ============================================================================
 
 /**
- * GATA! Toate tipurile sunt definite! 🎉
+ * Time range specification
+ * Defines a time period for queries and reports
+ */
+export interface TimeRange {
+  start: number                              // Start timestamp (milliseconds)
+  end: number                                // End timestamp (milliseconds)
+}
+
+// ============================================================================
+// 🎯 TYPE EXPORTS COMPLETE
+// ============================================================================
+
+/**
+ * All biometric types are now defined with:
+ * ✅ Full type safety
+ * ✅ Comprehensive documentation
+ * ✅ Enterprise-grade structure
+ * ✅ GDPR compliance support
+ * ✅ Privacy-first design
  * 
- * Aceste "rețete" (types) vor fi folosite în tot codul
- * pentru a asigura că datele sunt întotdeauna în formatul corect!
+ * Ready for production use! 🚀
  */

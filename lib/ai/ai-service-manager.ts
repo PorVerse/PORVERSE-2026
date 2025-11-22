@@ -3,15 +3,16 @@
  * 🎯 PorVerse V2 - AI Service Manager
  * Core AI service managing OpenAI and Anthropic models for portal guidance
  * 
- * @version 2.0.0
+ * @version 2.0.0 - WAVE 2 UPDATED
  * @author PorVerse Development Team
- * @description AI brain for personalized spiritual guidance and coaching
+ * @description AI brain for personalized spiritual guidance and coaching with biometric adaptation
  */
 
 import OpenAI from 'openai'
 import Anthropic from '@anthropic-ai/sdk'
+import { createBiometricAIAdapter, type BiometricAIAdapter } from './biometric-adapter'
+import type { EmotionReading } from '../../types/biometric'
 import type {
-  
   UserPortalProgress,
   BiometricReading,
   CulturalContext,
@@ -30,6 +31,7 @@ interface AIServiceConfig {
   enableCaching: boolean
   enableCrisisDetection: boolean
   culturalAdaptation: boolean
+  enableBiometricAdaptation: boolean // WAVE 2 NEW
 }
 
 /**
@@ -43,6 +45,7 @@ interface ConversationContext {
   culturalContext?: CulturalContext
   biometricData?: BiometricReading[]
   conversationHistory: ConversationMessage[]
+  currentEmotion?: EmotionReading // WAVE 2 NEW
 }
 
 /**
@@ -68,6 +71,8 @@ interface AIGuidance {
   culturallyAdapted: boolean
   crisisDetected: boolean
   resourceRecommendations: AIResource[]
+  biometricallyAdapted?: boolean // WAVE 2 NEW
+  emotionDetected?: string // WAVE 2 NEW
 }
 
 /**
@@ -94,17 +99,18 @@ interface CrisisDetection {
 }
 
 /**
- * AI Service Manager Class
- * Manages AI model selection, conversation routing, and response generation
+ * AI Service Manager Class - WAVE 2 UPDATED
+ * Manages AI model selection, conversation routing, response generation, and biometric adaptation
  */
 export class AIServiceManager {
   private openai: OpenAI
   private anthropic: Anthropic
   private config: AIServiceConfig
   private conversationCache: Map<string, ConversationMessage[]> = new Map()
+  private biometricAdapter: BiometricAIAdapter // WAVE 2 NEW
 
   /**
-   * Initialize AI Service Manager
+   * Initialize AI Service Manager - WAVE 2 UPDATED
    */
   constructor(config: AIServiceConfig) {
     this.config = config
@@ -116,14 +122,28 @@ export class AIServiceManager {
     this.anthropic = new Anthropic({
       apiKey: config.anthropicKey
     })
+
+    // WAVE 2 NEW: Initialize biometric adapter
+    this.biometricAdapter = createBiometricAIAdapter({
+      adaptationIntensity: 'moderate',
+      enableCrisisDetection: config.enableCrisisDetection,
+      enableStressDetection: true
+    })
+
+    console.log('🎯 AI Service Manager initialized:', {
+      defaultModel: config.defaultModel,
+      biometricAdaptation: config.enableBiometricAdaptation,
+      crisisDetection: config.enableCrisisDetection,
+      culturalAdaptation: config.culturalAdaptation
+    })
   }
 
   // ============================================================================
-  // CORE AI GUIDANCE METHODS
+  // CORE AI GUIDANCE METHODS - WAVE 2 UPDATED
   // ============================================================================
 
   /**
-   * Generate personalized portal guidance
+   * Generate personalized portal guidance - WAVE 2 UPDATED with biometric adaptation
    * @param context - Conversation context with user and portal data
    * @returns AI guidance response
    */
@@ -137,25 +157,61 @@ export class AIServiceManager {
       // Build culturally adapted prompt
       const prompt = this.buildGuidancePrompt(context)
 
-      // Generate AI response
-      const response = await this.generateResponse(model, prompt, context)
+      // Generate base AI response
+      const baseResponse = await this.generateResponse(model, prompt, context)
+
+      // WAVE 2 NEW: Adapt response based on current emotion if available
+      let finalResponse = baseResponse
+      let biometricallyAdapted = false
+      let emotionDetected = undefined
+
+      if (this.config.enableBiometricAdaptation && context.currentEmotion) {
+        console.log('🎭 Adapting AI response to detected emotion:', context.currentEmotion.emotion)
+        
+        try {
+          // Create a simple AIResponse object for the adapter
+          const aiResponse = {
+            message: baseResponse,
+            metadata: {}
+          }
+
+          // Adapt the response using biometric adapter
+          const adapted = await this.biometricAdapter.adaptToEmotionalState(
+            aiResponse,
+            context.currentEmotion,
+            context.userId
+          )
+
+          if (adapted.adaptationApplied) {
+            finalResponse = adapted.message
+            biometricallyAdapted = true
+            emotionDetected = context.currentEmotion.emotion
+            console.log('✨ Response adapted successfully for emotion:', emotionDetected)
+          }
+        } catch (adaptError) {
+          console.error('⚠️  Biometric adaptation failed, using base response:', adaptError)
+          // Continue with base response if adaptation fails
+        }
+      }
 
       // Detect potential crisis indicators
       const crisisDetection = this.config.enableCrisisDetection ? 
-        await this.detectCrisis(response) : null
+        await this.detectCrisis(finalResponse) : null
 
       // Generate resource recommendations
-      const resources = await this.generateResourceRecommendations(context, response)
+      const resources = await this.generateResourceRecommendations(context, finalResponse)
 
       const guidance: AIGuidance = {
-        message: response,
-        tone: this.analyzeTone(context, response),
-        actionItems: this.extractActionItems(response),
-        nextSteps: this.generateNextSteps(context, response),
-        confidenceScore: this.calculateConfidenceScore(context, response),
+        message: finalResponse,
+        tone: this.analyzeTone(context, finalResponse),
+        actionItems: this.extractActionItems(finalResponse),
+        nextSteps: this.generateNextSteps(context, finalResponse),
+        confidenceScore: this.calculateConfidenceScore(context, finalResponse),
         culturallyAdapted: this.config.culturalAdaptation && !!context.culturalContext,
         crisisDetected: crisisDetection?.detected || false,
-        resourceRecommendations: resources
+        resourceRecommendations: resources,
+        biometricallyAdapted, // WAVE 2 NEW
+        emotionDetected // WAVE 2 NEW
       }
 
       return {
@@ -163,9 +219,9 @@ export class AIServiceManager {
         data: guidance,
         metadata: {
           execution_time_ms: Date.now() - startTime,
-          model,
           cache_hit: false,
-          api_version: '2.0.0'
+          api_version: '2.0.0',
+          biometric_adaptation_applied: biometricallyAdapted // WAVE 2 NEW
         }
       }
 
@@ -229,16 +285,18 @@ export class AIServiceManager {
   }
 
   /**
-   * Process user message and generate AI response
+   * Process user message and generate AI response - WAVE 2 UPDATED
    * @param conversationId - Conversation identifier
    * @param userMessage - User's message
    * @param context - Current context including biometrics and progress
+   * @param currentEmotion - Current emotion reading (WAVE 2 NEW)
    * @returns AI response
    */
   async processUserMessage(
     conversationId: string,
     userMessage: string,
-    context: Partial<ConversationContext>
+    context: Partial<ConversationContext>,
+    currentEmotion?: EmotionReading // WAVE 2 NEW parameter
   ): Promise<ServiceResponse<AIGuidance>> {
     try {
       const conversation = this.conversationCache.get(conversationId)
@@ -254,13 +312,14 @@ export class AIServiceManager {
         timestamp: new Date().toISOString(),
         metadata: {
           biometricData: context.biometricData,
-          progressData: context.userProgress
+          progressData: context.userProgress,
+          emotion: currentEmotion?.emotion // WAVE 2 NEW
         }
       }
 
       conversation.push(userMsg)
 
-      // Build full context for AI
+      // Build full context for AI - WAVE 2 UPDATED with emotion
       const fullContext: ConversationContext = {
         userId: context.userId || '',
         portalId: context.portalId || '',
@@ -268,7 +327,8 @@ export class AIServiceManager {
         userProgress: context.userProgress!,
         culturalContext: context.culturalContext,
         biometricData: context.biometricData,
-        conversationHistory: conversation
+        conversationHistory: conversation,
+        currentEmotion // WAVE 2 NEW
       }
 
       // Generate guidance
@@ -283,7 +343,8 @@ export class AIServiceManager {
           timestamp: new Date().toISOString(),
           metadata: {
             tone: guidanceResponse.data.tone,
-            confidenceScore: guidanceResponse.data.confidenceScore
+            confidenceScore: guidanceResponse.data.confidenceScore,
+            biometricallyAdapted: guidanceResponse.data.biometricallyAdapted // WAVE 2 NEW
           }
         }
 
@@ -302,6 +363,61 @@ export class AIServiceManager {
           timestamp: new Date().toISOString()
         }
       }
+    }
+  }
+
+  /**
+   * WAVE 2 NEW: Generate response with automatic biometric adaptation
+   * Convenience method that handles emotion detection automatically
+   * 
+   * @param userMessage - User's message
+   * @param context - Conversation context
+   * @param emotionReading - Optional emotion reading
+   * @returns Adapted AI guidance
+   */
+  async generateAdaptedResponse(
+    userMessage: string,
+    context: ConversationContext,
+    emotionReading?: EmotionReading
+  ): Promise<ServiceResponse<AIGuidance>> {
+    // If emotion reading provided, add to context
+    if (emotionReading && emotionReading.confidence > 0.6) {
+      context.currentEmotion = emotionReading
+    }
+
+    // Generate normal guidance (will auto-adapt if emotion present)
+    return this.generatePortalGuidance(context)
+  }
+
+  /**
+   * WAVE 2 NEW: Detect stress and adapt response accordingly
+   * Specialized method for stress-aware responses
+   * 
+   * @param baseResponse - Base AI response
+   * @param emotionReading - Current emotion reading
+   * @param userId - User ID
+   * @returns Stress-adapted response
+   */
+  async adaptResponseForStress(
+    baseResponse: string,
+    emotionReading: EmotionReading,
+    userId: string
+  ): Promise<string> {
+    try {
+      const aiResponse = {
+        message: baseResponse,
+        metadata: {}
+      }
+
+      const adapted = await this.biometricAdapter.detectStressAndRespond(
+        aiResponse,
+        emotionReading
+      )
+
+      return adapted.message
+    } catch (error) {
+      console.error('❌ Stress adaptation failed:', error)
+      return baseResponse
     }
   }
 
@@ -395,7 +511,7 @@ export class AIServiceManager {
   // ============================================================================
 
   /**
-   * Build guidance prompt with cultural adaptation
+   * Build guidance prompt with cultural adaptation - WAVE 2 UPDATED
    */
   private buildGuidancePrompt(context: ConversationContext): string {
     let prompt = `You are a wise, compassionate spiritual guide helping a user progress through the ${this.getPortalName(context.portalId)} portal. `
@@ -407,6 +523,11 @@ export class AIServiceManager {
 
     // Add progress context
     prompt += `The user is currently ${this.calculateCompletionPercentage(context.userProgress)}% complete with this portal. `
+
+    // WAVE 2 NEW: Add current emotion context (will be further adapted by BiometricAIAdapter)
+    if (context.currentEmotion) {
+      prompt += `The user's current emotional state is ${context.currentEmotion.emotion} with ${(context.currentEmotion.confidence * 100).toFixed(0)}% confidence. `
+    }
 
     // Add biometric context
     if (context.biometricData && context.biometricData.length > 0) {
@@ -510,7 +631,7 @@ export class AIServiceManager {
   /**
    * Analyze tone of AI response
    */
-  private analyzeTone(context: ConversationContext, response: string): 'supportive' | 'challenging' | 'neutral' | 'celebratory' {
+  private analyzeTone(_context: ConversationContext, response: string): 'supportive' | 'challenging' | 'neutral' | 'celebratory' {
     const celebratoryWords = ['congratulations', 'amazing', 'wonderful', 'celebrate', 'proud']
     const supportiveWords = ['support', 'gentle', 'patience', 'compassion', 'understand']
     const challengingWords = ['challenge', 'push', 'growth', 'discomfort', 'breakthrough']
@@ -566,7 +687,7 @@ export class AIServiceManager {
   /**
    * Generate next steps based on context and response
    */
-  private generateNextSteps(context: ConversationContext, response: string): string[] {
+  private generateNextSteps(context: ConversationContext, _response: string): string[] {
     const nextSteps: string[] = []
 
     // Calculate completion percentage from progress data
@@ -611,6 +732,7 @@ export class AIServiceManager {
     if (context.biometricData && context.biometricData.length > 0) score += 0.1
     if (context.culturalContext) score += 0.1
     if (context.conversationHistory.length > 2) score += 0.1
+    if (context.currentEmotion) score += 0.05 // WAVE 2 NEW
 
     // Adjust based on response length and quality
     if (response.length > 200 && response.length < 1000) score += 0.05
@@ -666,7 +788,7 @@ export class AIServiceManager {
    */
   private async generateResourceRecommendations(
     context: ConversationContext,
-    response: string
+    _response: string
   ): Promise<AIResource[]> {
     const resources: AIResource[] = []
 
@@ -726,10 +848,32 @@ export class AIServiceManager {
     if (portalId.includes('quantum')) return 'quantum'
     return 'activation'
   }
+
+  // ============================================================================
+  // WAVE 2 NEW: UTILITY METHODS FOR BIOMETRIC ADAPTER
+  // ============================================================================
+
+  /**
+   * Get biometric adapter statistics
+   */
+  getBiometricAdapterStats(): {
+    totalAdaptations: number
+    crisisDetections: number
+    usersTracked: number
+  } {
+    return this.biometricAdapter.getStats()
+  }
+
+  /**
+   * Clear biometric adaptation history for a user
+   */
+  clearBiometricHistory(userId: string): void {
+    this.biometricAdapter.clearHistory(userId)
+  }
 }
 
 /**
- * Create AI Service Manager instance
+ * Create AI Service Manager instance - WAVE 2 UPDATED
  */
 export function createAIServiceManager(overrides?: Partial<AIServiceConfig>): AIServiceManager {
   const config: AIServiceConfig = {
@@ -741,6 +885,7 @@ export function createAIServiceManager(overrides?: Partial<AIServiceConfig>): AI
     enableCaching: true,
     enableCrisisDetection: true,
     culturalAdaptation: true,
+    enableBiometricAdaptation: true, // WAVE 2 NEW - enabled by default
     ...overrides
   }
 
@@ -748,3 +893,27 @@ export function createAIServiceManager(overrides?: Partial<AIServiceConfig>): AI
 }
 
 export default AIServiceManager
+
+/**
+ * ✅ WAVE 2 - AI SERVICE MANAGER UPDATED! 🎉
+ * 
+ * NEW CAPABILITIES:
+ * ✅ BiometricAIAdapter integration
+ * ✅ Automatic emotion-based response adaptation
+ * ✅ Stress detection and specialized responses
+ * ✅ Current emotion tracking in conversation context
+ * ✅ Biometric adaptation statistics
+ * ✅ Enhanced confidence scoring with emotion data
+ * 
+ * USAGE:
+ * const aiService = createAIServiceManager()
+ * 
+ * // With emotion detection:
+ * const response = await aiService.generateAdaptedResponse(
+ *   userMessage,
+ *   context,
+ *   emotionReading // from biometric scan
+ * )
+ * 
+ * // Response will be automatically adapted based on user's emotional state!
+ */

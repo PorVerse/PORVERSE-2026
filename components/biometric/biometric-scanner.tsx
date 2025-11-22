@@ -2,8 +2,8 @@
  * 📸 PorVerse V2 - Biometric Scanner Component
  * React component pentru scanare biometrică în timp real
  * 
- * @version 2.0.0
- * @description Component complet cu cameră, detectare față, și afișare emoții
+ * @version 2.0.0 - WAVE 2 UPDATED
+ * @description Component complet cu cameră, detectare față, afișare emoții și salvare Supabase
  */
 
 'use client'
@@ -21,15 +21,17 @@ import type {
 // ============================================================================
 
 interface BiometricScannerProps {
-  userId: string
+  userId?: string // WAVE 2 UPDATED: Made optional, will fetch from Supabase if not provided
   onScanComplete?: (reading: BiometricReading) => void
+  onEmotionDetected?: (emotion: EmotionType, reading: BiometricReading) => void // WAVE 2 NEW
   onError?: (error: Error) => void
   autoStart?: boolean
   scanInterval?: number
   showOverlay?: boolean
   showQuality?: boolean
   showEmotion?: boolean
-  privacyMode?: 'strict' | 'balanced' | 'permissive'
+  privacyMode?: 'strict' | 'balanced' | 'permissive' // WAVE 2: Used for storage
+  enableStorage?: boolean // WAVE 2 NEW: Enable/disable Supabase storage
   className?: string
 }
 
@@ -41,6 +43,8 @@ interface ScanState {
   quality: QualityScore | null
   error: string | null
   fps: number
+  lastSavedReadingId?: string // WAVE 2 NEW
+  totalScansStored?: number // WAVE 2 NEW
 }
 
 // ============================================================================
@@ -65,19 +69,21 @@ const STRESS_CONFIG: Record<StressLevel, { color: string; label: string; icon: s
 }
 
 // ============================================================================
-// 📸 BIOMETRIC SCANNER COMPONENT
+// 📸 BIOMETRIC SCANNER COMPONENT - WAVE 2 UPDATED
 // ============================================================================
 
 export function BiometricScanner({
-  userId,
+  userId: propUserId,
   onScanComplete,
+  onEmotionDetected, // WAVE 2 NEW
   onError,
   autoStart = false,
   scanInterval = 1000,
   showOverlay = true,
   showQuality = true,
   showEmotion = true,
-  privacyMode = 'strict',
+  privacyMode = 'balanced', // WAVE 2: Changed default from 'strict' to 'balanced'
+  enableStorage = true, // WAVE 2 NEW: Default to true
   className = '',
 }: BiometricScannerProps) {
   // ========================================================================
@@ -103,11 +109,50 @@ export function BiometricScanner({
     quality: null,
     error: null,
     fps: 0,
+    totalScansStored: 0, // WAVE 2 NEW
   })
 
   const [cameraPermission, setCameraPermission] = useState<'granted' | 'denied' | 'prompt'>('prompt')
   const [availableCameras, setAvailableCameras] = useState<any[]>([])
   const [selectedCameraId, setSelectedCameraId] = useState<string | null>(null)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(propUserId || null) // WAVE 2 NEW
+
+  // ========================================================================
+  // WAVE 2 NEW: GET USER ID FROM SUPABASE
+  // ========================================================================
+
+  useEffect(() => {
+    const getUserId = async () => {
+      // If userId provided as prop, use it
+      if (propUserId) {
+        setCurrentUserId(propUserId)
+        return
+      }
+
+      // Otherwise, fetch from Supabase
+      try {
+        const { createClient } = await import('@/lib/supabase/client')
+        const supabase = createClient()
+        const { data: { user }, error } = await supabase.auth.getUser()
+        
+        if (error) {
+          console.error('❌ Error getting user:', error)
+          return
+        }
+
+        if (user) {
+          setCurrentUserId(user.id)
+          console.log('✅ User ID loaded:', user.id)
+        } else {
+          console.warn('⚠️  No user logged in - biometric storage will be disabled')
+        }
+      } catch (error) {
+        console.error('❌ Error fetching user:', error)
+      }
+    }
+
+    getUserId()
+  }, [propUserId])
 
   // ========================================================================
   // 🎬 INITIALIZATION
@@ -170,7 +215,7 @@ export function BiometricScanner({
   }, [privacyMode, onError])
 
   // ========================================================================
-  // 📸 SCANNING
+  // 📸 SCANNING - WAVE 2 UPDATED with Supabase storage
   // ========================================================================
 
   const startScanning = useCallback(async () => {
@@ -189,10 +234,13 @@ export function BiometricScanner({
         try {
           const { processCompleteBiometricFrame } = await import('@/lib/biometric')
           
+          // WAVE 2 UPDATED: Now we need userId for storage
+          const userIdForScan = currentUserId || 'anonymous'
+          
           // Procesăm frame-ul
           const reading = await processCompleteBiometricFrame(
             servicesRef.current,
-            userId
+            userIdForScan
           )
 
           if (reading) {
@@ -214,6 +262,40 @@ export function BiometricScanner({
               } : null,
             }))
 
+            // WAVE 2 NEW: Store to Supabase if enabled and user is logged in
+            if (enableStorage && currentUserId && reading.emotion) {
+              try {
+                // Import emotion analyzer for storage
+                const { createEmotionAnalyzer } = await import('@/lib/biometric/emotion-analyzer')
+                const emotionAnalyzer = createEmotionAnalyzer()
+
+                // Store the reading
+                const readingId = await emotionAnalyzer.storeBiometricReading(
+                  currentUserId,
+                  reading.emotion,
+                  privacyMode
+                )
+
+                // Update state with storage info
+                setState(prev => ({
+                  ...prev,
+                  lastSavedReadingId: readingId,
+                  totalScansStored: (prev.totalScansStored || 0) + 1,
+                }))
+
+                console.log('✅ Biometric reading stored:', readingId)
+
+              } catch (storageError) {
+                // Don't stop scanning if storage fails
+                console.error('⚠️  Storage failed (continuing scan):', storageError)
+              }
+            }
+
+            // WAVE 2 NEW: Emotion detection callback
+            if (reading.emotion && onEmotionDetected) {
+              onEmotionDetected(reading.emotion.emotion, reading)
+            }
+
             // FPS tracking
             frameCountRef.current++
             const now = Date.now()
@@ -223,7 +305,7 @@ export function BiometricScanner({
               lastFpsUpdateRef.current = now
             }
 
-            // Callback
+            // Original callback
             onScanComplete?.(reading)
 
             // Draw overlay
@@ -247,7 +329,7 @@ export function BiometricScanner({
       }))
       onError?.(error as Error)
     }
-  }, [userId, scanInterval, showOverlay, onScanComplete, onError, initializeServices])
+  }, [currentUserId, scanInterval, showOverlay, enableStorage, privacyMode, onScanComplete, onEmotionDetected, onError, initializeServices])
 
   const stopScanning = useCallback(() => {
     if (scanIntervalRef.current) {
@@ -330,7 +412,7 @@ export function BiometricScanner({
   // ========================================================================
 
   useEffect(() => {
-    if (autoStart) {
+    if (autoStart && currentUserId) {
       initializeServices().then(() => startScanning())
     }
 
@@ -340,7 +422,7 @@ export function BiometricScanner({
         servicesRef.current.camera.cleanup()
       }
     }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [currentUserId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ========================================================================
   // 🎨 RENDER
@@ -437,6 +519,15 @@ export function BiometricScanner({
                 </div>
               </div>
             )}
+
+            {/* WAVE 2 NEW: Storage Status */}
+            {enableStorage && currentUserId && state.totalScansStored !== undefined && (
+              <div className="mt-2 pt-2 border-t border-gray-600">
+                <p className="text-gray-400 text-xs">
+                  💾 {state.totalScansStored} scanări salvate
+                </p>
+              </div>
+            )}
           </div>
         )}
 
@@ -458,6 +549,15 @@ export function BiometricScanner({
         {state.isScanning && (
           <div className="absolute bottom-4 right-4 bg-black/70 backdrop-blur-sm rounded px-2 py-1">
             <p className="text-white text-xs font-mono">{state.fps} FPS</p>
+          </div>
+        )}
+
+        {/* WAVE 2 NEW: No user warning */}
+        {!currentUserId && enableStorage && (
+          <div className="absolute bottom-4 left-4 bg-yellow-900/70 backdrop-blur-sm rounded-lg px-3 py-2">
+            <p className="text-yellow-200 text-xs">
+              ⚠️ Scanările nu vor fi salvate (user neautentificat)
+            </p>
           </div>
         )}
       </div>
@@ -508,6 +608,20 @@ export function BiometricScanner({
           </p>
         </div>
       )}
+
+      {/* WAVE 2 NEW: Storage info */}
+      {enableStorage && currentUserId && state.totalScansStored !== undefined && state.totalScansStored > 0 && (
+        <div className="mt-4 p-3 bg-green-100 border border-green-300 rounded-lg">
+          <p className="text-green-800 text-sm">
+            ✅ Salvare activă: <strong>{state.totalScansStored}</strong> scanări în această sesiune
+            {state.lastSavedReadingId && (
+              <span className="text-xs block mt-1 text-green-600">
+                Ultimul ID: {state.lastSavedReadingId.slice(0, 8)}...
+              </span>
+            )}
+          </p>
+        </div>
+      )}
     </div>
   )
 }
@@ -543,27 +657,41 @@ function QualityBar({ label, value }: { label: string; value: number }) {
 export default BiometricScanner
 
 /**
- * USAGE EXAMPLE:
+ * ✅ WAVE 2 - BIOMETRIC SCANNER UPDATED! 🎉
+ * 
+ * NEW CAPABILITIES:
+ * ✅ Automatic Supabase storage integration
+ * ✅ User ID fetching from Supabase auth
+ * ✅ Privacy mode support (strict/balanced/permissive)
+ * ✅ Storage enable/disable toggle
+ * ✅ onEmotionDetected callback
+ * ✅ Storage statistics display
+ * ✅ User authentication status warnings
+ * 
+ * USAGE EXAMPLES:
  * 
  * ```tsx
- * import BiometricScanner from '@/components/biometric/biometric-scanner'
+ * // Basic usage (auto storage)
+ * <BiometricScanner
+ *   onScanComplete={handleScan}
+ *   autoStart={true}
+ * />
  * 
- * function MyPage() {
- *   const handleScan = (reading: BiometricReading) => {
- *     console.log('Emotion:', reading.emotion.emotion)
- *     console.log('Stress:', reading.stress.level)
- *   }
+ * // With emotion callback for AI adaptation
+ * <BiometricScanner
+ *   onScanComplete={handleScan}
+ *   onEmotionDetected={(emotion, reading) => {
+ *     // Pass to AI service for adaptation
+ *     console.log('Detected:', emotion)
+ *   }}
+ *   enableStorage={true}
+ *   privacyMode="balanced"
+ * />
  * 
- *   return (
- *     <BiometricScanner
- *       userId={user.id}
- *       onScanComplete={handleScan}
- *       autoStart={false}
- *       showOverlay={true}
- *       showQuality={true}
- *       showEmotion={true}
- *     />
- *   )
- * }
+ * // Without storage (demo mode)
+ * <BiometricScanner
+ *   onScanComplete={handleScan}
+ *   enableStorage={false}
+ * />
  * ```
  */

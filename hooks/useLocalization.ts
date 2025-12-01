@@ -83,7 +83,7 @@ function withLocaleInPath(pathname: string, newLang: Supported): string {
 /** verifică sesiunea Supabase fără a crea instanțe multiple inutil */
 async function hasSupabaseSession(): Promise<boolean> {
   try {
-    const mod = await import('@supabase/auth-helpers-nextjs').catch(() => null)
+    const mod = await import('@supabase/ssr').catch(() => null)
     if (!mod?.createClientComponentClient) return false
     const supabase = mod.createClientComponentClient()
     const { data } = await supabase.auth.getSession()
@@ -115,7 +115,7 @@ async function persistPreferences(payload: {
 
   // 2) fallback direct Supabase (opțional)
   try {
-    const mod = await import('@supabase/auth-helpers-nextjs').catch(() => null)
+    const mod = await import('@supabase/ssr').catch(() => null)
     if (!mod?.createClientComponentClient) return
     const supabase = mod.createClientComponentClient()
     const { data: userData } = await supabase.auth.getUser()
@@ -258,7 +258,7 @@ export function useLocalization() {
 
       // 4) Persistă preferința doar dacă există sesiune
       try {
-        const mod = await import('@supabase/auth-helpers-nextjs').catch(() => null)
+        const mod = await import('@supabase/ssr').catch(() => null)
         if (mod?.createClientComponentClient) {
           const supabase = mod.createClientComponentClient()
           const { data: userData } = await supabase.auth.getUser()

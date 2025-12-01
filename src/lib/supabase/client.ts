@@ -1,4 +1,4 @@
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { createClientComponentClient } from '@supabase/ssr'
 import { createClient as createServerClient } from '@supabase/supabase-js'
 
 // Client-side Supabase client (pentru componente)

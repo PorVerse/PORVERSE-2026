@@ -4,7 +4,8 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useLocalization } from '@/hooks/useLocalization'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+// ✅ FIX 1: Înlocuit pachetul deprecated
+import { createBrowserClient } from '@supabase/ssr'
 import {
   Shield,
   ArrowLeft,
@@ -218,7 +219,12 @@ export default function EnterpriseLoginPage({
   const { language } = useLocalization()
   const router = useRouter()
   const searchParams = useSearchParams()
-  const supabase = createClientComponentClient()
+  
+  // ✅ FIX 2: Client Supabase cu noul pachet @supabase/ssr
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
 
   // Refs for cleanup
   const timeoutRef = useRef<NodeJS.Timeout>()
@@ -476,6 +482,7 @@ export default function EnterpriseLoginPage({
 
         console.log('✅ Authentication successful')
         console.log('👤 User ID:', data.user.id)
+        console.log('📧 User Email:', data.user.email)
         if (data.session.expires_at) {
           console.log(
             '🔄 Session valid until:',
@@ -485,16 +492,28 @@ export default function EnterpriseLoginPage({
 
         addAuthAttempt(true, 'password')
 
-        // Success - redirect after short delay
+        // ✅ FIX 3: Asigură-te că session e setată în cookies
+        await supabase.auth.setSession({
+          access_token: data.session.access_token,
+          refresh_token: data.session.refresh_token,
+        })
+
+        // Success state
         setAuthState(prev => ({
           ...prev,
           success: 'Authentication successful! Redirecting...',
           loading: false,
         }))
 
-        setTimeout(() => {
-          router.replace(redirectTo)
-        }, 1000)
+        console.log('🚀 Preparing redirect to:', redirectTo)
+
+        // ✅ FIX 4: Așteaptă un pic pentru cookies să se seteze
+        await new Promise(resolve => setTimeout(resolve, 500))
+
+        // ✅ FIX 5: Folosește window.location.href pentru redirect sigur
+        console.log('🔄 Executing redirect...')
+        window.location.href = redirectTo
+
       } catch (error: any) {
         console.error('💥 LOGIN ERROR:', error)
 
@@ -514,7 +533,6 @@ export default function EnterpriseLoginPage({
       addAuthAttempt,
       createError,
       t,
-      router,
     ]
   )
 
@@ -651,6 +669,25 @@ export default function EnterpriseLoginPage({
       }))
     }
   }, [urlParams, createError, t])
+
+  // ✅ FIX 6: Verifică environment variables la start
+  useEffect(() => {
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+      console.error('❌ CRITICAL: Missing Supabase environment variables!')
+      console.error('NEXT_PUBLIC_SUPABASE_URL:', process.env.NEXT_PUBLIC_SUPABASE_URL ? 'SET' : 'MISSING')
+      console.error('NEXT_PUBLIC_SUPABASE_ANON_KEY:', process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'SET' : 'MISSING')
+      
+      setAuthState(prev => ({
+        ...prev,
+        error: createError(
+          'unknown',
+          'Configuration error. Please contact support.',
+          'MISSING_CONFIG',
+          false
+        ),
+      }))
+    }
+  }, [createError])
 
   // ── Helper Functions ──
   const formatTimeRemaining = (timestamp: number): string => {
@@ -929,13 +966,13 @@ export default function EnterpriseLoginPage({
           <div className="mt-6 pt-6 border-t border-white/10">
             <div className="flex flex-col space-y-3 text-center">
               <Link
-                href={`/${lang}/auth/forgot-password`}
+                href={`/${lang}/reset-password`}
                 className="text-purple-200 hover:text-white transition-colors text-sm"
               >
                 {t.forgotPassword}
               </Link>
               <Link
-                href={`/${lang}/auth/signup`}
+                href={`/${lang}/signup`}
                 className="text-purple-200 hover:text-white transition-colors text-sm"
               >
                 {t.createAccount}

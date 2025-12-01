@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
 
     let userId: string | undefined
     try {
-      const mod: any = await import('@supabase/auth-helpers-nextjs').catch(() => null)
+      const mod: any = await import('@supabase/ssr').catch(() => null)
       if (mod?.createRouteHandlerClient) {
         const supabase = mod.createRouteHandlerClient({ cookies: () => req.cookies })
         const { data } = await supabase.auth.getUser()

@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Lazy import Supabase helper
-    const mod: any = await import('@supabase/auth-helpers-nextjs').catch(() => null)
+    const mod: any = await import('@supabase/ssr').catch(() => null)
     const supabaseAdminKey = process.env.SUPABASE_SERVICE_ROLE_KEY
     let supabase: any = null
     if (mod?.createClient && supabaseAdminKey) {

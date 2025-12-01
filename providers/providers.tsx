@@ -1,22 +1,34 @@
 'use client'
 
 import { createContext, useContext, useMemo } from 'react'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+// ✅ FIX: Funcția corectă din @supabase/ssr
+import { createBrowserClient } from '@supabase/ssr'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 type Ctx = { supabase: SupabaseClient }
-const SupabaseCtx = createContext<Ctx | null>(null)
+
+const SupabaseCtx = createContext<Ctx | undefined>(undefined)
 
 export function Providers({ children }: { children: React.ReactNode }) {
-  // important: o singură instanță per mount
-  const supabase = useMemo(() => createClientComponentClient(), [])
+  // ✅ FIX: Înlocuit createClientComponentClient() cu createBrowserClient()
+  const supabase = useMemo(
+    () =>
+      createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      ),
+    []
+  )
+  
   const value = useMemo(() => ({ supabase }), [supabase])
 
   return <SupabaseCtx.Provider value={value}>{children}</SupabaseCtx.Provider>
 }
 
-export function useSupabase(): SupabaseClient {
+export function useSupabase() {
   const ctx = useContext(SupabaseCtx)
-  if (!ctx) throw new Error('useSupabase must be used within <Providers>')
+  if (!ctx) {
+    throw new Error('useSupabase must be used within Providers')
+  }
   return ctx.supabase
 }

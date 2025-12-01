@@ -1,0 +1,74 @@
+{
+  "common": {
+    "welcome": "Bine ai venit în PorVerse",
+    "loading": "Se încarcă...",
+    "error": "A apărut o eroare",
+    "save": "Salvează",
+    "cancel": "Anulează",
+    "continue": "Continuă",
+    "back": "Înapoi",
+    "next": "Următorul"
+  },
+  "portals": {
+    "title": "Portaluri",
+    "locked": "Blocat",
+    "unlocked": "Deblocat",
+    "completed": "Completat",
+    "inProgress": "În curs",
+    "startJourney": "Începe Călătoria",
+    "continueJourney": "Continuă Călătoria",
+    "progress": "Progres",
+    "timeSpent": "Timp Petrecut",
+    "achievements": "Realizări"
+  },
+  "biometric": {
+    "scanning": "Se scanează...",
+    "emotionDetected": "Emoție detectată",
+    "privacyMode": "Mod Privat",
+    "startScan": "Pornește Scanarea",
+    "stopScan": "Oprește Scanarea",
+    "calibrate": "Calibrează",
+    "quality": "Calitate",
+    "emotions": {
+      "happy": "Fericit",
+      "sad": "Trist",
+      "angry": "Supărat",
+      "anxious": "Anxios",
+      "calm": "Calm",
+      "excited": "Entuziasmat",
+      "neutral": "Neutru",
+      "stressed": "Stresat"
+    }
+  },
+  "ai": {
+    "chatWith": "Conversează cu AI",
+    "thinking": "AI se gândește...",
+    "typeMessage": "Scrie mesajul tău...",
+    "emotionalSupport": "Suport Emoțional",
+    "guidance": "Îndrumare",
+    "personalityAdapted": "Personalitate adaptată"
+  },
+  "quantum": {
+    "vault": "Seiful Cuantic",
+    "timeline": "Cronologie",
+    "memories": "Amintiri",
+    "patterns": "Modele",
+    "addMemory": "Adaugă Amintire",
+    "generateScenarios": "Generează Scenarii",
+    "futureScenarios": "Scenarii Viitoare",
+    "past": "Trecut",
+    "present": "Prezent",
+    "future": "Viitor"
+  },
+  "billing": {
+    "subscribe": "Abonează-te",
+    "upgrade": "Îmbunătățește",
+    "downgrade": "Reduce",
+    "cancel": "Anulează Abonamentul",
+    "plans": {
+      "voyager": "Călător",
+      "explorer": "Explorator",
+      "transcender": "Transcendent"
+    }
+  }
+}

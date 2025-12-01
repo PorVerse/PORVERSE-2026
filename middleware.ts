@@ -10,6 +10,7 @@ import { NextResponse, type NextRequest } from 'next/server'
  * - public routes explicit (login/signup/callback/reset) — evită bucle
  * - protected routes guard (Supabase cookies heuristic)
  * - dev mode: guard OFF (prod: ON)
+ * - TIER 1: Security Headers (CSP, X-Frame-Options, etc.)
  */
 
 const SUPPORTED = ['en', 'ro'] as const
@@ -42,6 +43,36 @@ const PUBLIC_PREFIXES = [
   'forgot-password',
   'verify',
 ] as const
+
+// ---- TIER 1: Security Headers Configuration ----
+function addSecurityHeaders(response: NextResponse): NextResponse {
+  // Content Security Policy
+  const csp = [
+    "default-src 'self'",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://js.sentry-cdn.com",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "font-src 'self' https://fonts.gstatic.com",
+    "img-src 'self' data: https: blob:",
+    "connect-src 'self' https://api.anthropic.com https://api.openai.com https://*.supabase.co https://*.sentry.io https://*.upstash.io",
+    "frame-ancestors 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "upgrade-insecure-requests"
+  ].join('; ')
+
+  response.headers.set('Content-Security-Policy', csp)
+  response.headers.set('X-Frame-Options', 'DENY')
+  response.headers.set('X-Content-Type-Options', 'nosniff')
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
+  response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
+  
+  // HSTS - doar în production
+  if (ENFORCE_HTTPS) {
+    response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload')
+  }
+
+  return response
+}
 
 // ---- Helpers ----
 function isStaticFile(pathname: string): boolean {
@@ -112,7 +143,9 @@ function buildRedirect(req: NextRequest, targetUrl: URL, localeToSet?: Supported
   if (localeToSet) ensureI18nCookie(req, res, localeToSet)
   res.headers.set('Vary', 'Accept-Language, Cookie')
   res.headers.set('X-PV-Auth-Guard', DISABLE_GUARD_DEV ? 'disabled-dev' : 'enabled')
-  return res
+  
+  // TIER 1: Add security headers
+  return addSecurityHeaders(res)
 }
 
 function buildLoginUrl(req: NextRequest, lang: Supported) {
@@ -132,7 +165,8 @@ export function middleware(req: NextRequest) {
     const res = NextResponse.next()
     res.headers.set('Vary', 'Accept-Language, Cookie')
     res.headers.set('X-PV-Auth-Guard', DISABLE_GUARD_DEV ? 'disabled-dev' : 'enabled')
-    return res
+    // TIER 1: Add security headers (chiar și pentru bypass, pentru consistență)
+    return addSecurityHeaders(res)
   }
 
   // 1) Canonical host
@@ -182,7 +216,8 @@ export function middleware(req: NextRequest) {
     ensureI18nCookie(req, res, lang)
     res.headers.set('Vary', 'Accept-Language, Cookie')
     res.headers.set('X-PV-Auth-Guard', DISABLE_GUARD_DEV ? 'disabled-dev' : 'enabled')
-    return res
+    // TIER 1: Add security headers
+    return addSecurityHeaders(res)
   }
 
   // Protected?
@@ -200,7 +235,8 @@ export function middleware(req: NextRequest) {
   ensureI18nCookie(req, res, lang)
   res.headers.set('Vary', 'Accept-Language, Cookie')
   res.headers.set('X-PV-Auth-Guard', DISABLE_GUARD_DEV ? 'disabled-dev' : 'enabled')
-  return res
+  // TIER 1: Add security headers
+  return addSecurityHeaders(res)
 }
 
 // ---- Matcher: excludem asset/API/manifest/sw etc. ----

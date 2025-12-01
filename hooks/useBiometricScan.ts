@@ -327,7 +327,7 @@ export function useBiometricScan(options: UseBiometricScanOptions): UseBiometric
   const saveBiometricReading = async (reading: BiometricReading) => {
     try {
       // Import Supabase client
-      const { createClientComponentClient } = await import('@supabase/auth-helpers-nextjs')
+      const { createClientComponentClient } = await import('@supabase/ssr')
       const supabase = createClientComponentClient()
 
       // Save to biometric_scans table
@@ -421,7 +421,7 @@ export function useEmotionTracking(userId: string) {
   const loadHistory = useCallback(async () => {
     setIsLoading(true)
     try {
-      const { createClientComponentClient } = await import('@supabase/auth-helpers-nextjs')
+      const { createClientComponentClient } = await import('@supabase/ssr')
       const supabase = createClientComponentClient()
 
       const { data, error } = await supabase
@@ -493,7 +493,7 @@ export function useBiometricConsent(userId: string) {
       setConsent(consentData)
 
       // Optionally save to database
-      const { createClientComponentClient } = await import('@supabase/auth-helpers-nextjs')
+      const { createClientComponentClient } = await import('@supabase/ssr')
       const supabase = createClientComponentClient()
 
       await supabase

@@ -50,7 +50,10 @@ export function generateStaticParams() {
  * ⚠️ IMPORTANT:
  * App Router rule — ONLY app/layout.tsx renders <html> and <body>.
  * This per-locale layout must return normal elements (e.g. <main/>),
- * otherwise you’ll get hydration errors.
+ * otherwise you'll get hydration errors.
+ * 
+ * ✅ TIER 1 PRODUCTION FIX: Added suppressHydrationWarning to prevent
+ * hydration mismatches between server and client rendering.
  */
 export default function LangLayout({
   children,
@@ -64,6 +67,7 @@ export default function LangLayout({
 
   return (
     <div
+      suppressHydrationWarning
       className={`${inter.className} min-h-screen bg-neutral-950 text-white antialiased`}
       data-lang={lang}
     >

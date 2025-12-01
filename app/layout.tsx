@@ -1,6 +1,4 @@
 // app/layout.tsx
-// Root Layout - Entry point al aplicației
-
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { Providers } from '@/providers/providers'
@@ -54,9 +52,8 @@ export const metadata: Metadata = {
     shortcut: '/favicon-16x16.png',
     apple: '/apple-touch-icon.png',
   },
-  // 🔽 Hreflang principal (root). Pagini reale en/ro vor fi generate din app/[lang] + sitemap.
   alternates: {
-    canonical: SITE_URL, // opțional; canonical fără limbă (root)
+    canonical: SITE_URL,
     languages: {
       en: `${SITE_URL}/en`,
       ro: `${SITE_URL}/ro`,
@@ -74,9 +71,8 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    // Scoatem lang="en" – e setat corect în app/[lang]/layout.tsx
     <html suppressHydrationWarning>
-      <body className="antialiased">
+      <body className="antialiased" suppressHydrationWarning>  {/* ✅ ADĂUGAT suppressHydrationWarning */}
         <Providers>{children}</Providers>
       </body>
     </html>

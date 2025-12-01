@@ -2,15 +2,14 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { createBrowserClient } from '@supabase/ssr'
 import { Loader2, AlertCircle, RefreshCw, ShieldAlert } from 'lucide-react'
-
 import { PortalGrid } from '@/components/portals/portal-grid'
 import { DashboardHeader } from '@/components/dashboard/dashboard-header'
 import { StatsOverview } from '@/components/dashboard/stats-overview'
 import { OfflinePanel } from '@/components/dashboard/offline-panel'
 
-import type { User, Session } from '@supabase/auth-helpers-nextjs'
+import type { User, Session } from '@supabase/supabase-js'
 import type { Database } from '@/types/database.types'
 
 type DBProfile = Database['public']['Tables']['profiles']['Row']
@@ -103,7 +102,11 @@ export default function PortalDashboardPage({
   params: { lang: string }
 }) {
   const router = useRouter()
-  const supabase = createClientComponentClient()
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+  
   const [state, setState] = useState<DashboardState>(INITIAL_STATE)
 
   // Mounted ref to avoid setState on unmounted

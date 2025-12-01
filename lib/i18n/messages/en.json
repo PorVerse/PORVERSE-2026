@@ -1,0 +1,74 @@
+{
+  "common": {
+    "welcome": "Welcome to PorVerse",
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "save": "Save",
+    "cancel": "Cancel",
+    "continue": "Continue",
+    "back": "Back",
+    "next": "Next"
+  },
+  "portals": {
+    "title": "Portals",
+    "locked": "Locked",
+    "unlocked": "Unlocked",
+    "completed": "Completed",
+    "inProgress": "In Progress",
+    "startJourney": "Start Journey",
+    "continueJourney": "Continue Journey",
+    "progress": "Progress",
+    "timeSpent": "Time Spent",
+    "achievements": "Achievements"
+  },
+  "biometric": {
+    "scanning": "Scanning...",
+    "emotionDetected": "Emotion detected",
+    "privacyMode": "Privacy Mode",
+    "startScan": "Start Scan",
+    "stopScan": "Stop Scan",
+    "calibrate": "Calibrate",
+    "quality": "Quality",
+    "emotions": {
+      "happy": "Happy",
+      "sad": "Sad",
+      "angry": "Angry",
+      "anxious": "Anxious",
+      "calm": "Calm",
+      "excited": "Excited",
+      "neutral": "Neutral",
+      "stressed": "Stressed"
+    }
+  },
+  "ai": {
+    "chatWith": "Chat with AI",
+    "thinking": "AI is thinking...",
+    "typeMessage": "Type your message...",
+    "emotionalSupport": "Emotional Support",
+    "guidance": "Guidance",
+    "personalityAdapted": "Personality adapted"
+  },
+  "quantum": {
+    "vault": "Quantum Vault",
+    "timeline": "Timeline",
+    "memories": "Memories",
+    "patterns": "Patterns",
+    "addMemory": "Add Memory",
+    "generateScenarios": "Generate Scenarios",
+    "futureScenarios": "Future Scenarios",
+    "past": "Past",
+    "present": "Present",
+    "future": "Future"
+  },
+  "billing": {
+    "subscribe": "Subscribe",
+    "upgrade": "Upgrade",
+    "downgrade": "Downgrade",
+    "cancel": "Cancel Subscription",
+    "plans": {
+      "voyager": "Voyager",
+      "explorer": "Explorer",
+      "transcender": "Transcender"
+    }
+  }
+}

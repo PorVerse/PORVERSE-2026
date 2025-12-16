@@ -7,8 +7,8 @@ export type AlertLevel = 'info' | 'warn' | 'error' | 'critical'
  */
 export async function sendCriticalAlert(subject: string, details: Record<string, unknown>) {
   try {
-    const key = process.env.RESEND_API_KEY
-    const to = process.env.ALERT_EMAIL // ex: ops@porverse.com
+    const key = process.env['RESEND_API_KEY']
+    const to = process.env['ALERT_EMAIL'] // ex: ops@porverse.com
     if (!key || !to) {
       console.error('[ALERT][NO-EMAIL]', subject, details)
       return

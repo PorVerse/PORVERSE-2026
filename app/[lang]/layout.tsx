@@ -12,7 +12,7 @@ const SUPPORTED = ['en', 'ro'] as const
 type Lang = (typeof SUPPORTED)[number]
 
 const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/+$/, '') || 'http://localhost:3000'
+  process.env['NEXT_PUBLIC_SITE_URL']?.replace(/\/+$/, '') || 'http://localhost:3000'
 
 function normalize(value?: string): Lang | null {
   if (!value) return null

@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic'
 
 export function GET(_req: NextRequest) {
   const site =
-    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/+$/, '') ||
+    process.env['NEXT_PUBLIC_SITE_URL']?.replace(/\/+$/, '') ||
     'http://localhost:3000'
 
   const body = `

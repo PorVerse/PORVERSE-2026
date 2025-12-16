@@ -520,8 +520,8 @@ export class PortalManager {
 
 export function createPortalManager(overrides?: Partial<PortalManagerConfig>): PortalManager {
   const config: PortalManagerConfig = {
-    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl: process.env['NEXT_PUBLIC_SUPABASE_URL']!,
+    supabaseKey: process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!,
     enableRealtime: true,
     enableOfflineSync: true,
     cacheTtlMinutes: 5,

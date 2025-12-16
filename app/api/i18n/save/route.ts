@@ -50,7 +50,7 @@ export async function POST(req: Request) {
       .eq('id', user.id)
 
     if (upErr) {
-      if (process.env.NODE_ENV !== 'production') {
+      if (process.env['NODE_ENV'] !== 'production') {
         console.error('[i18n.save] update error', upErr)
       }
       return NextResponse.json({ ok: false, error: upErr.message }, { status: 400 })
@@ -58,7 +58,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ ok: true })
   } catch (e: any) {
-    if (process.env.NODE_ENV !== 'production') {
+    if (process.env['NODE_ENV'] !== 'production') {
       console.error('[i18n.save] fatal', e)
     }
     return NextResponse.json({ ok: false, error: e?.message || 'Unknown error' }, { status: 500 })

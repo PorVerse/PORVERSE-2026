@@ -1,11 +1,14 @@
 // lib/supabase/supabase-browser.ts
-import { createBrowserClient, type SupabaseClient } from '@supabase/ssr'
-
+import { createBrowserClient } from '@supabase/ssr'
 
 let _client: ReturnType<typeof createBrowserClient> | null = null
 
 export function getSupabaseBrowserClient() {
-  if (!_client) _client = createBrowserClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+  if (!_client) {
+    _client = createBrowserClient(
+      process.env['NEXT_PUBLIC_SUPABASE_URL']!,
+      process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!
+    )
+  }
+  return _client
+}

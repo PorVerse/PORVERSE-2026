@@ -1,10 +1,8 @@
-import CallbackClient from '.auth/CallbackClient.tsx'
+import CallbackClient from './CallbackClient'
 
-export const dynamic = 'force-dynamic'
-
-export default function Page({
+export default function CallbackPage({
   params,
-  searchParams,
+  searchParams
 }: {
   params: { lang: string }
   searchParams: Record<string, string | string[] | undefined>

@@ -25,7 +25,7 @@ const PortalSessionPropsSchema = z.object({
 type PortalSessionProps = z.infer<typeof PortalSessionPropsSchema>;
 
 export const PortalSession = memo(function PortalSession(props: PortalSessionProps) {
-  if (process.env.NODE_ENV === 'development') {
+  if (process.env['NODE_ENV'] === 'development') {
     PortalSessionPropsSchema.parse(props);
   }
 

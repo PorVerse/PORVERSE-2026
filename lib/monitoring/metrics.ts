@@ -38,7 +38,7 @@ export class MetricsService {
       port: getEnv('STATSD_PORT'),
       prefix: `${this.prefix}.`,
       cacheDns: true,
-      mock: process.env.NODE_ENV === 'test' // Mock in tests
+      mock: process.env['NODE_ENV'] === 'test' // Mock in tests
     })
   }
 

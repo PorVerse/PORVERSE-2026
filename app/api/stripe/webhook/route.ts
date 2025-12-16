@@ -9,8 +9,8 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
-const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || ''
-const WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || ''
+const STRIPE_SECRET_KEY = process.env['STRIPE_SECRET_KEY'] || ''
+const WEBHOOK_SECRET = process.env['STRIPE_WEBHOOK_SECRET'] || ''
 
 const stripe = new Stripe(STRIPE_SECRET_KEY, { apiVersion: '2024-06-20' })
 
@@ -110,7 +110,7 @@ export async function POST(req: Request) {
 
       default: {
         // alte evenimente — log light
-        if (process.env.NODE_ENV !== 'production') {
+        if (process.env['NODE_ENV'] !== 'production') {
           console.info('[stripe.webhook.unhandled]', event.type)
         }
       }

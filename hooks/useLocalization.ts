@@ -224,7 +224,7 @@ export function useLocalization() {
           })
         }
       } catch (e) {
-        if (process.env.NODE_ENV !== 'production') {
+        if (process.env['NODE_ENV'] !== 'production') {
           console.warn('i18n.init failed (degraded gracefully):', e)
         }
       } finally {

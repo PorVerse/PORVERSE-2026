@@ -420,7 +420,7 @@ export const usePortalStore = create<PortalStore>()(
     ),
     {
       name: 'PortalStore',
-      enabled: process.env.NODE_ENV === 'development',
+      enabled: process.env['NODE_ENV'] === 'development',
     }
   )
 );

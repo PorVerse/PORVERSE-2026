@@ -61,9 +61,9 @@ export async function GET() {
   const health: HealthCheck = {
     status: 'healthy',
     timestamp: startedAt,
-    version: process.env.NEXT_PUBLIC_APP_VERSION || process.env.APP_VERSION || 'dev',
+    version: process.env['NEXT_PUBLIC_APP_VERSION'] || process.env['APP_VERSION'] || 'dev',
     uptime: process.uptime(),
-    region: process.env.VERCEL_REGION || process.env.FLY_REGION,
+    region: process.env['VERCEL_REGION'] || process.env['FLY_REGION'],
     services: {},
     system: {
       memory: {
@@ -73,23 +73,23 @@ export async function GET() {
           (process.memoryUsage().heapUsed / Math.max(process.memoryUsage().heapTotal, 1)) * 100,
       },
       nodejs: { version: process.version, uptime: process.uptime() },
-      environment: process.env.NODE_ENV || 'unknown',
+      environment: process.env['NODE_ENV'] || 'unknown',
     },
     deployment: {
-      buildId: process.env.NEXT_BUILD_ID || 'unknown',
-      deployedAt: process.env.DEPLOYMENT_DATE || 'unknown',
-      commitHash: process.env.VERCEL_GIT_COMMIT_SHA || process.env.COMMIT_SHA || 'unknown',
+      buildId: process.env['NEXT_BUILD_ID'] || 'unknown',
+      deployedAt: process.env['DEPLOYMENT_DATE'] || 'unknown',
+      commitHash: process.env['VERCEL_GIT_COMMIT_SHA'] || process.env['COMMIT_SHA'] || 'unknown',
     },
   }
 
   // --- 1) Database (Supabase) ---
   {
     const lastCheck = nowISO()
-    if (has(process.env.NEXT_PUBLIC_SUPABASE_URL) && has(process.env.SUPABASE_SERVICE_ROLE_KEY)) {
+    if (has(process.env['NEXT_PUBLIC_SUPABASE_URL']) && has(process.env['SUPABASE_SERVICE_ROLE_KEY'])) {
       const [dbRes, ms, err] = await timed(async () => {
         const supabase = createClient(
-          process.env.NEXT_PUBLIC_SUPABASE_URL!,
-          process.env.SUPABASE_SERVICE_ROLE_KEY!
+          process.env['NEXT_PUBLIC_SUPABASE_URL']!,
+          process.env['SUPABASE_SERVICE_ROLE_KEY']!
         )
         return supabase.from('profiles').select('id').limit(1)
       })
@@ -118,10 +118,10 @@ export async function GET() {
   // --- 2) OpenAI ---
   {
     const lastCheck = nowISO()
-    if (has(process.env.OPENAI_API_KEY)) {
+    if (has(process.env['OPENAI_API_KEY'])) {
       const [_, ms, err] = await timed(async () => {
         const r = await fetch('https://api.openai.com/v1/models', {
-          headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
+          headers: { Authorization: `Bearer ${process.env['OPENAI_API_KEY']}` },
           signal: AbortSignal.timeout(5000),
           cache: 'no-store',
         })
@@ -139,10 +139,10 @@ export async function GET() {
   // --- 3) Anthropic ---
   {
     const lastCheck = nowISO()
-    if (has(process.env.ANTHROPIC_API_KEY)) {
+    if (has(process.env['ANTHROPIC_API_KEY'])) {
       const [_, ms, err] = await timed(async () => {
         const r = await fetch('https://api.anthropic.com/', {
-          headers: { 'x-api-key': process.env.ANTHROPIC_API_KEY! },
+          headers: { 'x-api-key': process.env['ANTHROPIC_API_KEY']! },
           signal: AbortSignal.timeout(5000),
           cache: 'no-store',
         })
@@ -170,10 +170,10 @@ export async function GET() {
   // --- 4) Stripe ---
   {
     const lastCheck = nowISO()
-    if (has(process.env.STRIPE_SECRET_KEY)) {
+    if (has(process.env['STRIPE_SECRET_KEY'])) {
       const [_, ms, err] = await timed(async () => {
         const Stripe = (await import('stripe')).default
-        const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2024-06-20' })
+        const stripe = new Stripe(process.env['STRIPE_SECRET_KEY']!, { apiVersion: '2024-06-20' })
         return stripe.accounts.retrieve()
       })
       health.services.stripe = { status: err ? 'down' : 'up', responseTime: ms, error: err, lastCheck }
@@ -187,10 +187,10 @@ export async function GET() {
   // --- 5) Resend (Email) ---
   {
     const lastCheck = nowISO()
-    if (has(process.env.RESEND_API_KEY)) {
+    if (has(process.env['RESEND_API_KEY'])) {
       const [_, ms, err] = await timed(async () => {
         const r = await fetch('https://api.resend.com/domains', {
-          headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}` },
+          headers: { Authorization: `Bearer ${process.env['RESEND_API_KEY']}` },
           signal: AbortSignal.timeout(5000),
           cache: 'no-store',
         })
@@ -208,12 +208,12 @@ export async function GET() {
   // --- 6) Cloudflare ---
   {
     const lastCheck = nowISO()
-    if (has(process.env.CLOUDFLARE_ZONE_ID) && has(process.env.CLOUDFLARE_API_TOKEN)) {
+    if (has(process.env['CLOUDFLARE_ZONE_ID']) && has(process.env['CLOUDFLARE_API_TOKEN'])) {
       const [_, ms, err] = await timed(async () => {
         const r = await fetch(
-          `https://api.cloudflare.com/client/v4/zones/${process.env.CLOUDFLARE_ZONE_ID}`,
+          `https://api.cloudflare.com/client/v4/zones/${process.env['CLOUDFLARE_ZONE_ID']}`,
           {
-            headers: { Authorization: `Bearer ${process.env.CLOUDFLARE_API_TOKEN}` },
+            headers: { Authorization: `Bearer ${process.env['CLOUDFLARE_API_TOKEN']}` },
             signal: AbortSignal.timeout(5000),
             cache: 'no-store',
           }

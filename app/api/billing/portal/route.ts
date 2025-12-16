@@ -8,8 +8,8 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
-const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || ''
-const REQUIRE_AUTH = process.env.NEXT_BILLING_REQUIRE_AUTH === '1' // dacă e 0, permitem dev-fallback
+const STRIPE_SECRET_KEY = process.env['STRIPE_SECRET_KEY'] || ''
+const REQUIRE_AUTH = process.env['NEXT_BILLING_REQUIRE_AUTH'] === '1' // dacă e 0, permitem dev-fallback
 
 if (!STRIPE_SECRET_KEY) {
   console.warn('[billing] STRIPE_SECRET_KEY missing')
@@ -58,7 +58,7 @@ export async function POST(req: Request) {
         .eq('id', user.id)
         .maybeSingle()
       if (profErr) {
-        if (process.env.NODE_ENV !== 'production') console.error('[billing] profile read error', profErr)
+        if (process.env['NODE_ENV'] !== 'production') console.error('[billing] profile read error', profErr)
         return NextResponse.json({ ok: false, error: 'Profile read failed.' }, { status: 500 })
       }
 
@@ -75,7 +75,7 @@ export async function POST(req: Request) {
           .from('profiles')
           .update({ stripe_customer_id: customerId })
           .eq('id', user.id)
-        if (updErr && process.env.NODE_ENV !== 'production') {
+        if (updErr && process.env['NODE_ENV'] !== 'production') {
           console.warn('[billing] profile update warn', updErr)
         }
       }
@@ -90,7 +90,7 @@ export async function POST(req: Request) {
         metadata: { note: 'temp_dev_customer_no_auth' },
       })
       customerId = tempCustomer.id
-      if (process.env.NODE_ENV !== 'production') {
+      if (process.env['NODE_ENV'] !== 'production') {
         console.info('[billing] using temp dev customer', { customerId })
       }
     }
@@ -112,7 +112,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true, url: session.url })
   } catch (err: any) {
     const msg = err?.message || 'Unknown error'
-    if (process.env.NODE_ENV !== 'production') console.error('[billing] portal error:', msg)
+    if (process.env['NODE_ENV'] !== 'production') console.error('[billing] portal error:', msg)
     return NextResponse.json({ ok: false, error: msg }, { status: 500 })
   }
 }

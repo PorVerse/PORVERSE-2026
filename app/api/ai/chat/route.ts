@@ -7,11 +7,11 @@ import OpenAI from 'openai'
 import Anthropic from '@anthropic-ai/sdk'
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY!,
+  apiKey: process.env['OPENAI_API_KEY']!,
 })
 
 const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY!,
+  apiKey: process.env['ANTHROPIC_API_KEY']!,
 })
 
 // Helper pentru a construi system prompt cu context
@@ -122,7 +122,7 @@ export async function POST(request: NextRequest) {
 
     // GET USER CONTEXT - toate răspunsurile lor!
     const contextResponse = await fetch(
-      `${process.env.NEXT_PUBLIC_APP_URL}/api/ai/get-user-context?userId=${userId}&portalId=${portalId}`,
+      `${process.env['NEXT_PUBLIC_APP_URL']}/api/ai/get-user-context?userId=${userId}&portalId=${portalId}`,
       {
         headers: {
           'Cookie': request.headers.get('cookie') || '',

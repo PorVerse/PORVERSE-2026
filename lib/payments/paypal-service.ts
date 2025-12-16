@@ -6,14 +6,14 @@ export class PayPalService {
   private client: paypal.core.PayPalHttpClient;
 
   constructor() {
-    const environment = process.env.PAYPAL_MODE === 'live'
+    const environment = process.env['PAYPAL_MODE'] === 'live'
       ? new paypal.core.LiveEnvironment(
-          process.env.PAYPAL_CLIENT_ID!,
-          process.env.PAYPAL_CLIENT_SECRET!
+          process.env['PAYPAL_CLIENT_ID']!,
+          process.env['PAYPAL_CLIENT_SECRET']!
         )
       : new paypal.core.SandboxEnvironment(
-          process.env.PAYPAL_CLIENT_ID!,
-          process.env.PAYPAL_CLIENT_SECRET!
+          process.env['PAYPAL_CLIENT_ID']!,
+          process.env['PAYPAL_CLIENT_SECRET']!
         );
 
     this.client = new paypal.core.PayPalHttpClient(environment);
@@ -32,9 +32,9 @@ export class PayPalService {
 
     // Map tiers to PayPal plan IDs
     const paypalPlanIds = {
-      voyager: process.env.PAYPAL_VOYAGER_PLAN_ID,
-      explorer: process.env.PAYPAL_EXPLORER_PLAN_ID,
-      transcender: process.env.PAYPAL_TRANSCENDER_PLAN_ID
+      voyager: process.env['PAYPAL_VOYAGER_PLAN_ID'],
+      explorer: process.env['PAYPAL_EXPLORER_PLAN_ID'],
+      transcender: process.env['PAYPAL_TRANSCENDER_PLAN_ID']
     };
 
     const request = new paypal.subscriptions.SubscriptionsCreateRequest();
@@ -47,8 +47,8 @@ export class PayPalService {
         brand_name: 'PorVerse',
         shipping_preference: 'NO_SHIPPING',
         user_action: 'SUBSCRIBE_NOW',
-        return_url: `${process.env.NEXT_PUBLIC_APP_URL}/billing/success`,
-        cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/billing/cancel`
+        return_url: `${process.env['NEXT_PUBLIC_APP_URL']}/billing/success`,
+        cancel_url: `${process.env['NEXT_PUBLIC_APP_URL']}/billing/cancel`
       }
     });
 

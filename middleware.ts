@@ -17,11 +17,11 @@ const SUPPORTED = ['en', 'ro'] as const
 type Supported = (typeof SUPPORTED)[number]
 
 // ---- Flags & config via env ----
-const IS_DEV = process.env.NODE_ENV !== 'production'
+const IS_DEV = process.env['NODE_ENV'] !== 'production'
 const DISABLE_GUARD_DEV =
-  process.env.NEXT_DISABLE_AUTH_GUARD_DEV === '1' || IS_DEV // în dev, guard-ul e OFF
-const CANONICAL_HOST = (process.env.NEXT_CANONICAL_HOST || '').toLowerCase() // ex: "porverse.com"
-const ENFORCE_HTTPS = process.env.NODE_ENV === 'production'
+  process.env['NEXT_DISABLE_AUTH_GUARD_DEV'] === '1' || IS_DEV // în dev, guard-ul e OFF
+const CANONICAL_HOST = (process.env['NEXT_CANONICAL_HOST'] || '').toLowerCase() // ex: "porverse.com"
+const ENFORCE_HTTPS = process.env['NODE_ENV'] === 'production'
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 180 // 180 days
 const DEFAULT_LOCALE: Supported = 'en'
 

@@ -69,14 +69,14 @@ const STRIPE_PRICE_IDS: Record<
   //   - STRIPE_PRICE_PORTAL_PREMIUM_EU
   //   - STRIPE_PRICE_PORTAL_PREMIUM_US
   portal_premium: {
-    romania: process.env.NEXT_PUBLIC_STRIPE_PRICE_PORTAL_PREMIUM_RO, // if you must show it client-side
-    eu: process.env.NEXT_PUBLIC_STRIPE_PRICE_PORTAL_PREMIUM_EU,
-    us: process.env.NEXT_PUBLIC_STRIPE_PRICE_PORTAL_PREMIUM_US,
+    romania: process.env['NEXT_PUBLIC_STRIPE_PRICE_PORTAL_PREMIUM_RO'], // if you must show it client-side
+    eu: process.env['NEXT_PUBLIC_STRIPE_PRICE_PORTAL_PREMIUM_EU'],
+    us: process.env['NEXT_PUBLIC_STRIPE_PRICE_PORTAL_PREMIUM_US'],
   },
   pro_monthly: {
-    romania: process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_MONTHLY_RO,
-    eu: process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_MONTHLY_EU,
-    us: process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_MONTHLY_US,
+    romania: process.env['NEXT_PUBLIC_STRIPE_PRICE_PRO_MONTHLY_RO'],
+    eu: process.env['NEXT_PUBLIC_STRIPE_PRICE_PRO_MONTHLY_EU'],
+    us: process.env['NEXT_PUBLIC_STRIPE_PRICE_PRO_MONTHLY_US'],
   },
 }
 

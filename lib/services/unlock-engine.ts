@@ -504,8 +504,8 @@ export class UnlockEngine {
 
 export function createUnlockEngine(overrides?: Partial<UnlockEngineConfig>): UnlockEngine {
   const config: UnlockEngineConfig = {
-    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl: process.env['NEXT_PUBLIC_SUPABASE_URL']!,
+    supabaseKey: process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!,
     enablePaymentValidation: true,
     enableBiometricValidation: true,
     enableAchievementValidation: true,

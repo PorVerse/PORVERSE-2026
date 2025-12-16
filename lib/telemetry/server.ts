@@ -12,7 +12,7 @@ const METRICS_ENDPOINT = '/api/telemetry/metrics'
 
 function siteUrl() {
   // în runtime server; în dev / local e ok relativ
-  return process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/+$/, '') || ''
+  return process.env['NEXT_PUBLIC_SITE_URL']?.replace(/\/+$/, '') || ''
 }
 
 export async function svLog(event: string, payload: TelemetryPayload = {}) {
@@ -26,7 +26,7 @@ export async function svLog(event: string, payload: TelemetryPayload = {}) {
       cache: 'no-store',
     })
   } catch (e) {
-    if (process.env.NODE_ENV !== 'production') {
+    if (process.env['NODE_ENV'] !== 'production') {
       console.info('[telemetry/log-fallback]', event, payload)
     }
   }
@@ -42,7 +42,7 @@ export async function svMetric(name: string, value = 1) {
       cache: 'no-store',
     })
   } catch (e) {
-    if (process.env.NODE_ENV !== 'production') {
+    if (process.env['NODE_ENV'] !== 'production') {
       console.info('[telemetry/metric-fallback]', name, value)
     }
   }

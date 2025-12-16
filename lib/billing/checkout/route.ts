@@ -8,7 +8,7 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
-const STRIPE_SECRET = process.env.STRIPE_SECRET_KEY
+const STRIPE_SECRET = process.env['STRIPE_SECRET_KEY']
 if (!STRIPE_SECRET) console.warn('[billing] Missing STRIPE_SECRET_KEY env')
 const stripe = STRIPE_SECRET ? new Stripe(STRIPE_SECRET, { apiVersion: '2024-06-20' }) : null
 
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
     const tier = body.tier ?? tierFromAL(al)
     const locale = body.locale ?? 'auto'
 
-    const site = (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/+$/, '')
+    const site = (process.env['NEXT_PUBLIC_SITE_URL'] || 'http://localhost:3000').replace(/\/+$/, '')
     const successUrl = body.successUrl ?? `${site}/billing/success?session_id={CHECKOUT_SESSION_ID}`
     const cancelUrl = body.cancelUrl ?? `${site}/billing/cancel`
 
@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
       { status: 200, headers: { 'Cache-Control': 'no-store', Vary: 'Accept-Language' } }
     )
   } catch (e) {
-    if (process.env.NODE_ENV !== 'production') {
+    if (process.env['NODE_ENV'] !== 'production') {
       // eslint-disable-next-line no-console
       console.error('[billing] checkout error:', e)
     }

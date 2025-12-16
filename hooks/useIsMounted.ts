@@ -18,7 +18,7 @@ const csp = [
   // Connections (Supabase, OpenAI, Anthropic, Stripe, Resend, Cloudflare, WS for realtime)
   [
     "connect-src 'self'",
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env['NEXT_PUBLIC_SUPABASE_URL'],
     'https://api.openai.com',
     'https://api.anthropic.com',
     'https://api.resend.com',

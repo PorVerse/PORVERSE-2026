@@ -27,14 +27,14 @@ export default function CallbackClient({
   const lang = safeLang(params.lang)
   const [stuck, setStuck] = useState(false)
 
-  const looksInvalid = !first(searchParams.code) && !first(searchParams.token_hash)
+  const looksInvalid = !first(searchParams['code']) && !first(searchParams['token_hash'])
 
   const forwardUrl = useMemo(() => {
     const qs = new URLSearchParams()
-    const code = first(searchParams.code)
-    const token_hash = first(searchParams.token_hash)
-    const type = first(searchParams.type)
-    const nextSafe = sanitizeNext(first(searchParams.next), `/${lang}/portal-dashboard`)
+    const code = first(searchParams['code'])
+    const token_hash = first(searchParams['token_hash'])
+    const type = first(searchParams['type'])
+    const nextSafe = sanitizeNext(first(searchParams['next']), `/${lang}/portal-dashboard`)
 
     if (code) qs.set('code', code)
     if (token_hash) qs.set('token_hash', token_hash)

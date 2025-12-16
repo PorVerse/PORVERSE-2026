@@ -142,9 +142,9 @@ export function validateEnvironment(): void {
   }
 
   // Validate URL format for Supabase
-  if (process.env.NEXT_PUBLIC_SUPABASE_URL) {
+  if (process.env['NEXT_PUBLIC_SUPABASE_URL']) {
     try {
-      new URL(process.env.NEXT_PUBLIC_SUPABASE_URL)
+      new URL(process.env['NEXT_PUBLIC_SUPABASE_URL'])
     } catch {
       invalidVars.push({ 
         key: 'NEXT_PUBLIC_SUPABASE_URL', 
@@ -184,7 +184,7 @@ export function validateEnvironment(): void {
   }
 
   // Success message in development
-  if (process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_VERBOSE_LOGGING === 'true') {
+  if (process.env['NODE_ENV'] === 'development' && process.env['NEXT_PUBLIC_VERBOSE_LOGGING'] === 'true') {
     console.log('✅ Environment variables validated successfully')
   }
 }
@@ -263,10 +263,10 @@ export const env = {
   app: {
     url: getEnv('NEXT_PUBLIC_APP_URL', 'http://localhost:3000'),
     apiUrl: getEnv('NEXT_PUBLIC_API_URL', 'http://localhost:3000/api'),
-    env: (process.env.NODE_ENV || 'development') as 'development' | 'production' | 'test',
-    isDevelopment: process.env.NODE_ENV === 'development',
-    isProduction: process.env.NODE_ENV === 'production',
-    isTest: process.env.NODE_ENV === 'test',
+    env: (process.env['NODE_ENV'] || 'development') as 'development' | 'production' | 'test',
+    isDevelopment: process.env['NODE_ENV'] === 'development',
+    isProduction: process.env['NODE_ENV'] === 'production',
+    isTest: process.env['NODE_ENV'] === 'test',
   },
 
   // ===== SUPABASE =====
@@ -408,7 +408,7 @@ if (typeof window === 'undefined') {
     if (error instanceof EnvironmentError) {
       console.error(error.message)
       // Avoid hard exit in Next.js dev to preserve HMR; still fail builds in prod CI
-      if (process.env.NODE_ENV === 'production') {
+      if (process.env['NODE_ENV'] === 'production') {
         process.exit(1)
       }
     } else {

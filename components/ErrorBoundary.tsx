@@ -89,7 +89,7 @@ export class ErrorBoundary extends React.Component<
     this.setState({ errorInfo })
 
     // Log to Sentry (production)
-    if (Sentry && process.env.NODE_ENV === 'production') {
+    if (Sentry && process.env['NODE_ENV'] === 'production') {
       Sentry.captureException(error, {
         contexts: {
           react: {
@@ -100,7 +100,7 @@ export class ErrorBoundary extends React.Component<
     }
 
     // Log to console (development)
-    if (process.env.NODE_ENV === 'development') {
+    if (process.env['NODE_ENV'] === 'development') {
       console.group('🚨 Error Boundary Caught Error')
       console.error('Error:', error)
       console.error('Error Info:', errorInfo)
@@ -189,7 +189,7 @@ export class ErrorBoundary extends React.Component<
           </p>
 
           {/* Error Details (Development Only) */}
-          {process.env.NODE_ENV === 'development' && (
+          {process.env['NODE_ENV'] === 'development' && (
             <details className="mt-6">
               <summary className="text-sm font-medium text-gray-700 cursor-pointer hover:text-gray-900">
                 Technical Details (Dev Only)

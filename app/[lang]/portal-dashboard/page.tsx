@@ -46,8 +46,8 @@ export default function PortalDashboardPage({
   const lang = params.lang
   const router = useRouter()
   const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    process.env['NEXT_PUBLIC_SUPABASE_URL']!,
+    process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!
   )
   
   const [state, setState] = useState<DashboardState>(INITIAL_STATE)

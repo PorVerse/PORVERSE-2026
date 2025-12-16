@@ -7,7 +7,7 @@ import type { MetadataRoute } from 'next'
  */
 
 const SITE =
-  process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/+$/, '') || 'http://localhost:3000'
+  process.env['NEXT_PUBLIC_SITE_URL']?.replace(/\/+$/, '') || 'http://localhost:3000'
 
 const STATIC_EN = [
   '/en',

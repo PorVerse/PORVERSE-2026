@@ -21,8 +21,8 @@ function sanitizeNext(nextRaw: string | null, fallback: string) {
 }
 
 function supabaseBrowser() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  const url = process.env['NEXT_PUBLIC_SUPABASE_URL']!
+  const key = process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!
   return createBrowserClient(url, key)
 }
 
@@ -75,7 +75,7 @@ export default function SignupClient({
   const router = useRouter()
 
   const supabase = useMemo(() => supabaseBrowser(), [])
-  const next = sanitizeNext(first(searchParams.next), `/${lang}/portal-dashboard`)
+  const next = sanitizeNext(first(searchParams['next']), `/${lang}/portal-dashboard`)
 
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')

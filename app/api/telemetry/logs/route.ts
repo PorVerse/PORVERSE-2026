@@ -12,7 +12,7 @@ const MAX_EVENTS = 50
 const MAX_BODY_BYTES = 64 * 1024 // 64KB
 const RATE_WINDOW_MS = 60_000
 const RATE_MAX_HITS = 120 // /min per IP
-const IP_HASH_SECRET = process.env.TELEMETRY_IP_HASH_SECRET || 'dev-secret-change-me'
+const IP_HASH_SECRET = process.env['TELEMETRY_IP_HASH_SECRET'] || 'dev-secret-change-me'
 
 // --- Allowlist & schema ---
 const ALLOWED = new Set([
@@ -105,7 +105,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Sink: replace with your data pipeline (Kafka/S3/ClickHouse). Non-blocking.
-    if (process.env.NODE_ENV !== 'production') {
+    if (process.env['NODE_ENV'] !== 'production') {
       // eslint-disable-next-line no-console
       console.info('[telemetry/logs]', JSON.stringify(sanitized))
     }

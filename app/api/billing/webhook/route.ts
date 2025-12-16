@@ -6,8 +6,8 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
-const STRIPE_SECRET = process.env.STRIPE_SECRET_KEY
-const STRIPE_WH_SECRET = process.env.STRIPE_WEBHOOK_SECRET
+const STRIPE_SECRET = process.env['STRIPE_SECRET_KEY']
+const STRIPE_WH_SECRET = process.env['STRIPE_WEBHOOK_SECRET']
 
 const stripe = STRIPE_SECRET ? new Stripe(STRIPE_SECRET, { apiVersion: '2024-06-20' }) : null
 
@@ -37,17 +37,17 @@ export async function POST(req: NextRequest) {
     try {
       event = stripe.webhooks.constructEvent(raw, sig, STRIPE_WH_SECRET)
     } catch (err) {
-      if (process.env.NODE_ENV !== 'production') console.error('[stripe] bad signature', err)
+      if (process.env['NODE_ENV'] !== 'production') console.error('[stripe] bad signature', err)
       return new NextResponse('Bad signature', { status: 400 })
     }
 
     // Lazy import Supabase helper
     const mod: any = await import('@supabase/ssr').catch(() => null)
-    const supabaseAdminKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+    const supabaseAdminKey = process.env['SUPABASE_SERVICE_ROLE_KEY']
     let supabase: any = null
     if (mod?.createClient && supabaseAdminKey) {
       // Server-side admin client (nu folosește cookie)
-      supabase = mod.createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, supabaseAdminKey)
+      supabase = mod.createClient(process.env['NEXT_PUBLIC_SUPABASE_URL']!, supabaseAdminKey)
     }
 
     const type = event.type
@@ -118,7 +118,7 @@ export async function POST(req: NextRequest) {
 
     return new NextResponse(null, { status: 200 })
   } catch (e) {
-    if (process.env.NODE_ENV !== 'production') console.error('[stripe] webhook error', e)
+    if (process.env['NODE_ENV'] !== 'production') console.error('[stripe] webhook error', e)
     return new NextResponse(null, { status: 200 })
   }
 }

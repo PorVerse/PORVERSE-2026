@@ -11,7 +11,7 @@ const MAX_POINTS = 100
 const MAX_BODY_BYTES = 64 * 1024
 const RATE_WINDOW_MS = 60_000
 const RATE_MAX_HITS = 240
-const IP_HASH_SECRET = process.env.TELEMETRY_IP_HASH_SECRET || 'dev-secret-change-me'
+const IP_HASH_SECRET = process.env['TELEMETRY_IP_HASH_SECRET'] || 'dev-secret-change-me'
 
 const ALLOWED = new Set(['i18n.locale.applied', 'i18n.locale.changed'])
 
@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
       })
       .filter(Boolean)
 
-    if (sanitized.length && process.env.NODE_ENV !== 'production') {
+    if (sanitized.length && process.env['NODE_ENV'] !== 'production') {
       // eslint-disable-next-line no-console
       console.info('[telemetry/metrics]', JSON.stringify(sanitized))
     }

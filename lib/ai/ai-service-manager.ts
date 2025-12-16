@@ -877,8 +877,8 @@ export class AIServiceManager {
  */
 export function createAIServiceManager(overrides?: Partial<AIServiceConfig>): AIServiceManager {
   const config: AIServiceConfig = {
-    openAIKey: process.env.OPENAI_API_KEY!,
-    anthropicKey: process.env.ANTHROPIC_API_KEY!,
+    openAIKey: process.env['OPENAI_API_KEY']!,
+    anthropicKey: process.env['ANTHROPIC_API_KEY']!,
     defaultModel: 'openai',
     maxTokens: 1500,
     temperature: 0.7,

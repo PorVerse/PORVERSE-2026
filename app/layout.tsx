@@ -4,7 +4,7 @@ import './globals.css'
 import { Providers } from '@/providers/providers'
 
 const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/+$/, '') || 'http://localhost:3000'
+  process.env['NEXT_PUBLIC_SITE_URL']?.replace(/\/+$/, '') || 'http://localhost:3000'
 
 export const metadata: Metadata = {
   title: 'PorVerse V2 - Spiritual Operating System',

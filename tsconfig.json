@@ -1,6 +1,5 @@
 {
   "compilerOptions": {
-    /* STRICT MODE - Maximum Type Safety */
     "strict": true,
     "noImplicitAny": true,
     "strictNullChecks": true,
@@ -9,17 +8,13 @@
     "strictPropertyInitialization": true,
     "noImplicitThis": true,
     "alwaysStrict": true,
-    
-    /* Additional Checks */
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
     "noPropertyAccessFromIndexSignature": true,
-    
-    /* Module Resolution */
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
     "target": "ES2022",
     "lib": ["DOM", "DOM.Iterable", "ES2022"],
     "module": "esnext",
@@ -27,8 +22,6 @@
     "resolveJsonModule": true,
     "allowJs": true,
     "checkJs": false,
-    
-    /* Emit */
     "jsx": "preserve",
     "declaration": true,
     "declarationMap": true,
@@ -36,45 +29,17 @@
     "removeComments": false,
     "noEmit": true,
     "incremental": true,
-    
-    /* Interop */
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
     "isolatedModules": true,
-    
-    /* Path Mapping */
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./*"],
-      "@/components/*": ["./components/*"],
-      "@/lib/*": ["./lib/*"],
-      "@/types/*": ["./types/*"],
-      "@/hooks/*": ["./hooks/*"],
-      "@/stores/*": ["./stores/*"]
+      "@/*": ["./*"]
     },
-    
-    /* Skip Lib Check (for faster builds) */
     "skipLibCheck": true,
-    
-    /* Next.js specific */
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ]
+    "plugins": [{ "name": "next" }]
   },
-  "include": [
-    "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
-    ".next/types/**/*.ts"
-  ],
-  "exclude": [
-    "node_modules",
-    ".next",
-    "out",
-    "dist",
-    "build"
-  ]
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "exclude": ["node_modules", ".next", "out", "dist", "build"]
 }

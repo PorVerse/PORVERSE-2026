@@ -10,8 +10,8 @@
 
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { PortalCard } from '@/components/organisms/portal-card';
-import { usePortalStore, type Portal, type UserProgress } from '@/store/portal-store';
+import { PortalCard } from '@/components/portals/portal-card';
+import { usePortalStore, type Portal, type UserProgress } from '@/stores/portal-store';
 import { useRetry, useDebounce } from '@/hooks';
 import * as Sentry from '@sentry/nextjs';
 import { z } from 'zod';
@@ -477,14 +477,3 @@ export default function PortalsPage() {
 }
 
 // ============================================================================
-// METADATA (SEO)
-// ============================================================================
-
-export const metadata = {
-  title: 'Your Portals | PorVerse',
-  description: 'Explore your transformation journey through immersive portals',
-  openGraph: {
-    title: 'Your Portals | PorVerse',
-    description: 'Explore your transformation journey through immersive portals',
-  },
-};

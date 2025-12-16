@@ -628,8 +628,8 @@ export class ProgressTracker {
 
 export function createProgressTracker(overrides?: Partial<ProgressTrackerConfig>): ProgressTracker {
   const config: ProgressTrackerConfig = {
-    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl: process.env['NEXT_PUBLIC_SUPABASE_URL']!,
+    supabaseKey: process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!,
     enableAnalytics: true,
     enableBiometricTracking: true,
     sessionTimeoutMinutes: 60,

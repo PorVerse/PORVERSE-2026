@@ -20,14 +20,13 @@ function normalize(value?: string): Lang | null {
   return SUPPORTED.includes(base as any) ? (base as Lang) : null
 }
 
-/* ----------------------------- Metadata ----------------------------- */
-
 export async function generateMetadata({
   params,
 }: {
-  params: { lang: string }
+  params: Promise<{ lang: string }>
 }): Promise<Metadata> {
-  const lang = normalize(params.lang)
+  const resolvedParams = await params
+  const lang = normalize(resolvedParams.lang)
   if (!lang) notFound()
 
   return {
@@ -45,24 +44,15 @@ export function generateStaticParams() {
   return SUPPORTED.map((lang) => ({ lang }))
 }
 
-/* ------------------------------ Layout ------------------------------ */
-/**
- * ⚠️ IMPORTANT:
- * App Router rule — ONLY app/layout.tsx renders <html> and <body>.
- * This per-locale layout must return normal elements (e.g. <main/>),
- * otherwise you'll get hydration errors.
- * 
- * ✅ TIER 1 PRODUCTION FIX: Added suppressHydrationWarning to prevent
- * hydration mismatches between server and client rendering.
- */
-export default function LangLayout({
+export default async function LangLayout({
   children,
   params,
 }: {
   children: ReactNode
-  params: { lang: 'en' | 'ro' }
+  params: Promise<{ lang: 'en' | 'ro' }>
 }) {
-  const lang = normalize(params.lang)
+  const resolvedParams = await params
+  const lang = normalize(resolvedParams.lang)
   if (!lang) notFound()
 
   return (
@@ -71,7 +61,6 @@ export default function LangLayout({
       className={`${inter.className} min-h-screen bg-neutral-950 text-white antialiased`}
       data-lang={lang}
     >
-      {/* Skip link for a11y */}
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 rounded-md bg-white/10 px-3 py-2 text-sm"

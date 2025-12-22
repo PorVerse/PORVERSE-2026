@@ -1,11 +1,14 @@
 // app/api/i18n/timezone/route.ts - Production-safe (@supabase/ssr)
-import { createServerClient } from '@supabase/ssr'
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
+import type { Database } from '@/types/database.types'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
+
+type SupabaseClient = ReturnType<typeof createServerClient<Database>>
 
 function isValidTimeZone(tz?: string): boolean {
   if (!tz || typeof tz !== 'string') {return false}
@@ -22,7 +25,7 @@ function isValidTimeZone(tz?: string): boolean {
 
 function logOperation(
   operation: string,
-  context: any = {},
+  context: Record<string, unknown> = {},
   level: 'info' | 'warn' | 'error' = 'info'
 ) {
   const timestamp = new Date().toISOString()
@@ -34,7 +37,7 @@ function logOperation(
 }
 
 async function ensureProfileExists(
-  supabase: any,
+  supabase: SupabaseClient,
   userId: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
@@ -85,7 +88,7 @@ async function ensureProfileExists(
 }
 
 async function updateTimezoneWithFallback(
-  supabase: any,
+  supabase: SupabaseClient,
   userId: string,
   timezone: string
 ): Promise<{ success: boolean; error?: string }> {

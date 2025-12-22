@@ -68,7 +68,7 @@ export class Logger {
   private redact(obj?: Record<string, unknown>): Record<string, unknown> | undefined {
     if (!obj) {return obj}
     const keys = new Set((this.opts.redactKeys ?? DEFAULTS.redactKeys).map((k) => k.toLowerCase()))
-    const walk = (v: any): any => {
+    const walk = (v: unknown): unknown => {
       if (Array.isArray(v)) {return v.map(walk)}
       if (v && typeof v === 'object') {
         const out: Record<string, unknown> = {}
@@ -79,7 +79,7 @@ export class Logger {
       }
       return v
     }
-    return walk(obj)
+    return walk(obj) as Record<string, unknown>
   }
 
   private baseEvent(level: LogLevel, message: string, ctx?: Record<string, unknown>, error?: unknown): LogEvent {
@@ -163,7 +163,7 @@ export class Logger {
     })
 
     window.addEventListener('unhandledrejection', (ev: PromiseRejectionEvent) => {
-      const reason: any = ev?.reason
+      const reason: unknown = ev?.reason
       const err = reason instanceof Error ? reason : new Error(typeof reason === 'string' ? reason : 'UnhandledRejection')
       this.error('window.unhandledrejection', err)
     })

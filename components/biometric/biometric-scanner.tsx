@@ -94,6 +94,7 @@ export function BiometricScanner({
   
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const servicesRef = useRef<any>(null)
   const scanIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const frameCountRef = useRef(0)
@@ -115,7 +116,7 @@ export function BiometricScanner({
   })
 
   const [cameraPermission, setCameraPermission] = useState<'granted' | 'denied' | 'prompt'>('prompt')
-  const [availableCameras, setAvailableCameras] = useState<any[]>([])
+  const [availableCameras, setAvailableCameras] = useState<MediaDeviceInfo[]>([])
   const [selectedCameraId, setSelectedCameraId] = useState<string | null>(null)
   const [currentUserId, setCurrentUserId] = useState<string | null>(propUserId || null) // WAVE 2 NEW
 

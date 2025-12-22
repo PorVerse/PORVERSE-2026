@@ -508,8 +508,8 @@ export interface PortalUnlockResult {
 export interface UnlockCriterion {
   type: UnlockCriterionType
   description: string
-  current_value: any
-  required_value: any
+  current_value: unknown
+  required_value: unknown
   satisfied: boolean
   weight: number
 }
@@ -795,7 +795,7 @@ export interface DataField {
 export interface ValidationRule {
   field: string
   rule: string
-  value: any
+  value: unknown
   message: string
 }
 
@@ -855,8 +855,8 @@ export interface AIInsights {
 export interface QuantumVaultData {
   identity_markers: string[]
   consciousness_patterns: string[]
-  timeline_data: any
-  future_self_projection: any
+  timeline_data: Record<string, unknown>
+  future_self_projection: Record<string, unknown>
 }
 
 /**
@@ -924,7 +924,7 @@ export interface SortOptions {
 export interface FilterOptions {
   field: string
   operator: 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'in' | 'contains'
-  value: any
+  value: unknown
 }
 
 /**

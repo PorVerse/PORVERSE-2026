@@ -19,7 +19,15 @@ const anthropic = new Anthropic({
 })
 
 // Helper pentru a construi system prompt cu context
-function buildSystemPrompt(portalTitle: string, portalDescription: string, userContext: any) {
+interface UserContext {
+  user: { name?: string };
+  journey: { overallProgress: number; startedPortals: number; totalPortals: number; completedPortals: number };
+  portals?: Array<{ title: string; currentStep: number; totalSteps: number; completion: number; status: string }>;
+  responses?: Array<{ portalCode: string; portal: string; step: number; stepTitle: string; answers: Record<string, unknown> }>;
+  stats: { totalResponses: number; totalWordsWritten: number };
+}
+
+function buildSystemPrompt(portalTitle: string, portalDescription: string, userContext: UserContext) {
   const { user, journey, portals, responses, stats } = userContext
 
   let prompt = `You are a compassionate, insightful spiritual AI guide helping ${user.name || 'a user'} through the "${portalTitle}" portal.
@@ -48,7 +56,7 @@ USER CONTEXT:
   // Portal-specific progress
   if (portals && portals.length > 0) {
     prompt += `\nPORTAL PROGRESS:\n`
-    portals.forEach((p: any) => {
+    portals.forEach((p) => {
       prompt += `- ${p.title}: Step ${p.currentStep}/${p.totalSteps} (${p.completion}% complete) - ${p.status}\n`
     })
   }
@@ -58,19 +66,21 @@ USER CONTEXT:
     prompt += `\nUSER'S PREVIOUS ANSWERS (use this to personalize guidance):\n`
     
     // Group by portal
-    const responsesByPortal = responses.reduce((acc: any, r: any) => {
+    const responsesByPortal = responses.reduce((acc: Record<string, typeof responses>, r) => {
       if (!acc[r.portalCode]) {acc[r.portalCode] = []}
-      acc[r.portalCode].push(r)
+      acc[r.portalCode]!.push(r)
       return acc
-    }, {})
+    }, {} as Record<string, typeof responses>)
 
-    Object.entries(responsesByPortal).forEach(([_, resps]: [string, any]) => {
-      prompt += `\n${resps[0].portal}:\n`
-      resps.forEach((r: any) => {
+    Object.entries(responsesByPortal).forEach(([_, resps]) => {
+      if (!resps || resps.length === 0) return
+      prompt += `\n${resps[0]!.portal}:\n`
+      resps.forEach((r) => {
         prompt += `  Step ${r.step} - ${r.stepTitle}:\n`
-        Object.entries(r.answers).forEach(([_, value]: [string, any]) => {
-          if (value?.trim()) {
-            prompt += `    • ${value.substring(0, 200)}${value.length > 200 ? '...' : ''}\n`
+        Object.entries(r.answers).forEach(([_, value]) => {
+          const strValue = String(value || '').trim()
+          if (strValue) {
+            prompt += `    • ${strValue.substring(0, 200)}${strValue.length > 200 ? '...' : ''}\n`
           }
         })
       })
@@ -204,9 +214,11 @@ export async function POST(request: NextRequest) {
 
     if (profile?.subscription_tier === 'elite') {
       // Use Claude pentru Elite users
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const response = await (anthropic as any).messages.create({
         model: 'claude-3-5-sonnet-20241022',
         max_tokens: 1024,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         messages: messages.slice(1) as any,
         system: messages[0].content,
       })

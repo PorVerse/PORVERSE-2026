@@ -33,14 +33,16 @@ export const TTL = {
  * Fast but limited capacity
  */
 class MemoryCache {
-  private cache = new Map<string, { value: any; expires: number }>()
+  private cache = new Map<string, { value: unknown; expires: number }>()
   private maxSize = 1000
 
-  set(key: string, value: any, ttl: number): void {
+  set(key: string, value: unknown, ttl: number): void {
     // Enforce size limit
     if (this.cache.size >= this.maxSize) {
       const firstKey = this.cache.keys().next().value
-      this.cache.delete(firstKey)
+      if (firstKey) {
+        this.cache.delete(firstKey)
+      }
     }
 
     this.cache.set(key, {
@@ -49,7 +51,7 @@ class MemoryCache {
     })
   }
 
-  get(key: string): any | null {
+  get(key: string): unknown {
     const item = this.cache.get(key)
     
     if (!item) {return null}
@@ -258,7 +260,7 @@ export class CacheService {
    */
   async cacheQuery<T>(
     query: string,
-    params: any[],
+    params: unknown[],
     fetcher: () => Promise<T>,
     ttl: number = this.TTL.MEDIUM
   ): Promise<T> {
@@ -339,7 +341,7 @@ export class CacheService {
   /**
    * Create query cache key
    */
-  private createQueryKey(query: string, params: any[]): string {
+  private createQueryKey(query: string, params: unknown[]): string {
     const combined = `${query}:${JSON.stringify(params)}`
     const hash = this.hashString(combined)
     return `query:${hash}`

@@ -524,6 +524,7 @@ export class AIServiceManager {
       .filter(msg => msg.role !== 'system')
       .map(msg => ({ role: msg.role as 'user' | 'assistant', content: msg.content }))
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const response = await (this.anthropic as any).messages.create({
       model: 'claude-3-5-sonnet-20241022',
       max_tokens: this.config.maxTokens,
@@ -746,6 +747,7 @@ export class AIServiceManager {
     // Assuming UserPortalProgress has properties to calculate completion
     // This is a fallback implementation that should be adjusted based on actual UserPortalProgress structure
     if ('completed_steps' in progress && 'total_steps' in progress) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return ((progress as any).completed_steps / (progress as any).total_steps) * 100
     }
     

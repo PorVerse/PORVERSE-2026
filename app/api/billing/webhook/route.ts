@@ -42,8 +42,10 @@ export async function POST(req: NextRequest) {
     }
 
     // Lazy import Supabase helper
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const mod: any = await import('@supabase/ssr').catch(() => null)
     const supabaseAdminKey = process.env['SUPABASE_SERVICE_ROLE_KEY']
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let supabase: any = null
     if (mod?.createClient && supabaseAdminKey) {
       // Server-side admin client (nu folosește cookie)
@@ -56,6 +58,7 @@ export async function POST(req: NextRequest) {
       const session = event.data.object
       const customerId = session.customer as string | null
       const priceId = (session.line_items?.data?.[0]?.price?.id ||
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (session as any).lines?.data?.[0]?.price?.id) as string | undefined
 
       // user_id l-am pus în metadata în timpul creării sesiunii
@@ -85,6 +88,7 @@ export async function POST(req: NextRequest) {
       const sub = event.data.object
       const customerId = sub.customer as string
       const priceId = sub.items.data[0]?.price?.id
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const periodEnd = new Date((sub as any).current_period_end * 1000).toISOString()
       const status = sub.status
 

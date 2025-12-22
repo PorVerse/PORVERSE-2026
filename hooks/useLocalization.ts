@@ -51,6 +51,7 @@ export type Supported = (typeof SUPPORTED)[number]
 
 function normalizeLang(lang?: string): Supported {
   const base = ((lang ?? 'en').split('-')[0] || 'en').toLowerCase()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (SUPPORTED.includes(base as any) ? base : 'en') as Supported
 }
 
@@ -75,6 +76,7 @@ function ensureValidCurrency(currency: string | undefined, tier: PricingTier): I
 /** înlocuiește segmentul de limbă în path sau îl prefixează dacă lipsește */
 function withLocaleInPath(pathname: string, newLang: Supported): string {
   const segments = pathname.split('/').filter(Boolean)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (segments.length > 0 && SUPPORTED.includes(segments[0] as any)) {
     segments[0] = newLang
     return `/${segments.join('/')}`

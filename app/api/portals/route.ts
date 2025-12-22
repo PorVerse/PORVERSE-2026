@@ -114,7 +114,7 @@ const dbCircuitBreaker = new CircuitBreaker();
 /**
  * Generate cache key for portals
  */
-function getCacheKey(filters: Record<string, any>): string {
+function getCacheKey(filters: Record<string, unknown>): string {
   const sorted = Object.keys(filters)
     .sort()
     .reduce((acc, key) => ({ ...acc, [key]: filters[key] }), {});
@@ -124,7 +124,7 @@ function getCacheKey(filters: Record<string, any>): string {
 /**
  * Structured logger
  */
-function log(level: string, message: string, meta?: Record<string, any>) {
+function log(level: string, message: string, meta?: Record<string, unknown>) {
   const timestamp = new Date().toISOString();
   const logEntry = {
     timestamp,

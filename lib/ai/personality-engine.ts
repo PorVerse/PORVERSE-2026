@@ -1,6 +1,29 @@
 // lib/ai/personality-engine.ts
 import { createClient } from '@/lib/supabase/client';
 
+// Database record types
+interface BiometricScanRecord {
+  user_id: string;
+  analysis_results?: {
+    emotional_state?: string;
+    [key: string]: unknown;
+  };
+  created_at: string;
+  [key: string]: unknown;
+}
+
+interface ConversationRecord {
+  content?: string;
+  created_at: string;
+  [key: string]: unknown;
+}
+
+interface ProgressRecord {
+  strengths?: string[];
+  challenges?: string[];
+  [key: string]: unknown;
+}
+
 export interface PersonalityProfile {
   userId: string;
   communicationStyle: 'direct' | 'friendly' | 'formal' | 'casual';
@@ -170,7 +193,7 @@ export class PersonalityEngine {
     return data || null;
   }
 
-  private analyzeEmotionalPatterns(biometricData: any[]) {
+  private analyzeEmotionalPatterns(biometricData: BiometricScanRecord[]) {
     const emotions: Record<string, number> = {};
     
     biometricData.forEach(scan => {
@@ -185,7 +208,7 @@ export class PersonalityEngine {
     return { dominant, frequency: emotions };
   }
 
-  private analyzeCommunicationStyle(conversationData: any[]): PersonalityProfile['communicationStyle'] {
+  private analyzeCommunicationStyle(conversationData: ConversationRecord[]): PersonalityProfile['communicationStyle'] {
     // Simplu: analizează length-ul mesajelor
     const avgLength = conversationData.reduce((sum, msg) => 
       sum + (msg.content?.length || 0), 0
@@ -196,16 +219,16 @@ export class PersonalityEngine {
     return 'friendly';
   }
 
-  private analyzeLearningStyle(_progressData: any): PersonalityProfile['learningStyle'] {
+  private analyzeLearningStyle(_progressData: ProgressRecord | null): PersonalityProfile['learningStyle'] {
     // Default: textual (poate fi extins)
     return 'textual';
   }
 
-  private identifyStrengths(progressData: any): string[] {
+  private identifyStrengths(progressData: ProgressRecord | null): string[] {
     return progressData?.strengths || ['determined', 'curious'];
   }
 
-  private identifyChallenges(progressData: any): string[] {
+  private identifyChallenges(progressData: ProgressRecord | null): string[] {
     return progressData?.challenges || ['time management'];
   }
 

@@ -149,7 +149,7 @@ export function PortalLayout({
 // SUB-COMPONENTS
 // ============================================
 
-function AnimatedBackground({ portalTheme: _portalTheme }: { portalTheme: any }) {
+function AnimatedBackground({ portalTheme: _portalTheme }: { portalTheme: unknown }) {
   return (
     <div className="fixed inset-0 z-0">
       {/* Gradient Background */}

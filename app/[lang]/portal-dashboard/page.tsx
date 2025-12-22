@@ -24,7 +24,7 @@ interface DashboardState {
   portals: DBPortal[]
   userProgress: DBProgress[]
   loading: boolean
-  error: any
+  error: Error | null
   retryCount: number
 }
 
@@ -80,12 +80,12 @@ export default function PortalDashboardPage({
         error: null,
         retryCount: 0,
       })
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Dashboard load error:', error)
       setState(prev => ({
         ...prev,
         loading: false,
-        error,
+        error: error instanceof Error ? error : new Error('Unknown error'),
         retryCount: prev.retryCount + 1,
       }))
     }

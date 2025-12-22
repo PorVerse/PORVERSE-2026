@@ -69,7 +69,7 @@ export class PayPalService {
 
     return {
       subscriptionId: response.result.id,
-      approvalUrl: response.result.links.find((l: any) => l.rel === 'approve')?.href
+      approvalUrl: response.result.links.find((l: { rel: string; href?: string }) => l.rel === 'approve')?.href
     };
   }
 
@@ -111,7 +111,7 @@ export class PayPalService {
   /**
    * 4. HANDLE WEBHOOK
    */
-  async handleWebhook(webhookBody: any, _webhookHeaders: any) {
+  async handleWebhook(webhookBody: { event_type: string; resource: { id: string; [key: string]: unknown } }, _webhookHeaders: Record<string, unknown>) {
     console.log('🪝 PayPal webhook received:', webhookBody.event_type);
 
     const eventType = webhookBody.event_type;
@@ -150,15 +150,24 @@ export class PayPalService {
         break;
 
       case 'PAYMENT.SALE.COMPLETED':
-        // Payment received
-        await supabase.from('payments').insert({
-          subscription_id: resource.billing_agreement_id,
-          amount: parseFloat(resource.amount.total),
-          currency: resource.amount.currency,
-          status: 'completed',
-          provider: 'paypal',
-          provider_payment_id: resource.id
-        });
+        // Payment received - use bracket notation for index signature
+        {
+          const billingAgreementId = resource['billing_agreement_id'];
+          const amount = resource['amount'];
+          
+          await supabase.from('payments').insert({
+            subscription_id: typeof billingAgreementId === 'string' ? billingAgreementId : null,
+            amount: typeof amount === 'object' && amount !== null && 'total' in amount 
+              ? parseFloat(String(amount.total)) 
+              : 0,
+            currency: typeof amount === 'object' && amount !== null && 'currency' in amount 
+              ? String(amount.currency) 
+              : 'USD',
+            status: 'completed',
+            provider: 'paypal',
+            provider_payment_id: resource.id
+          });
+        }
         break;
 
       default:

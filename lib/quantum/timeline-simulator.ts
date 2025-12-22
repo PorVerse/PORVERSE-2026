@@ -1,6 +1,21 @@
 // lib/quantum/timeline-simulator.ts
 import { createClient } from '@/lib/supabase/client';
 
+// Database record types
+interface QuantumMemoryRecord {
+  created_at: string;
+  title: string;
+  significance?: number;
+  [key: string]: unknown;
+}
+
+interface TimelineScenarioRecord {
+  timeframe: string;
+  title: string;
+  probability: number;
+  [key: string]: unknown;
+}
+
 export interface TimelineScenario {
   id: string;
   title: string;
@@ -71,7 +86,7 @@ export class TimelineSimulator {
       .eq('user_id', userId)
       .order('created_at', { ascending: true });
 
-    const past: TimelinePoint[] = (memories || []).map((m: any) => ({
+    const past: TimelinePoint[] = (memories || []).map((m: QuantumMemoryRecord) => ({
       timestamp: m.created_at,
       event: m.title,
       type: 'past' as const,
@@ -93,7 +108,7 @@ export class TimelineSimulator {
       .eq('user_id', userId)
       .order('probability', { ascending: false });
 
-    const future: TimelinePoint[] = (scenarios || []).map((s: any) => ({
+    const future: TimelinePoint[] = (scenarios || []).map((s: TimelineScenarioRecord) => ({
       timestamp: s.timeframe,
       event: s.title,
       type: 'future' as const,

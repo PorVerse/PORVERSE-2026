@@ -50,7 +50,14 @@ export async function POST(request: NextRequest) {
     const isCompleted = newCurrentStep > progress.total_steps
 
     // Update progress
-    const updateData: any = {
+    const updateData: {
+      current_step: number;
+      completion_percentage: number;
+      last_activity_at: string;
+      status?: string;
+      completed_at?: string;
+      started_at?: string;
+    } = {
       current_step: isCompleted ? progress.total_steps : newCurrentStep,
       completion_percentage: isCompleted ? 100 : newCompletionPercentage,
       last_activity_at: new Date().toISOString(),

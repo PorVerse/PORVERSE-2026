@@ -261,21 +261,25 @@ export type Awaitable<T> = T | Promise<T>
 /**
  * Function type
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type AnyFunction = (...args: any[]) => any
 
 /**
  * Async function type
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type AsyncFunction<T = any> = (...args: any[]) => Promise<T>
 
 /**
  * Constructor type
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type Constructor<T = any> = new (...args: any[]) => T
 
 /**
  * Abstract constructor type
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type AbstractConstructor<T = any> = abstract new (...args: any[]) => T
 
 /**
@@ -291,11 +295,13 @@ export type PromiseType<T> = T extends Promise<infer U> ? U : never
 /**
  * Extract function return type
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type ReturnTypeOf<T> = T extends (...args: any[]) => infer R ? R : never
 
 /**
  * Extract function parameters type
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type ParametersOf<T> = T extends (...args: infer P) => any ? P : never
 
 /**
@@ -397,81 +403,82 @@ export const isDefined = <T>(value: T | null | undefined): value is T => {
 /**
  * Check if value is null
  */
-export const isNull = (value: any): value is null => {
+export const isNull = (value: unknown): value is null => {
   return value === null
 }
 
 /**
  * Check if value is undefined
  */
-export const isUndefined = (value: any): value is undefined => {
+export const isUndefined = (value: unknown): value is undefined => {
   return value === undefined
 }
 
 /**
  * Check if value is string
  */
-export const isString = (value: any): value is string => {
+export const isString = (value: unknown): value is string => {
   return typeof value === 'string'
 }
 
 /**
  * Check if value is number
  */
-export const isNumber = (value: any): value is number => {
+export const isNumber = (value: unknown): value is number => {
   return typeof value === 'number' && !isNaN(value)
 }
 
 /**
  * Check if value is boolean
  */
-export const isBoolean = (value: any): value is boolean => {
+export const isBoolean = (value: unknown): value is boolean => {
   return typeof value === 'boolean'
 }
 
 /**
  * Check if value is object
  */
-export const isObject = (value: any): value is object => {
+export const isObject = (value: unknown): value is object => {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
 /**
  * Check if value is array
  */
-export const isArray = <T = any>(value: any): value is T[] => {
+export const isArray = <T = unknown>(value: unknown): value is T[] => {
   return Array.isArray(value)
 }
 
 /**
  * Check if value is function
  */
-export const isFunction = (value: any): value is AnyFunction => {
+export const isFunction = (value: unknown): value is AnyFunction => {
   return typeof value === 'function'
 }
 
 /**
  * Check if value is promise
  */
-export const isPromise = <T = any>(value: any): value is Promise<T> => {
+export const isPromise = <T = unknown>(value: unknown): value is Promise<T> => {
   return value instanceof Promise || (
     typeof value === 'object' &&
     value !== null &&
-    typeof value.then === 'function'
+    'then' in value &&
+    typeof (value as { then?: unknown }).then === 'function'
   )
 }
 
 /**
  * Check if value is date
  */
-export const isDate = (value: any): value is Date => {
+export const isDate = (value: unknown): value is Date => {
   return value instanceof Date && !isNaN(value.getTime())
 }
 
 /**
  * Check if value is error
  */
-export const isError = (value: any): value is Error => {
+export const isError = (value: unknown): value is Error => {
   return value instanceof Error
 }
 
@@ -495,7 +502,7 @@ export const assertDefined = <T>(
  * Assert value is string, throw if not
  */
 export const assertString = (
-  value: any,
+  value: unknown,
   message = 'Value is not a string'
 ): asserts value is string => {
   if (!isString(value)) {
@@ -507,7 +514,7 @@ export const assertString = (
  * Assert value is number, throw if not
  */
 export const assertNumber = (
-  value: any,
+  value: unknown,
   message = 'Value is not a number'
 ): asserts value is number => {
   if (!isNumber(value)) {
@@ -519,7 +526,7 @@ export const assertNumber = (
  * Assert value is object, throw if not
  */
 export const assertObject = (
-  value: any,
+  value: unknown,
   message = 'Value is not an object'
 ): asserts value is object => {
   if (!isObject(value)) {
@@ -530,8 +537,8 @@ export const assertObject = (
 /**
  * Assert value is array, throw if not
  */
-export const assertArray = <T = any>(
-  value: any,
+export const assertArray = <T = unknown>(
+  value: unknown,
   message = 'Value is not an array'
 ): asserts value is T[] => {
   if (!isArray(value)) {

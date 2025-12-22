@@ -138,7 +138,18 @@ export default function QuantumVaultPage() {
   };
 
   // Helper
-  const dbToMemory = (dbRecord: any): Memory => ({
+  const dbToMemory = (dbRecord: {
+    id: string;
+    user_id: string;
+    title: string;
+    description: string;
+    category: 'experience' | 'insight' | 'decision' | 'achievement';
+    emotional_tone: 'positive' | 'negative' | 'neutral';
+    significance: number;
+    tags?: string[];
+    created_at: string;
+    connections?: string[];
+  }): Memory => ({
     id: dbRecord.id,
     userId: dbRecord.user_id,
     title: dbRecord.title,

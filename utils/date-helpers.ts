@@ -52,13 +52,13 @@ export function parseDate(input: DateInput): Date {
 /**
  * Check if a value is a valid date
  */
-export function isValidDate(date: any): boolean {
+export function isValidDate(date: unknown): boolean {
   if (date instanceof Date) {
     return !isNaN(date.getTime())
   }
   
   try {
-    const parsed = parseDate(date)
+    const parsed = parseDate(date as DateInput)
     return !isNaN(parsed.getTime())
   } catch {
     return false

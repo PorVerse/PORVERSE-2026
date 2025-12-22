@@ -142,6 +142,21 @@ function TimelinePath({
   );
 }
 
+interface TimelineNodeProps {
+  position: THREE.Vector3;
+  point: {
+    timestamp: string;
+    event: string;
+    type: 'past' | 'present' | 'future';
+    significance: number;
+  };
+  isCurrent: boolean;
+  isHovered: boolean;
+  onHover: () => void;
+  onUnhover: () => void;
+  onClick: () => void;
+}
+
 function TimelineNode({
   position,
   point,
@@ -150,7 +165,7 @@ function TimelineNode({
   onHover,
   onUnhover,
   onClick
-}: any) {
+}: TimelineNodeProps) {
   const meshRef = useRef<THREE.Mesh>(null);
 
   // Animate node

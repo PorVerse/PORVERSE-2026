@@ -82,7 +82,17 @@ interface DatabasePortal {
   } | null;
   icon?: string | null;
   gradient?: string | null;
-  steps?: any[];
+  steps?: Array<{
+    id: string;
+    portal_id: string;
+    step_number: number;
+    name: string;
+    description: string;
+    estimated_time: number;
+    experience_points: number;
+    is_locked: boolean;
+    required_previous_step?: string | null;
+  }>;
   created_at?: string;
   updated_at?: string;
 }
@@ -109,7 +119,7 @@ function transformPortalData(dbPortal: DatabasePortal): Portal {
     requiredLevel: dbPortal.unlock_requirement?.required_level || 1,
     icon: dbPortal.icon || undefined,
     gradient: dbPortal.gradient || undefined,
-    steps: (dbPortal.steps || []).map((step: any) => ({
+    steps: (dbPortal.steps || []).map((step) => ({
       id: step.id,
       portalId: step.portal_id,
       stepNumber: step.step_number,
@@ -205,7 +215,9 @@ export default function PortalsPage() {
       setStorePortals(transformedPortals);
 
       // Analytics tracking
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       if (typeof window !== 'undefined' && (window as any).gtag) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (window as any).gtag('event', 'portals_loaded', {
           event_category: 'engagement',
           event_label: 'portals_page',
@@ -262,7 +274,9 @@ export default function PortalsPage() {
       console.log('Portal selected:', portalId);
       
       // Analytics tracking
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       if (typeof window !== 'undefined' && (window as any).gtag) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (window as any).gtag('event', 'portal_select', {
           event_category: 'engagement',
           event_label: portalId,

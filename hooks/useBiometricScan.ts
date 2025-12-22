@@ -53,7 +53,7 @@ interface UseBiometricScanReturn {
   takeSingleScan: () => Promise<BiometricReading | null>
   
   // Services access
-  services: any | null
+  services: ReturnType<typeof import('@/lib/biometric').createBiometricServices> | null
   
   // Utilities
   isReady: boolean
@@ -98,6 +98,7 @@ export function useBiometricScan(options: UseBiometricScanOptions): UseBiometric
   // 🎯 REFS
   // ========================================================================
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const servicesRef = useRef<any>(null)
   const scanIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const isMountedRef = useRef(true)
@@ -416,7 +417,7 @@ export function useBiometricScan(options: UseBiometricScanOptions): UseBiometric
  */
 export function useEmotionTracking(userId: string) {
   const [emotionHistory, setEmotionHistory] = useState<BiometricReading[]>([])
-  const [patterns, setPatterns] = useState<any[]>([])
+  const [patterns, setPatterns] = useState<Record<string, unknown>[]>([])
   const [isLoading, setIsLoading] = useState(false)
 
   const loadHistory = useCallback(async () => {
@@ -435,7 +436,12 @@ export function useEmotionTracking(userId: string) {
 
       if (!error && data) {
         // Convert to BiometricReading format
-        const readings = data.map((scan: any) => ({
+        const readings = data.map((scan: {
+          user_id: string;
+          created_at: string;
+          scan_data: { emotion: string; stress: number; quality: number };
+          analysis_results: Record<string, unknown>;
+        }) => ({
           userId: scan.user_id,
           timestamp: new Date(scan.created_at).getTime(),
           emotion: scan.scan_data.emotion,
@@ -470,7 +476,7 @@ export function useEmotionTracking(userId: string) {
  * Hook pentru consent management
  */
 export function useBiometricConsent(userId: string) {
-  const [consent, setConsent] = useState<any>(null)
+  const [consent, setConsent] = useState<unknown>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   const loadConsent = useCallback(async () => {
@@ -487,7 +493,7 @@ export function useBiometricConsent(userId: string) {
     }
   }, [userId])
 
-  const saveConsent = useCallback(async (consentData: any) => {
+  const saveConsent = useCallback(async (consentData: unknown) => {
     try {
       // Save to localStorage
       localStorage.setItem(`biometric_consent_${userId}`, JSON.stringify(consentData))
@@ -530,7 +536,7 @@ export function useBiometricConsent(userId: string) {
   return {
     consent,
     isLoading,
-    hasConsent: consent?.biometricCapture === true,
+    hasConsent: (consent as { biometricCapture?: boolean } | null)?.biometricCapture === true,
     saveConsent,
     revokeConsent,
   }

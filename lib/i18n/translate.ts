@@ -7,8 +7,13 @@ type Path = string
 /**
  * Extrage valoarea din dicționar pe bază de cheie "dot-path" (ex: "pricing.cta_buy").
  */
-function getByPath(obj: any, path: Path): unknown {
-  return path.split('.').reduce((acc, key) => (acc && key in acc ? acc[key] : undefined), obj)
+function getByPath(obj: Record<string, unknown>, path: Path): unknown {
+  return path.split('.').reduce<unknown>((acc, key) => {
+    if (acc && typeof acc === 'object' && key in acc) {
+      return (acc as Record<string, unknown>)[key]
+    }
+    return undefined
+  }, obj)
 }
 
 /**

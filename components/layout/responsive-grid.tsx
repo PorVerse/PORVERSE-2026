@@ -93,7 +93,7 @@ export function ResponsiveGrid({
 
 function getThemeStyles(theme: string) {
   // Apply subtle theme-based styling
-  const themes: Record<string, any> = {
+  const themes: Record<string, Record<string, string>> = {
     blue: { '--theme-glow': '59, 130, 246' },
     purple: { '--theme-glow': '139, 92, 246' },
     pink: { '--theme-glow': '236, 72, 153' },

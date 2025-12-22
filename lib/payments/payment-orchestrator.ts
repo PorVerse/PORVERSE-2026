@@ -256,7 +256,7 @@ export class PaymentOrchestrator {
       paypal: { success: 0, failed: 0, rate: 0 }
     };
 
-    (attempts || []).forEach((a: any) => {
+    (attempts || []).forEach((a: { provider: string; status: string }) => {
       if (a.status === 'success') {
         stats[a.provider as PaymentProvider].success++;
       } else {

@@ -188,7 +188,7 @@ export function logRequest(
  */
 export function logQuery(
   query: string,
-  params: any[],
+  params: unknown[],
   duration: number,
   rowCount?: number
 ): void {

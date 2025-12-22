@@ -1,6 +1,20 @@
 // lib/quantum/memory-integrator.ts
 import { createClient } from '@/lib/supabase/client';
 
+// Database record type
+interface QuantumMemoryDBRecord {
+  id: string;
+  user_id: string;
+  title: string;
+  description: string;
+  category: 'experience' | 'insight' | 'decision' | 'achievement';
+  emotional_tone: 'positive' | 'negative' | 'neutral';
+  significance: number;
+  tags: string[];
+  connections: string[];
+  created_at: string;
+}
+
 export interface Memory {
   id: string;
   userId: string;
@@ -94,7 +108,7 @@ export class MemoryIntegrator {
       achievements: [] as Memory[]
     };
 
-    (memories || []).forEach((m: any) => {
+    (memories || []).forEach((m: QuantumMemoryDBRecord) => {
       const memory = this.dbToMemory(m);
       
       switch (memory.category) {
@@ -191,7 +205,7 @@ export class MemoryIntegrator {
     // Find connections based on tags
     const connections: string[] = [];
     
-    recentMemories.forEach((m: any) => {
+    recentMemories.forEach((m: { id: string; tags?: string[] }) => {
       const commonTags = memory.tags.filter(tag => 
         m.tags?.includes(tag)
       );
@@ -221,7 +235,7 @@ export class MemoryIntegrator {
       });
   }
 
-  private dbToMemory(dbRecord: any): Memory {
+  private dbToMemory(dbRecord: QuantumMemoryDBRecord): Memory {
     return {
       id: dbRecord.id,
       userId: dbRecord.user_id,

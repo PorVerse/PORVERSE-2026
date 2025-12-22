@@ -552,7 +552,7 @@ export interface StreamingConfig {
  */
 export interface StreamEvent {
   type: StreamEventType
-  data: any
+  data: unknown
   timestamp: string
 }
 
@@ -733,7 +733,7 @@ export interface AIServiceError {
   provider: AIProvider
   model: string
   retry_after?: number
-  details?: any
+  details?: Record<string, unknown>
 }
 
 /**

@@ -1,6 +1,7 @@
 'use client'
 
 import * as React from 'react'
+
 import { useLocalization } from '@/hooks/useLocalization'
 
 // Dacă ai shadcn/ui: decomentează și folosește varianta UI de mai jos.
@@ -60,7 +61,7 @@ export function LanguageSwitcher({ compact = true }: { compact?: boolean }) {
                   disabled={isLoading || active}
                   onClick={() => {
                     setOpen(false)
-                    if (!active) changeLanguage(code)
+                    if (!active) {changeLanguage(code)}
                   }}
                   className={`flex w-full items-center gap-2 px-3 py-2 text-sm text-white/90 hover:bg-white/10 focus:bg-white/10 ${active ? 'opacity-60 cursor-default' : ''}`}
                 >

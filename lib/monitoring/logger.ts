@@ -12,7 +12,9 @@
  */
 
 import pino from 'pino'
-import { getEnv, isDevelopment, isProduction } from '@/lib/env'
+
+const isDevelopment = process.env.NODE_ENV === 'development'
+const isProduction = process.env.NODE_ENV === 'production'
 
 /**
  * Log levels
@@ -30,13 +32,13 @@ export enum LogLevel {
  */
 export const logger = pino({
   // Log level from environment
-  level: getEnv('LOG_LEVEL'),
+  level: process.env['LOG_LEVEL'] || 'info',
 
   // Base metadata (included in all logs)
   base: {
     service: 'porverse-api',
-    version: getEnv('APP_VERSION'),
-    environment: getEnv('NODE_ENV')
+    version: process.env['APP_VERSION'] || '2.0.0',
+    environment: process.env['NODE_ENV'] || 'development'
   },
 
   // Redact sensitive fields (CRITICAL for security)
@@ -70,7 +72,7 @@ export const logger = pino({
   timestamp: () => `,"timestamp":"${new Date().toISOString()}"`,
 
   // Pretty printing for development
-  transport: isDevelopment() ? {
+  transport: isDevelopment ? {
     target: 'pino-pretty',
     options: {
       colorize: true,
@@ -323,8 +325,8 @@ export function logAudit(
     action,
     resource,
     result,
-    ip_address: metadata?.ip_address,
-    user_agent: metadata?.user_agent,
+    ip_address: metadata?.['ip_address'],
+    user_agent: metadata?.['user_agent'],
     ...metadata
   }, `Audit: ${action} on ${resource} - ${result}`)
 }

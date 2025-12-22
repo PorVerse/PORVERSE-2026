@@ -172,6 +172,7 @@ export interface EmotionScores {
  * @property timestamp - Reading timestamp (milliseconds)
  * @property valence - Emotional valence: positive/negative (-1 to +1, optional)
  * @property arousal - Emotional arousal: calm/excited (0-1, optional)
+ * @property rawScores - Raw confidence scores for all emotions (optional, for debugging/analysis)
  */
 export interface EmotionReading {
   emotion: EmotionType                       // Primary detected emotion
@@ -181,6 +182,7 @@ export interface EmotionReading {
   timestamp: number                          // Reading timestamp (milliseconds)
   valence?: number                           // Emotional valence (-1 to +1)
   arousal?: number                           // Emotional arousal (0-1)
+  rawScores?: Record<string, number>         // Raw scores for all emotions (TensorFlow or rule-based)
 }
 
 /**

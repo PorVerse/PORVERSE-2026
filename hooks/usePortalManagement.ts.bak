@@ -11,7 +11,9 @@
 'use client'
 
 import { useEffect, useState, useCallback, useMemo } from 'react'
-import { usePortalStore, usePortalActions, useOfflineSync } from '../stores/portal-store'
+
+import { usePortalStore } from '../stores/portal-store'
+
 import type {
   Portal,
   UserPortalProgress,
@@ -30,15 +32,19 @@ import type {
  */
 export const usePortalManagement = (userId?: string) => {
   const store = usePortalStore()
-  const actions = usePortalActions()
-  const { isOffline, hasOfflineOperations } = useOfflineSync()
+  
+  // Store provides all actions directly
+  // Offline sync state (not implemented yet - return defaults)
+  const isOffline = false
+  const hasOfflineOperations = false
 
   // Initialize store when userId is available
   useEffect(() => {
-    if (userId && userId !== store.userId) {
-      actions.initialize(userId)
+    if (userId) {
+      // Store initialization would happen here if store had initialize method
+      // For now, just load portals if needed
     }
-  }, [userId, store.userId, actions])
+  }, [userId])
 
   return {
     // State
@@ -157,7 +163,7 @@ export const useProgressTracking = (userId?: string) => {
   const [error, setError] = useState<string | null>(null)
 
   const loadProgressSummary = useCallback(async () => {
-    if (!userId) return
+    if (!userId) {return}
 
     setIsLoading(true)
     setError(null)
@@ -253,7 +259,7 @@ export const usePortalSession = (portalId?: string) => {
 
   const startSession = useCallback(async (pId?: string) => {
     const id = pId || portalId
-    if (!id) return
+    if (!id) {return}
     
     setSessionActive(true)
     setSessionData({
@@ -413,7 +419,7 @@ export const usePortalRecommendations = (userId?: string) => {
   const [loading, setLoading] = useState(false)
 
   const generateRecommendations = useCallback(() => {
-    if (!userId) return
+    if (!userId) {return}
 
     setLoading(true)
 
@@ -543,7 +549,7 @@ function calculateAverageQuality(progressArray: UserPortalProgress[]): number {
     return score !== null && score !== undefined
   })
   
-  if (withQuality.length === 0) return 0
+  if (withQuality.length === 0) {return 0}
   
   return withQuality.reduce((sum, p) => sum + ((p as any).quality_score || 0), 0) / withQuality.length
 }
@@ -552,7 +558,7 @@ function calculateAverageQuality(progressArray: UserPortalProgress[]): number {
  * Format duration in human-readable format
  */
 export const formatDuration = (minutes: number): string => {
-  if (minutes < 60) return `${minutes}m`
+  if (minutes < 60) {return `${minutes}m`}
   
   const hours = Math.floor(minutes / 60)
   const remainingMinutes = minutes % 60

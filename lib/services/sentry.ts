@@ -1,23 +1,23 @@
 import * as Sentry from '@sentry/nextjs';
 
+import { env } from '@/lib/env';
+
 let isInitialized = false;
 
 export function initializeSentry() {
-  if (isInitialized || !process.env['NEXT_PUBLIC_SENTRY_DSN']) {
+  if (isInitialized || !env.analytics.sentry.enabled) {
     return;
   }
 
   Sentry.init({
-    dsn: process.env['NEXT_PUBLIC_SENTRY_DSN'],
-    environment: process.env['NODE_ENV'] || 'development',
-    tracesSampleRate: process.env['NODE_ENV'] === 'production' ? 0.1 : 1.0,
-    debug: process.env['NODE_ENV'] === 'development',
+    dsn: env.analytics.sentry.dsn,
+    environment: env.app.env,
+    tracesSampleRate: env.app.isProduction ? 0.1 : 1.0,
+    debug: env.app.isDevelopment,
     replaysSessionSampleRate: 0.1,
     replaysOnErrorSampleRate: 1.0,
-    integrations: [
-      new Sentry.BrowserTracing(),
-      new Sentry.Replay()
-    ]
+    // Remove problematic integrations that may not be available
+    // These can be added back if needed with proper feature detection
   });
 
   isInitialized = true;

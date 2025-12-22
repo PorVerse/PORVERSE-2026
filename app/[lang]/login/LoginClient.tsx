@@ -1,11 +1,12 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { createBrowserClient } from '@supabase/ssr'
 import { ArrowLeft, Mail, Lock, Eye, EyeOff, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { useEffect, useMemo, useRef, useState } from 'react'
+
 import InterstellarAuthShell from '@/components/InterstellarAuthShell'
+import Link from 'next/link'
 
 type Lang = 'ro' | 'en'
 
@@ -55,10 +56,10 @@ const first = (v: string | string[] | undefined): string | null =>
   !v ? null : Array.isArray(v) ? v[0] ?? null : v
 
 function sanitizeNext(nextRaw: string | null, fallback: string) {
-  if (!nextRaw) return fallback
-  if (!nextRaw.startsWith('/')) return fallback
-  if (nextRaw.startsWith('//')) return fallback
-  if (nextRaw.includes('://')) return fallback
+  if (!nextRaw) {return fallback}
+  if (!nextRaw.startsWith('/')) {return fallback}
+  if (nextRaw.startsWith('//')) {return fallback}
+  if (nextRaw.includes('://')) {return fallback}
   return nextRaw
 }
 
@@ -94,14 +95,14 @@ export default function LoginClient({
 
   const mounted = useRef(false)
   useEffect(() => {
-    if (mounted.current) return
+    if (mounted.current) {return}
     mounted.current = true
 
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session) router.replace(next)
+      if (data.session) {router.replace(next)}
     })
 
-    if (errorFromQuery) setBanner({ type: 'error', msg: decodeURIComponent(errorFromQuery) })
+    if (errorFromQuery) {setBanner({ type: 'error', msg: decodeURIComponent(errorFromQuery) })}
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -110,13 +111,13 @@ export default function LoginClient({
     setBanner(null)
 
     const emailTrim = email.trim()
-    if (!emailTrim.includes('@')) return setBanner({ type: 'error', msg: t.invalidEmail })
-    if (!password) return setBanner({ type: 'error', msg: t.needPassword })
+    if (!emailTrim.includes('@')) {return setBanner({ type: 'error', msg: t.invalidEmail })}
+    if (!password) {return setBanner({ type: 'error', msg: t.needPassword })}
 
     setLoading(true)
     try {
       const { error } = await supabase.auth.signInWithPassword({ email: emailTrim, password })
-      if (error) return setBanner({ type: 'error', msg: t.wrong })
+      if (error) {return setBanner({ type: 'error', msg: t.wrong })}
       router.replace(next)
     } finally {
       setLoading(false)
@@ -128,7 +129,7 @@ export default function LoginClient({
     setBanner(null)
 
     const emailTrim = email.trim()
-    if (!emailTrim.includes('@')) return setBanner({ type: 'error', msg: t.invalidEmail })
+    if (!emailTrim.includes('@')) {return setBanner({ type: 'error', msg: t.invalidEmail })}
 
     setLoading(true)
     try {
@@ -138,7 +139,7 @@ export default function LoginClient({
         email: emailTrim,
         options: { emailRedirectTo },
       })
-      if (error) return setBanner({ type: 'error', msg: t.wrong })
+      if (error) {return setBanner({ type: 'error', msg: t.wrong })}
       setBanner({ type: 'success', msg: t.successMagic })
     } finally {
       setLoading(false)

@@ -4,8 +4,8 @@
 // - probe condiționale: dacă lipsesc cheile în dev, marchează "degraded", NU "down"
 // - DB test pe tabela "profiles" (există în proiectul tău)
 
-import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { NextResponse } from 'next/server'
 
 // Runtime & caching
 export const runtime = 'nodejs'
@@ -47,8 +47,9 @@ async function timed<T>(fn: () => Promise<T>): Promise<[T | null, number, string
   try {
     const res = await fn()
     return [res, Date.now() - start, undefined]
-  } catch (e: any) {
-    return [null, Date.now() - start, e?.message || String(e)]
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : String(e)
+    return [null, Date.now() - start, message]
   }
 }
 
@@ -93,25 +94,25 @@ export async function GET() {
         )
         return supabase.from('profiles').select('id').limit(1)
       })
-      if (!err && dbRes && (dbRes as any).error == null) {
-        health.services.database = { status: 'up', responseTime: ms, lastCheck }
+      if (!err && dbRes && (dbRes).error == null) {
+        health.services['database'] = { status: 'up', responseTime: ms, lastCheck }
       } else {
-        health.services.database = {
+        health.services['database'] = {
           status: 'down',
           responseTime: ms,
-          error: err || (dbRes as any)?.error?.message,
+          error: err || (dbRes)?.error?.message,
           lastCheck,
         }
         health.status = 'unhealthy'
       }
     } else {
-      health.services.database = {
+      health.services['database'] = {
         status: 'degraded',
         responseTime: 0,
         error: 'env missing',
         lastCheck,
       }
-      if (health.status === 'healthy') health.status = 'degraded'
+      if (health.status === 'healthy') {health.status = 'degraded'}
     }
   }
 
@@ -125,14 +126,14 @@ export async function GET() {
           signal: AbortSignal.timeout(5000),
           cache: 'no-store',
         })
-        if (!r.ok) throw new Error(`OpenAI ${r.status}`)
+        if (!r.ok) {throw new Error(`OpenAI ${r.status}`)}
         return r
       })
-      health.services.openai = { status: err ? 'down' : 'up', responseTime: ms, error: err, lastCheck }
-      if (err) health.status = health.status === 'healthy' ? 'degraded' : 'unhealthy'
+      health.services['openai'] = { status: err ? 'down' : 'up', responseTime: ms, error: err, lastCheck }
+      if (err) {health.status = health.status === 'healthy' ? 'degraded' : 'unhealthy'}
     } else {
-      health.services.openai = { status: 'degraded', responseTime: 0, error: 'env missing', lastCheck }
-      if (health.status === 'healthy') health.status = 'degraded'
+      health.services['openai'] = { status: 'degraded', responseTime: 0, error: 'env missing', lastCheck }
+      if (health.status === 'healthy') {health.status = 'degraded'}
     }
   }
 
@@ -146,24 +147,24 @@ export async function GET() {
           signal: AbortSignal.timeout(5000),
           cache: 'no-store',
         })
-        if (r.status >= 500) throw new Error(`Anthropic ${r.status}`)
+        if (r.status >= 500) {throw new Error(`Anthropic ${r.status}`)}
         return r
       })
-      health.services.anthropic = {
+      health.services['anthropic'] = {
         status: err ? 'down' : 'up',
         responseTime: ms,
         error: err,
         lastCheck,
       }
-      if (err) health.status = health.status === 'healthy' ? 'degraded' : 'unhealthy'
+      if (err) {health.status = health.status === 'healthy' ? 'degraded' : 'unhealthy'}
     } else {
-      health.services.anthropic = {
+      health.services['anthropic'] = {
         status: 'degraded',
         responseTime: 0,
         error: 'env missing',
         lastCheck,
       }
-      if (health.status === 'healthy') health.status = 'degraded'
+      if (health.status === 'healthy') {health.status = 'degraded'}
     }
   }
 
@@ -173,14 +174,14 @@ export async function GET() {
     if (has(process.env['STRIPE_SECRET_KEY'])) {
       const [_, ms, err] = await timed(async () => {
         const Stripe = (await import('stripe')).default
-        const stripe = new Stripe(process.env['STRIPE_SECRET_KEY']!, { apiVersion: '2024-06-20' })
+        const stripe = new Stripe(process.env['STRIPE_SECRET_KEY']!, { apiVersion: '2025-12-15.clover' as const })
         return stripe.accounts.retrieve()
       })
-      health.services.stripe = { status: err ? 'down' : 'up', responseTime: ms, error: err, lastCheck }
-      if (err) health.status = health.status === 'healthy' ? 'degraded' : 'unhealthy'
+      health.services['stripe'] = { status: err ? 'down' : 'up', responseTime: ms, error: err, lastCheck }
+      if (err) {health.status = health.status === 'healthy' ? 'degraded' : 'unhealthy'}
     } else {
-      health.services.stripe = { status: 'degraded', responseTime: 0, error: 'env missing', lastCheck }
-      if (health.status === 'healthy') health.status = 'degraded'
+      health.services['stripe'] = { status: 'degraded', responseTime: 0, error: 'env missing', lastCheck }
+      if (health.status === 'healthy') {health.status = 'degraded'}
     }
   }
 
@@ -194,14 +195,14 @@ export async function GET() {
           signal: AbortSignal.timeout(5000),
           cache: 'no-store',
         })
-        if (!r.ok) throw new Error(`Resend ${r.status}`)
+        if (!r.ok) {throw new Error(`Resend ${r.status}`)}
         return r
       })
-      health.services.email = { status: err ? 'down' : 'up', responseTime: ms, error: err, lastCheck }
-      if (err) health.status = health.status === 'healthy' ? 'degraded' : 'unhealthy'
+      health.services['email'] = { status: err ? 'down' : 'up', responseTime: ms, error: err, lastCheck }
+      if (err) {health.status = health.status === 'healthy' ? 'degraded' : 'unhealthy'}
     } else {
-      health.services.email = { status: 'degraded', responseTime: 0, error: 'env missing', lastCheck }
-      if (health.status === 'healthy') health.status = 'degraded'
+      health.services['email'] = { status: 'degraded', responseTime: 0, error: 'env missing', lastCheck }
+      if (health.status === 'healthy') {health.status = 'degraded'}
     }
   }
 
@@ -218,14 +219,14 @@ export async function GET() {
             cache: 'no-store',
           }
         )
-        if (!r.ok) throw new Error(`Cloudflare ${r.status}`)
+        if (!r.ok) {throw new Error(`Cloudflare ${r.status}`)}
         return r
       })
-      health.services.cloudflare = { status: err ? 'down' : 'up', responseTime: ms, error: err, lastCheck }
-      if (err) health.status = health.status === 'healthy' ? 'degraded' : 'unhealthy'
+      health.services['cloudflare'] = { status: err ? 'down' : 'up', responseTime: ms, error: err, lastCheck }
+      if (err) {health.status = health.status === 'healthy' ? 'degraded' : 'unhealthy'}
     } else {
-      health.services.cloudflare = { status: 'degraded', responseTime: 0, error: 'env missing', lastCheck }
-      if (health.status === 'healthy') health.status = 'degraded'
+      health.services['cloudflare'] = { status: 'degraded', responseTime: 0, error: 'env missing', lastCheck }
+      if (health.status === 'healthy') {health.status = 'degraded'}
     }
   }
 

@@ -20,6 +20,7 @@ import {
   createHash
 } from 'crypto'
 import { promisify } from 'util'
+
 import { getEnv } from '@/lib/env'
 
 const scryptAsync = promisify(scrypt)
@@ -43,8 +44,8 @@ export class FieldEncryption {
   private masterKey: string
 
   constructor(masterKey?: string) {
-    this.masterKey = masterKey || getEnv('ENCRYPTION_MASTER_KEY') || ''
-    
+    this.masterKey = masterKey || process.env['ENCRYPTION_MASTER_KEY'] || ''
+
     if (!this.masterKey || this.masterKey.length < 32) {
       throw new Error(
         'Encryption master key must be at least 32 characters. ' +
@@ -177,7 +178,7 @@ export class FieldEncryption {
         
         if (parseJSON) {
           try {
-            result[field] = JSON.parse(decrypted) as any
+            result[field] = JSON.parse(decrypted)
           } catch {
             result[field] = decrypted as any
           }

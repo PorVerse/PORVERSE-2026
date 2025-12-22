@@ -43,7 +43,7 @@ const DEFAULTS: Required<
 export class Logger {
   private static _instance: Logger | null = null
   static get instance() {
-    if (!Logger._instance) Logger._instance = new Logger()
+    if (!Logger._instance) {Logger._instance = new Logger()}
     return Logger._instance
   }
 
@@ -53,23 +53,23 @@ export class Logger {
 
   configure(opts: LoggerOptions) {
     this.opts = { ...DEFAULTS, ...opts }
-    if (this.opts.captureGlobalErrors) this.installGlobalHandlers()
+    if (this.opts.captureGlobalErrors) {this.installGlobalHandlers()}
     this.ensureTimer()
   }
 
   private ensureTimer() {
-    if (typeof window === 'undefined') return
-    if (this.timer != null) return
+    if (typeof window === 'undefined') {return}
+    if (this.timer != null) {return}
     this.timer = window.setInterval(() => {
       this.flush().catch(() => void 0)
     }, this.opts.flushIntervalMs ?? DEFAULTS.flushIntervalMs)
   }
 
   private redact(obj?: Record<string, unknown>): Record<string, unknown> | undefined {
-    if (!obj) return obj
+    if (!obj) {return obj}
     const keys = new Set((this.opts.redactKeys ?? DEFAULTS.redactKeys).map((k) => k.toLowerCase()))
     const walk = (v: any): any => {
-      if (Array.isArray(v)) return v.map(walk)
+      if (Array.isArray(v)) {return v.map(walk)}
       if (v && typeof v === 'object') {
         const out: Record<string, unknown> = {}
         for (const [k, val] of Object.entries(v)) {
@@ -98,7 +98,7 @@ export class Logger {
   }
 
   private consoleEmit(evt: LogEvent) {
-    if (!this.opts.enableConsole) return
+    if (!this.opts.enableConsole) {return}
     const line = `[${evt.level.toUpperCase()}] ${evt.message}`
     const payload = { ts: evt.ts, ctx: evt.ctx, err: evt.err, user: evt.user }
     switch (evt.level) {
@@ -123,18 +123,18 @@ export class Logger {
   error(message: string, error?: unknown, ctx?: Record<string, unknown>) { this.enqueue(this.baseEvent('error', message, ctx, error)) }
 
   async flush(): Promise<void> {
-    if (!this.queue.length) return
+    if (!this.queue.length) {return}
     const batch = this.queue.splice(0, this.queue.length)
     const endpoint = this.opts.endpointUrl
 
-    if (!endpoint || typeof window === 'undefined') return
+    if (!endpoint || typeof window === 'undefined') {return}
 
     try {
       const payload = JSON.stringify({ logs: batch })
       if (typeof navigator !== 'undefined' && 'sendBeacon' in navigator) {
         const blob = new Blob([payload], { type: 'application/json' })
         const ok = (navigator as any).sendBeacon(endpoint, blob)
-        if (ok) return
+        if (ok) {return}
       }
       await fetch(endpoint, {
         method: 'POST',
@@ -148,9 +148,9 @@ export class Logger {
   }
 
   private installGlobalHandlers() {
-    if (typeof window === 'undefined') return
+    if (typeof window === 'undefined') {return}
     const anyWin = window as any
-    if (anyWin.__porverseLoggerInstalled) return
+    if (anyWin.__porverseLoggerInstalled) {return}
     anyWin.__porverseLoggerInstalled = true
 
     window.addEventListener('error', (ev) => {

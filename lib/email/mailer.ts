@@ -9,7 +9,7 @@ function getClient(): Resend {
   if (!RESEND_API_KEY) {
     throw new Error('RESEND_API_KEY missing')
   }
-  if (!client) client = new Resend(RESEND_API_KEY)
+  if (!client) {client = new Resend(RESEND_API_KEY)}
   return client
 }
 

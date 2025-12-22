@@ -6,12 +6,15 @@
  * @description Single import point pentru întregul sistem biometric
  */
 
+import type { BiometricReading } from '../../types/biometric'
+
 // ============================================================================
 // 🎯 CORE SERVICES EXPORT
 // ============================================================================
 
 // Camera Manager - Gestionarea camerei
 export { CameraManager, default as CameraManagerClass } from './camera-manager'
+import type { CameraManager } from './camera-manager'
 
 // Privacy Manager - Protecția confidențialității
 export {
@@ -19,6 +22,7 @@ export {
   createPrivacyManager,
   default as PrivacyManagerClass,
 } from './privacy-manager'
+import type { PrivacyManager } from './privacy-manager'
 
 // Face Detector - Detectarea feței
 export {
@@ -26,6 +30,7 @@ export {
   createFaceDetector,
   default as FaceDetectorClass,
 } from './face-detector'
+import type { FaceDetector } from './face-detector'
 
 // Emotion Analyzer - Analiza emoțiilor
 export {
@@ -33,6 +38,7 @@ export {
   createEmotionAnalyzer,
   default as EmotionAnalyzerClass,
 } from './emotion-analyzer'
+import type { EmotionAnalyzer } from './emotion-analyzer'
 
 // ============================================================================
 // 📦 CONVENIENCE EXPORTS
@@ -58,9 +64,9 @@ export {
  * await biometric.emotionAnalyzer.loadModel()
  */
 export function createBiometricServices(config?: {
-  privacy?: any
-  faceDetector?: any
-  emotionAnalyzer?: any
+  privacy?: Record<string, unknown>
+  faceDetector?: Record<string, unknown>
+  emotionAnalyzer?: Record<string, unknown>
 }) {
   // Importăm funcțiile factory
   const { createPrivacyManager } = require('./privacy-manager')
@@ -89,10 +95,10 @@ export function createBiometricServices(config?: {
  * // Toate serviciile sunt gata!
  */
 export async function initializeBiometricServices(services: {
-  camera: any
-  privacy: any
-  faceDetector: any
-  emotionAnalyzer: any
+  camera: CameraManager
+  privacy: PrivacyManager
+  faceDetector: FaceDetector
+  emotionAnalyzer: EmotionAnalyzer
 }): Promise<void> {
   console.log('🔄 Inițializare servicii biometrice...')
 
@@ -123,8 +129,8 @@ export async function initializeBiometricServices(services: {
  * @param services - Serviciile de curățat
  */
 export async function cleanupBiometricServices(services: {
-  camera: any
-  faceDetector: any
+  camera: CameraManager
+  faceDetector: FaceDetector
 }): Promise<void> {
   console.log('🧹 Curățare servicii biometrice...')
 
@@ -162,13 +168,13 @@ export async function cleanupBiometricServices(services: {
  */
 export async function processCompleteBiometricFrame(
   services: {
-    camera: any
-    privacy: any
-    faceDetector: any
-    emotionAnalyzer: any
+    camera: CameraManager
+    privacy: PrivacyManager
+    faceDetector: FaceDetector
+    emotionAnalyzer: EmotionAnalyzer
   },
   userId: string
-): Promise<any> {
+): Promise<BiometricReading | null> {
   try {
     console.log('🎬 START: Procesare frame biometric complet')
 
@@ -205,7 +211,7 @@ export async function processCompleteBiometricFrame(
     const stressLevel = services.emotionAnalyzer.detectStressLevels([emotion])
 
     // Construim BiometricReading complet
-    const reading: any = {
+    const reading: BiometricReading = {
       userId,
       timestamp: Date.now(),
       face: faceDetection,

@@ -1,5 +1,7 @@
 // lib/payments/paypal-service.ts
+// @ts-ignore - @paypal/checkout-server-sdk has no type declarations
 import paypal from '@paypal/checkout-server-sdk';
+
 import { createClient } from '@/lib/supabase/server';
 
 export class PayPalService {
@@ -55,7 +57,7 @@ export class PayPalService {
     const response = await this.client.execute(request);
     
     // Salvează în database
-    const supabase = createClient();
+    const supabase = await createClient();
     await supabase.from('subscriptions').insert({
       user_id: params.userId,
       payment_provider: 'paypal',
@@ -85,7 +87,7 @@ export class PayPalService {
     await this.client.execute(request);
 
     // Update în database
-    const supabase = createClient();
+    const supabase = await createClient();
     await supabase
       .from('subscriptions')
       .update({
@@ -109,12 +111,12 @@ export class PayPalService {
   /**
    * 4. HANDLE WEBHOOK
    */
-  async handleWebhook(webhookBody: any, webhookHeaders: any) {
+  async handleWebhook(webhookBody: any, _webhookHeaders: any) {
     console.log('🪝 PayPal webhook received:', webhookBody.event_type);
 
     const eventType = webhookBody.event_type;
     const resource = webhookBody.resource;
-    const supabase = createClient();
+    const supabase = await createClient();
 
     switch (eventType) {
       case 'BILLING.SUBSCRIPTION.ACTIVATED':

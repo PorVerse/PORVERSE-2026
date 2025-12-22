@@ -1,5 +1,6 @@
 // app/manifest.webmanifest/route.ts
 import { NextResponse } from 'next/server'
+
 import { manifestData } from '@/lib/pwa/manifest-data'
 
 export const dynamic = 'force-static' // servire statică, fără edge recompute

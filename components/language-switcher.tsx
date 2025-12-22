@@ -1,10 +1,11 @@
 // components/language-switcher.tsx
 'use client';
 
-import { useState } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Globe } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
+import { useState } from 'react';
+
 import { locales, localeNames, localeFlags, Locale } from '@/lib/i18n/config';
 
 export function LanguageSwitcher() {

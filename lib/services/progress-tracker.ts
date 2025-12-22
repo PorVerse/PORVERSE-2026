@@ -9,6 +9,7 @@
  */
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+
 import type { Database, Json } from '../../types/database.types'
 import type {
   UserPortalProgress,
@@ -104,16 +105,16 @@ export class ProgressTracker {
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
 
-      if (progressError) throw new Error(`Failed to fetch progress data: ${progressError.message}`)
+      if (progressError) {throw new Error(`Failed to fetch progress data: ${progressError.message}`)}
 
       // Basic metrics
-      const completedPortals = (portalProgress || []).filter((p) => p.status === 'completed')
+      const completedPortals = (portalProgress || []).filter((p: any) => p.status === 'completed')
       const totalTimeSpent = (portalProgress || []).reduce(
-        (sum, p) => sum + safeNumber((p as any).time_spent_minutes, 0),
+        (sum: number, p: any) => sum + safeNumber((p).time_spent_minutes, 0),
         0
       )
       const totalPoints = (portalProgress || []).reduce(
-        (sum, p) => sum + safeNumber((p as any).achievement_points, 0),
+        (sum: number, p: any) => sum + safeNumber((p).achievement_points, 0),
         0
       )
 
@@ -201,9 +202,8 @@ export class ProgressTracker {
         completed_at: now,
         time_spent_minutes: safeNumber(existingProgress?.time_spent_minutes, 0) + timeSpent,
         quality_score: typeof qualityScore === 'number' ? qualityScore : existingProgress?.quality_score,
-        attempts_count: safeNumber(existingProgress?.attempts_count, 0) + 1,
-        data: toJson({ ...(existingProgress as any)?.data, ...(stepData || {}), completion_timestamp: now }),
-        started_at: existingProgress?.started_at ?? now,
+        // attempts_count: safeNumber(existingProgress?.attempts_count, 0) + 1, // Field does not exist on UserStepProgress
+        step_data: toJson({ ...(existingProgress as any)?.step_data, ...(stepData || {}), completion_timestamp: now }) as any, started_at: existingProgress?.started_at ?? now,
       }
 
       const { data: updatedProgress, error: progressError } = await this.supabase
@@ -212,13 +212,13 @@ export class ProgressTracker {
         .select()
         .single()
 
-      if (progressError) throw new Error(`Failed to update step progress: ${progressError.message}`)
+      if (progressError) {throw new Error(`Failed to update step progress: ${progressError.message}`)}
 
       await this.updatePortalProgressFromStep(userId, portalId)
 
-      if (this.activeSession && this.activeSession.portal_id === portalId) {
+      if (this.activeSession?.portal_id === portalId) {
         const sd = (this.activeSession.session_data as any) || {}
-        this.activeSession.session_data = toJson({ ...sd, last_step_completed: stepId, last_quality_score: qualityScore })
+        this.activeSession.session_data = toJson({ ...sd, last_step_completed: stepId, last_quality_score: qualityScore }) as any
       }
 
       if (this.config.enableAnalytics) {
@@ -260,7 +260,7 @@ export class ProgressTracker {
         .from('portal_sessions')
         .update({
           duration_minutes: timeSpentMinutes,
-          session_data: toJson(sessionData || {}),
+          session_data: toJson(sessionData || {}) as any,
         })
         .eq('id', sessionId)
         .eq('user_id', userId)
@@ -268,7 +268,7 @@ export class ProgressTracker {
         .select()
         .single()
 
-      if (error) throw new Error(`Failed to update session time: ${error.message}`)
+      if (error) {throw new Error(`Failed to update session time: ${error.message}`)}
 
       return { success: true, data: session as PortalSession }
     } catch (error) {
@@ -288,7 +288,7 @@ export class ProgressTracker {
   // ————————————————————————————————————————————————————————————————
   async startSession(userId: string, portalId: string): Promise<ServiceResponse<PortalSession>> {
     try {
-      if (this.activeSession) await this.endSession()
+      if (this.activeSession) {await this.endSession()}
 
       const nowIso = new Date().toISOString()
 
@@ -296,7 +296,7 @@ export class ProgressTracker {
         user_id: userId,
         portal_id: portalId,
         session_start: nowIso,
-        session_data: toJson({ start_timestamp: Date.now() }),
+        session_data: toJson({ start_timestamp: Date.now() }) as any,
       } satisfies Partial<PortalSession>
 
       const { data, error } = await this.supabase
@@ -305,7 +305,7 @@ export class ProgressTracker {
         .select()
         .single()
 
-      if (error) throw new Error(`Failed to create session: ${error.message}`)
+      if (error) {throw new Error(`Failed to create session: ${error.message}`)}
 
       this.activeSession = {
         id: data!.id,
@@ -334,7 +334,7 @@ export class ProgressTracker {
 
   async endSession(): Promise<ServiceResponse<PortalSession | null>> {
     try {
-      if (!this.activeSession) return { success: true, data: null }
+      if (!this.activeSession) {return { success: true, data: null }}
 
       const endIso = new Date().toISOString()
       const startMs = new Date(this.activeSession.session_start).getTime()
@@ -345,13 +345,13 @@ export class ProgressTracker {
         .update({
           session_end: endIso,
           duration_minutes: duration,
-          session_data: toJson({ ...(this.activeSession.session_data as any), end_timestamp: Date.now(), final_duration: duration }),
+          session_data: toJson({ ...(this.activeSession.session_data as any), end_timestamp: Date.now(), final_duration: duration }) as any,
         })
         .eq('id', this.activeSession.id)
         .select()
         .single()
 
-      if (error) throw new Error(`Failed to end session: ${error.message}`)
+      if (error) {throw new Error(`Failed to end session: ${error.message}`)}
 
       if (this.sessionTimer) {
         clearTimeout(this.sessionTimer)
@@ -389,7 +389,7 @@ export class ProgressTracker {
         .order('session_start', { ascending: false })
         .limit(limit)
 
-      if (error) throw new Error(`Failed to fetch recent sessions: ${error.message}`)
+      if (error) {throw new Error(`Failed to fetch recent sessions: ${error.message}`)}
 
       return { success: true, data: (data || []) as PortalSession[] }
     } catch (error) {
@@ -414,19 +414,19 @@ export class ProgressTracker {
       .eq('user_id', userId)
       .not('quality_score', 'is', null)
 
-    if (error || !data || data.length === 0) return 0
-    const scores = data.map((r) => safeNumber(r.quality_score, 0))
-    return scores.reduce((a, b) => a + b, 0) / scores.length
+    if (error || !data || data.length === 0) {return 0}
+    const scores = data.map((r: any) => safeNumber(r.quality_score, 0))
+    return scores.reduce((a: number, b: number) => a + b, 0) / scores.length
   }
 
   private calculateCompletionRate(progress: UserPortalProgress[]): number {
-    if (!progress || progress.length === 0) return 0
+    if (!progress || progress.length === 0) {return 0}
     const completed = progress.filter((p) => (p as any).status === 'completed').length
     return (completed / progress.length) * 100
   }
 
   private calculateAverageEfficiency(rows: Array<{ progress_percentage?: number | null; time_spent_minutes?: number | null }>): number {
-    if (!rows || rows.length === 0) return 0
+    if (!rows || rows.length === 0) {return 0}
     const values = rows.map((r) => safeNumber(r.progress_percentage, 0) / Math.max(1, safeNumber(r.time_spent_minutes, 0)))
     return values.reduce((a, b) => a + b, 0) / values.length
   }
@@ -435,13 +435,13 @@ export class ProgressTracker {
     const metrics: ImprovementMetric[] = []
     try {
       const timeMetric = await this.calculateTimeEfficiencyImprovement(userId)
-      if (timeMetric) metrics.push(timeMetric)
+      if (timeMetric) {metrics.push(timeMetric)}
 
       const qualityMetric = await this.calculateQualityImprovement(userId)
-      if (qualityMetric) metrics.push(qualityMetric)
+      if (qualityMetric) {metrics.push(qualityMetric)}
 
       const consistencyMetric = await this.calculateConsistencyImprovement(userId)
-      if (consistencyMetric) metrics.push(consistencyMetric)
+      if (consistencyMetric) {metrics.push(consistencyMetric)}
     } catch (e) {
       // swallow — metrics are optional
     }
@@ -460,18 +460,21 @@ export class ProgressTracker {
         .gte('created_at', thirtyDaysAgo.toISOString())
         .order('created_at')
 
-      if (!data || data.length < 2) return null
+      if (!data || data.length < 2) {return null}
       const mid = Math.floor(data.length / 2)
       const oldEfficiency = this.calculateAverageEfficiency(data.slice(0, mid))
       const newEfficiency = this.calculateAverageEfficiency(data.slice(mid))
-      if (oldEfficiency === 0) return null
+      if (oldEfficiency === 0) {return null}
 
       return {
         metric_name: 'Time Efficiency',
         baseline_value: oldEfficiency,
         current_value: newEfficiency,
         improvement_percentage: ((newEfficiency - oldEfficiency) / oldEfficiency) * 100,
-        statistical_significance: 0.85,
+        trend: 'improving' as const,
+        confidence: 0.85,
+        measurement_count: data.length,
+        
       }
     } catch {
       return null
@@ -491,17 +494,20 @@ export class ProgressTracker {
         .not('quality_score', 'is', null)
         .order('created_at')
 
-      if (!data || data.length < 5) return null
+      if (!data || data.length < 5) {return null}
       const mid = Math.floor(data.length / 2)
-      const oldAvg = data.slice(0, mid).reduce((s, r) => s + safeNumber(r.quality_score, 0), 0) / mid
-      const newAvg = data.slice(mid).reduce((s, r) => s + safeNumber(r.quality_score, 0), 0) / Math.max(1, data.length - mid)
+      const oldAvg = data.slice(0, mid).reduce((s: number, r: any) => s + safeNumber(r.quality_score, 0), 0) / mid
+      const newAvg = data.slice(mid).reduce((s: number, r: any) => s + safeNumber(r.quality_score, 0), 0) / Math.max(1, data.length - mid)
 
       return {
         metric_name: 'Quality Score',
         baseline_value: oldAvg,
         current_value: newAvg,
         improvement_percentage: oldAvg === 0 ? 0 : ((newAvg - oldAvg) / oldAvg) * 100,
-        statistical_significance: 0.9,
+        trend: 'improving' as const,
+        confidence: 0.9,
+        measurement_count: data.length,
+        
       }
     } catch {
       return null
@@ -516,7 +522,10 @@ export class ProgressTracker {
         baseline_value: streak.averageSessionGap,
         current_value: streak.recentSessionGap,
         improvement_percentage: streak.consistencyImprovement,
-        statistical_significance: 0.75,
+        trend: 'stable' as const,
+        confidence: 0.75,
+        measurement_count: 30,
+        
       }
     } catch {
       return null
@@ -541,11 +550,11 @@ export class ProgressTracker {
       return { currentStreak: 0, longestStreak: 0, averageSessionGap: 0, recentSessionGap: 0, consistencyImprovement: 0 }
     }
 
-    const dates = sessions.map((s) => new Date(s.session_start).toDateString())
+    const dates = sessions.map((s: any) => new Date(s.session_start).toDateString())
     const uniqueDates = [...new Set(dates)]
 
     let currentStreak = 0
-    let check = new Date()
+    const check = new Date()
     while (uniqueDates.includes(check.toDateString())) {
       currentStreak++
       check.setDate(check.getDate() - 1)

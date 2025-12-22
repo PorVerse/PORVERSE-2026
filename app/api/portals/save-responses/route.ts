@@ -2,6 +2,7 @@
 // API pentru salvarea răspunsurilor utilizatorului
 
 import { NextRequest, NextResponse } from 'next/server'
+
 import { createClient } from '@/lib/supabase/server'
 
 export async function POST(request: NextRequest) {
@@ -48,7 +49,7 @@ export async function POST(request: NextRequest) {
         .select()
         .single()
 
-      if (error) throw error
+      if (error) {throw error}
       result = data
     } else {
       // Inserează răspunsuri noi
@@ -64,7 +65,7 @@ export async function POST(request: NextRequest) {
         .select()
         .single()
 
-      if (error) throw error
+      if (error) {throw error}
       result = data
     }
 
@@ -72,10 +73,11 @@ export async function POST(request: NextRequest) {
       success: true,
       data: result,
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Save Responses Error:', error)
+    const message = error instanceof Error ? error.message : 'Failed to save responses'
     return NextResponse.json(
-      { error: error.message || 'Failed to save responses' },
+      { error: message },
       { status: 500 }
     )
   }

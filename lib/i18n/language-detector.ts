@@ -24,22 +24,22 @@ const COOKIE_LOCALE = 'i18n_locale'
 const COOKIE_COUNTRY = 'i18n_country'
 const COOKIE_TIER = 'i18n_tier'
 
-function pickCookie(cookieHeader: string | null | undefined, name: string): string | undefined {
-  if (!cookieHeader) return
+function parseCookie(cookieHeader: string | null | undefined, name: string): string | undefined {
+  if (!cookieHeader) {return}
   const m = cookieHeader.match(new RegExp(`${name}=([^;]+)`))
-  return m ? decodeURIComponent(m[1]) : undefined
+  return m?.[1] ? decodeURIComponent(m[1]) : undefined
 }
 
 function normalizeLang(lang?: string | null): SupportedLang {
-  if (!lang) return 'en'
+  if (!lang) {return 'en'}
   const base = lang.split(',')[0]?.trim().toLowerCase().split('-')[0]
   return SUPPORTED.includes(base as SupportedLang) ? (base as SupportedLang) : 'en'
 }
 
 function countryToTier(country?: string): PricingTier {
   const cc = (country || '').toUpperCase()
-  if (cc === 'RO') return 'romania'
-  if (cc === 'US') return 'us'
+  if (cc === 'RO') {return 'romania'}
+  if (cc === 'US') {return 'us'}
   // fallback: UE → 'eu'; global → 'eu'
   return 'eu'
 }
@@ -67,9 +67,9 @@ export function detect(req?: Request): DetectionResult {
   const cookieHdr = headers?.get('cookie') || ''
 
   // 1) din cookie
-  const cookieLang = pickCookie(cookieHdr, COOKIE_LOCALE)
-  const cookieCountry = pickCookie(cookieHdr, COOKIE_COUNTRY)
-  const cookieTier = pickCookie(cookieHdr, COOKIE_TIER) as PricingTier | undefined
+  const cookieLang = parseCookie(cookieHdr, COOKIE_LOCALE)
+  const cookieCountry = parseCookie(cookieHdr, COOKIE_COUNTRY)
+  const cookieTier = parseCookie(cookieHdr, COOKIE_TIER) as PricingTier | undefined
 
   if (cookieLang && SUPPORTED.includes(cookieLang as SupportedLang)) {
     const lang = cookieLang as SupportedLang
@@ -123,7 +123,7 @@ export function detect(req?: Request): DetectionResult {
  */
 export function resolveLocale(pathname: string, acceptLanguage?: string): SupportedLang {
   const first = pathname.split('/').filter(Boolean)[0]
-  if (first && SUPPORTED.includes(first as SupportedLang)) return first as SupportedLang
+  if (first && SUPPORTED.includes(first as SupportedLang)) {return first as SupportedLang}
   return normalizeLang(acceptLanguage || '')
 }
 

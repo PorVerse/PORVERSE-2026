@@ -18,35 +18,31 @@ export { AIServiceManager, createAIServiceManager } from '../ai/ai-service-manag
 
 // Store and Hooks
 export { 
-  usePortalStore,
-  usePortalById,
-  usePortalProgress,
-  useStepProgress,
-  useCompletedPortals,
-  useUnlockedPortals,
-  useSessionTime,
-  useIsPortalAccessible,
-  usePortalActions,
-  useOfflineSync
+  usePortalStore
+  // NOTE: The following exports don't exist in portal-store:
+  // usePortalById, usePortalProgress, useStepProgress, useCompletedPortals,
+  // useUnlockedPortals, useSessionTime, useIsPortalAccessible,
+  // usePortalActions, useOfflineSync
 } from '../../stores/portal-store'
 
-export {
-  usePortalManagement,
-  usePortal,
-  usePortalUnlock,
-  useProgressTracking,
-  useStepCompletion,
-  usePortalSession,
-  useBiometricIntegration,
-  useAchievements,
-  usePortalAnalytics,
-  usePortalRecommendations,
-  usePortalSearch,
-  useOfflineStatus,
-  formatDuration,
-  getPortalTheme,
-  getStatusColor
-} from '../../hooks/usePortalManagement'
+// NOTE: usePortalManagement and related hooks are disabled (broken/unmaintained)
+// export {
+//   usePortalManagement,
+//   usePortal,
+//   usePortalUnlock,
+//   useProgressTracking,
+//   useStepCompletion,
+//   usePortalSession,
+//   useBiometricIntegration,
+//   useAchievements,
+//   usePortalAnalytics,
+//   usePortalRecommendations,
+//   usePortalSearch,
+//   useOfflineStatus,
+//   formatDuration,
+//   getPortalTheme,
+//   getStatusColor
+// } from '../../hooks/usePortalManagement'
 
 // Types
 export type {
@@ -74,10 +70,10 @@ export type {
  * Call this once at app startup
  */
 export function initializePortalServices(userId?: string) {
-  // const portalManager = getPortalManager()
-// const progressTracker = createProgressTracker()
-// const unlockEngine = createUnlockEngine()
-// const aiServiceManager = createAIServiceManager()
+  const portalManager = getPortalManager()
+  const progressTracker = createProgressTracker()
+  const unlockEngine = createUnlockEngine()
+  const aiServiceManager = createAIServiceManager()
 
   return {
     portalManager,

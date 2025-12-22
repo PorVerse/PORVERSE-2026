@@ -1,8 +1,8 @@
 // components/auth/OAuthButtons.tsx
 'use client'
 
-import { useState } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
+import { useState } from 'react'
 
 const supabaseBrowser = () => {
   return createBrowserClient(
@@ -38,7 +38,7 @@ export function OAuthButtons({
   async function signInWith(provider: Provider) {
     try {
       setLoading(provider)
-      if (typeof window === 'undefined') return
+      if (typeof window === 'undefined') {return}
 
       const origin = window.location.origin || process.env['NEXT_PUBLIC_SITE_URL'] || 'http://localhost:3000'
       const { error } = await supabase.auth.signInWithOAuth({
@@ -48,7 +48,7 @@ export function OAuthButtons({
           queryParams: { prompt: 'select_account' },
         },
       })
-      if (error) throw error
+      if (error) {throw error}
     } catch (e) {
       console.error('[OAuthButtons]', e)
       alert(copy.error)

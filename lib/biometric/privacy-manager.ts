@@ -105,7 +105,7 @@ export class PrivacyManager {
    * Generează o cheie secretă pentru criptare
    */
   private initializeEncryption(): void {
-    if (!this.config.encryptionEnabled) return
+    if (!this.config.encryptionEnabled) {return}
 
     // În producție, aceasta ar fi o cheie reală generată securizat
     // Pentru acum, folosim un placeholder
@@ -323,24 +323,19 @@ export class PrivacyManager {
   async anonymizeData(
     data: BiometricReading
   ): Promise<AnonymizedBiometricReading> {
-    // Creăm o copie anonimizată
+    // Creăm o copie anonimizată conform interfaței GDPR-compliant
     const anonymized: AnonymizedBiometricReading = {
-      // ❌ NU includem userId - asta te identifică
+      readingId: this.generateAnonymousId(),     // ID anonim, NOT userId
       timestamp: data.timestamp,
-      face: data.face,
-      emotion: data.emotion,
-      stress: data.stress,
-      quality: data.quality,
-      metadata: {
-        sessionId: this.generateAnonymousId(), // ID anonim nou
-        // ❌ NU includem portalId sau alte date identificabile
-        context: 'anonymized',
-      },
+      emotionCategory: data.emotion?.emotion || 'neutral',  // General emotion category
+      stressCategory: data.stress?.level || 'low',          // General stress category  
+      qualityScore: typeof data.quality === 'number' ? data.quality : 0.5,  // Quality score
+      // NO userId, NO face data, NO identifiable information per GDPR
     }
 
     console.log('🎭 Date anonimizate:', {
       originalUserId: data.userId,
-      anonymousId: anonymized.metadata.sessionId,
+      anonymousId: anonymized.readingId,
     })
 
     return anonymized
@@ -373,7 +368,7 @@ export class PrivacyManager {
     purpose: string,
     dataType: string = 'biometric'
   ): Promise<void> {
-    if (!this.config.auditEnabled) return
+    if (!this.config.auditEnabled) {return}
 
     const actionLog: DataUsageAction = {
       action,
@@ -413,7 +408,7 @@ export class PrivacyManager {
 
     const summary = {
       totalAccesses: actions.length,
-      lastAccess: actions.length > 0 ? actions[actions.length - 1].timestamp : 0,
+      lastAccess: actions.length > 0 ? (actions[actions.length - 1]?.timestamp || 0) : 0,
       purposes,
     }
 

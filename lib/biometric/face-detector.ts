@@ -14,6 +14,7 @@
  */
 
 import { FaceMesh } from '@mediapipe/face_mesh'
+
 import type {
   FaceDetection,
   FaceLandmarks,
@@ -23,6 +24,18 @@ import type {
   HeadPose,
   QualityScore,
 } from '../../types/biometric'
+
+// MediaPipe types
+interface MediaPipeLandmark {
+  x: number
+  y: number
+  z?: number
+}
+
+interface MediaPipeResults {
+  multiFaceLandmarks?: MediaPipeLandmark[][]
+  image?: HTMLCanvasElement | ImageData
+}
 
 // ============================================================================
 // 🔧 CONFIGURATION (Configurare)
@@ -188,7 +201,7 @@ export class FaceDetector {
       const results = await this.processFaceMesh(imageData)
 
       // PASUL 2: Verificăm dacă am găsit fețe
-      if (!results || !results.multiFaceLandmarks || results.multiFaceLandmarks.length === 0) {
+      if (!results?.multiFaceLandmarks || results.multiFaceLandmarks.length === 0) {
         console.log('👻 Nicio față detectată în imagine')
         return null
       }
@@ -245,12 +258,12 @@ export class FaceDetector {
       }
 
       // Callback când detectarea e gata
-      this.faceMesh.onResults((results: any) => {
-        resolve(results)
+      this.faceMesh.onResults((results: unknown) => {
+        resolve(results as MediaPipeResults)
       })
 
       // Procesăm imaginea
-      this.faceMesh.send({ image: imageData }).catch(reject)
+      this.faceMesh.send({ image: imageData as unknown as HTMLImageElement }).catch(reject)
     })
   }
 
@@ -260,7 +273,7 @@ export class FaceDetector {
    * @param rawLandmarks - Landmarks de la MediaPipe
    * @returns FaceLandmarks în formatul nostru
    */
-  private convertLandmarks(rawLandmarks: any[]): FaceLandmarks {
+  private convertLandmarks(rawLandmarks: MediaPipeLandmark[]): FaceLandmarks {
     const landmarks: FaceLandmark[] = rawLandmarks.map((lm) => ({
       x: lm.x,
       y: lm.y,
@@ -291,10 +304,10 @@ export class FaceDetector {
     let maxY = -Infinity
 
     points.forEach((point) => {
-      if (point.x < minX) minX = point.x
-      if (point.y < minY) minY = point.y
-      if (point.x > maxX) maxX = point.x
-      if (point.y > maxY) maxY = point.y
+      if (point.x < minX) {minX = point.x}
+      if (point.y < minY) {minY = point.y}
+      if (point.x > maxX) {maxX = point.x}
+      if (point.y > maxY) {maxY = point.y}
     })
 
     return {
@@ -353,13 +366,13 @@ export class FaceDetector {
     try {
       const results = await this.processFaceMesh(imageData)
 
-      if (!results || !results.multiFaceLandmarks) {
+      if (!results?.multiFaceLandmarks) {
         return []
       }
 
       // Convertim toate fețele
       const detections: FaceDetection[] = results.multiFaceLandmarks.map(
-        (faceLandmarksRaw: any) => {
+        (faceLandmarksRaw: MediaPipeLandmark[]) => {
           const landmarks = this.convertLandmarks(faceLandmarksRaw)
           const boundingBox = this.calculateBoundingBox(landmarks)
           const confidence = this.calculateConfidence(landmarks)

@@ -1,9 +1,12 @@
 // app/[lang]/layout.tsx
+import { Inter } from 'next/font/google'
+import { notFound } from 'next/navigation'
+
+import { LanguageSwitcher } from '@/components/i18n/LanguageSwitcher'
+
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
-import { notFound } from 'next/navigation'
-import { Inter } from 'next/font/google'
-import { LanguageSwitcher } from '@/components/i18n/LanguageSwitcher'
+
 import '@/app/globals.css'
 
 const inter = Inter({ subsets: ['latin'], display: 'swap', variable: '--font-inter' })
@@ -15,8 +18,9 @@ const SITE_URL =
   process.env['NEXT_PUBLIC_SITE_URL']?.replace(/\/+$/, '') || 'http://localhost:3000'
 
 function normalize(value?: string): Lang | null {
-  if (!value) return null
-  const base = value.split('-')[0].toLowerCase()
+  if (!value) {return null}
+  const base = value.split('-')[0]?.toLowerCase()
+  if (!base) {return null}
   return SUPPORTED.includes(base as any) ? (base as Lang) : null
 }
 
@@ -27,7 +31,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const resolvedParams = await params
   const lang = normalize(resolvedParams.lang)
-  if (!lang) notFound()
+  if (!lang) {notFound()}
 
   return {
     metadataBase: new URL(SITE_URL),
@@ -53,7 +57,7 @@ export default async function LangLayout({
 }) {
   const resolvedParams = await params
   const lang = normalize(resolvedParams.lang)
-  if (!lang) notFound()
+  if (!lang) {notFound()}
 
   return (
     <div

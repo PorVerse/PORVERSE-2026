@@ -9,11 +9,13 @@
 'use client'
 
 import { useEffect, useRef, useState, useCallback } from 'react'
+
 import type {
   BiometricReading,
   EmotionType,
   StressLevel,
   QualityScore,
+  FaceDetection,
 } from '@/types/biometric'
 
 // ============================================================================
@@ -350,7 +352,7 @@ export function BiometricScanner({
   }, [])
 
   const switchCamera = useCallback(async (cameraId: string) => {
-    if (!servicesRef.current) return
+    if (!servicesRef.current) {return}
 
     try {
       await servicesRef.current.camera.switchCamera(cameraId)
@@ -369,12 +371,12 @@ export function BiometricScanner({
   // 🎨 DRAWING
   // ========================================================================
 
-  const drawFaceOverlay = useCallback((faceDetection: any) => {
+  const drawFaceOverlay = useCallback((faceDetection: FaceDetection) => {
     const canvas = canvasRef.current
-    if (!canvas) return
+    if (!canvas) {return}
 
     const ctx = canvas.getContext('2d')
-    if (!ctx) return
+    if (!ctx) {return}
 
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height)
@@ -393,7 +395,7 @@ export function BiometricScanner({
     // Draw landmarks (optional - poate fi heavy)
     if (faceDetection.landmarks && faceDetection.landmarks.landmarks.length < 50) {
       ctx.fillStyle = '#10b981'
-      faceDetection.landmarks.landmarks.forEach((landmark: any) => {
+      faceDetection.landmarks.landmarks.forEach((landmark) => {
         ctx.beginPath()
         ctx.arc(
           landmark.x * canvas.width,

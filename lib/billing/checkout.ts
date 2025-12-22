@@ -1,7 +1,8 @@
 // lib/billing/checkout.ts
-import type Stripe from 'stripe'
-import { getBillingMode, type PricingTier } from '@/lib/i18n/price-map'
 import { resolveStripePriceId } from '@/lib/billing/stripe-prices.server'
+import { getBillingMode, type PricingTier } from '@/lib/i18n/price-map'
+
+import type Stripe from 'stripe'
 
 export type CheckoutInput = {
   productId: string

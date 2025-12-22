@@ -1,12 +1,12 @@
 // components/layout/portal-layout.tsx
 'use client';
 
-import { ReactNode, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, Settings, User, Bell } from 'lucide-react';
-import { Portal } from '@/types/portal';
-import PortalNavigation from './portal-navigation';
-import BiometricStatus from '@/components/biometric/biometric-status';
+import { ReactNode, useState } from 'react';
+
+import PortalNavigation from '@/components/navigation/portal-navigation';
+import { Portal } from '@/types';
 
 export interface PortalLayoutProps {
   children: ReactNode;
@@ -20,7 +20,7 @@ export interface PortalLayoutProps {
 export function PortalLayout({
   children,
   portal,
-  showBiometricOverlay = false,
+  showBiometricOverlay: _showBiometricOverlay = false,
   showAIAssistant = false,
   navigationVariant = 'full',
   backgroundEffects = true
@@ -33,7 +33,7 @@ export function PortalLayout({
     <div className="relative min-h-screen overflow-hidden bg-black">
       {/* Animated Background */}
       {backgroundEffects && (
-        <AnimatedBackground portalTheme={portal.theme} />
+        <AnimatedBackground portalTheme={portal.color_scheme} />
       )}
 
       {/* Top Navigation Bar */}
@@ -125,9 +125,10 @@ export function PortalLayout({
       </main>
 
       {/* Biometric Overlay */}
-      {showBiometricOverlay && (
+      {/* TODO: Re-enable when BiometricStatus component is implemented */}
+      {/* {showBiometricOverlay && (
         <BiometricStatus position="bottom-right" />
-      )}
+      )} */}
 
       {/* AI Assistant */}
       {showAIAssistant && (
@@ -148,7 +149,7 @@ export function PortalLayout({
 // SUB-COMPONENTS
 // ============================================
 
-function AnimatedBackground({ portalTheme }: { portalTheme: any }) {
+function AnimatedBackground({ portalTheme: _portalTheme }: { portalTheme: any }) {
   return (
     <div className="fixed inset-0 z-0">
       {/* Gradient Background */}
@@ -189,7 +190,7 @@ function AnimatedBackground({ portalTheme }: { portalTheme: any }) {
   );
 }
 
-function AIAssistantWidget({ portalId }: { portalId: string }) {
+function AIAssistantWidget({ portalId: _portalId }: { portalId: string }) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (

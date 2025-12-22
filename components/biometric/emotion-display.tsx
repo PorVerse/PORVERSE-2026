@@ -3,7 +3,16 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, Activity, Eye, TrendingUp } from 'lucide-react';
+
 import { EmotionReading } from '@/types/biometric';
+
+// Extended type for display purposes
+type EmotionDisplayData = EmotionReading & {
+  heartRate?: number;
+  stressLevel?: number;
+  valence?: number;
+  arousal?: number;
+}
 
 export interface EmotionDisplayProps {
   emotionData: EmotionReading;
@@ -25,7 +34,7 @@ export function EmotionDisplay({
     return null;
   }
 
-  const displayData = privacyLevel === 'anonymous' 
+  const displayData: EmotionDisplayData = privacyLevel === 'anonymous' 
     ? anonymizeData(emotionData)
     : emotionData;
 
@@ -188,7 +197,7 @@ function SummaryView({ data, className }: { data: EmotionReading; className?: st
   );
 }
 
-function HistoryView({ data, className }: { data: EmotionReading; className?: string }) {
+function HistoryView({ data: _data, className }: { data: EmotionReading; className?: string }) {
   // In production, fetch history from database
   const mockHistory = [
     { emotion: 'happy', time: '10:30 AM', intensity: 0.8 },
@@ -224,12 +233,11 @@ function HistoryView({ data, className }: { data: EmotionReading; className?: st
 // HELPER FUNCTIONS
 // ============================================
 
-function anonymizeData(data: EmotionReading): EmotionReading {
+function anonymizeData(data: EmotionReading): EmotionDisplayData {
   // Remove identifying features, keep only general emotion
   return {
     ...data,
     heartRate: undefined,
-    facialFeatures: undefined,
   };
 }
 
@@ -252,20 +260,20 @@ function getEmotionEmoji(emotion: string): string {
 }
 
 function getStressLabel(level: number): string {
-  if (level < 0.3) return 'Low';
-  if (level < 0.6) return 'Medium';
+  if (level < 0.3) {return 'Low';}
+  if (level < 0.6) {return 'Medium';}
   return 'High';
 }
 
 function getValenceLabel(value: number): string {
-  if (value < -0.3) return 'Negative';
-  if (value > 0.3) return 'Positive';
+  if (value < -0.3) {return 'Negative';}
+  if (value > 0.3) {return 'Positive';}
   return 'Neutral';
 }
 
 function getArousalLabel(value: number): string {
-  if (value < -0.3) return 'Calm';
-  if (value > 0.3) return 'Energized';
+  if (value < -0.3) {return 'Calm';}
+  if (value > 0.3) {return 'Energized';}
   return 'Balanced';
 }
 

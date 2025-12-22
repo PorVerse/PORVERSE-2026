@@ -44,8 +44,8 @@ export function getPrice(
   productId: keyof typeof CATALOG | string,
   tier: PricingTier
 ): TierPrice {
-  const record = (CATALOG as ProductPriceMap)[productId]
-  if (!record) return { amount: 0, currency: 'EUR' }
+  const record = (CATALOG)[productId]
+  if (!record) {return { amount: 0, currency: 'EUR' }}
   return record[tier]
 }
 
@@ -53,7 +53,7 @@ export function getPrice(
  * Get billing mode for a product (one_time/subscription). Defaults to 'subscription' for safety.
  */
 export function getBillingMode(productId: keyof typeof CATALOG | string): BillingMode {
-  const record = (CATALOG as ProductPriceMap)[productId]
+  const record = (CATALOG)[productId]
   return record?.billingMode ?? 'subscription'
 }
 

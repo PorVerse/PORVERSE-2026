@@ -1,12 +1,12 @@
-import { NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
 import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
+import { NextResponse } from 'next/server'
 
 function sanitizeNext(nextRaw: string | null, fallback: string) {
-  if (!nextRaw) return fallback
-  if (!nextRaw.startsWith('/')) return fallback
-  if (nextRaw.startsWith('//')) return fallback
-  if (nextRaw.includes('://')) return fallback
+  if (!nextRaw) {return fallback}
+  if (!nextRaw.startsWith('/')) {return fallback}
+  if (nextRaw.startsWith('//')) {return fallback}
+  if (nextRaw.includes('://')) {return fallback}
   return nextRaw
 }
 
@@ -43,7 +43,7 @@ export async function GET(request: Request) {
     // PKCE / OAuth / code flow
     if (code) {
       const { error } = await supabase.auth.exchangeCodeForSession(code)
-      if (!error) return NextResponse.redirect(new URL(next, url))
+      if (!error) {return NextResponse.redirect(new URL(next, url))}
       return NextResponse.redirect(new URL(`/${lang}/login?error=${encodeURIComponent('Auth callback failed.')}`, url))
     }
 
@@ -53,7 +53,7 @@ export async function GET(request: Request) {
         type: type as any,
         token_hash,
       })
-      if (!error) return NextResponse.redirect(new URL(next, url))
+      if (!error) {return NextResponse.redirect(new URL(next, url))}
       return NextResponse.redirect(new URL(`/${lang}/login?error=${encodeURIComponent('OTP verification failed.')}`, url))
     }
 

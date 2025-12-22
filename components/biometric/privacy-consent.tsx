@@ -17,6 +17,7 @@
 'use client'
 
 import { useState } from 'react'
+
 import type { ConsentLevel } from '@/types/biometric'
 
 // ============================================================================
@@ -134,7 +135,7 @@ export function PrivacyConsent({
   // 🎨 RENDER
   // ========================================================================
 
-  if (!isOpen) return null
+  if (!isOpen) {return null}
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">

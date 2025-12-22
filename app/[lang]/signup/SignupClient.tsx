@@ -1,11 +1,12 @@
 'use client'
 
-import { useMemo, useState } from 'react'
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { createBrowserClient } from '@supabase/ssr'
 import { User, Mail, Lock, Eye, EyeOff, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { useMemo, useState } from 'react'
+
 import InterstellarAuthShell from '@/components/InterstellarAuthShell'
+import Link from 'next/link'
 
 type Lang = 'ro' | 'en'
 const safeLang = (x: string): Lang => (x === 'ro' ? 'ro' : 'en')
@@ -13,10 +14,10 @@ const first = (v: string | string[] | undefined): string | null =>
   !v ? null : Array.isArray(v) ? v[0] ?? null : v
 
 function sanitizeNext(nextRaw: string | null, fallback: string) {
-  if (!nextRaw) return fallback
-  if (!nextRaw.startsWith('/')) return fallback
-  if (nextRaw.startsWith('//')) return fallback
-  if (nextRaw.includes('://')) return fallback
+  if (!nextRaw) {return fallback}
+  if (!nextRaw.startsWith('/')) {return fallback}
+  if (nextRaw.startsWith('//')) {return fallback}
+  if (nextRaw.includes('://')) {return fallback}
   return nextRaw
 }
 
@@ -92,9 +93,9 @@ export default function SignupClient({
     setBanner(null)
 
     const emailTrim = email.trim()
-    if (!emailTrim.includes('@')) return setBanner({ type: 'error', msg: t.invalidEmail })
-    if (pw.length < 8) return setBanner({ type: 'error', msg: t.weak })
-    if (pw !== pw2) return setBanner({ type: 'error', msg: t.mismatch })
+    if (!emailTrim.includes('@')) {return setBanner({ type: 'error', msg: t.invalidEmail })}
+    if (pw.length < 8) {return setBanner({ type: 'error', msg: t.weak })}
+    if (pw !== pw2) {return setBanner({ type: 'error', msg: t.mismatch })}
 
     setLoading(true)
     try {
@@ -108,7 +109,7 @@ export default function SignupClient({
           data: { full_name: fullName.trim() || null },
         },
       })
-      if (error) return setBanner({ type: 'error', msg: t.error })
+      if (error) {return setBanner({ type: 'error', msg: t.error })}
 
       setBanner({ type: 'success', msg: t.checkEmail })
       setTimeout(() => router.push(`/${lang}/login?next=${encodeURIComponent(next)}`), 1200)

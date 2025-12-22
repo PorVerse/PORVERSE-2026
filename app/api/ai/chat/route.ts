@@ -1,10 +1,14 @@
 // app/api/ai/chat/route.ts
 // AI Chat API - Cu context personalizat din răspunsurile utilizatorului
 
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import OpenAI from 'openai'
 import Anthropic from '@anthropic-ai/sdk'
+import { NextRequest, NextResponse } from 'next/server'
+import OpenAI from 'openai'
+
+import { createClient } from '@/lib/supabase/server'
+import type { Database } from '@/types/database.types'
+
+type AiMessage = Database['public']['Tables']['ai_messages']['Row']
 
 const openai = new OpenAI({
   apiKey: process.env['OPENAI_API_KEY']!,
@@ -55,7 +59,7 @@ USER CONTEXT:
     
     // Group by portal
     const responsesByPortal = responses.reduce((acc: any, r: any) => {
-      if (!acc[r.portalCode]) acc[r.portalCode] = []
+      if (!acc[r.portalCode]) {acc[r.portalCode] = []}
       acc[r.portalCode].push(r)
       return acc
     }, {})
@@ -65,7 +69,7 @@ USER CONTEXT:
       resps.forEach((r: any) => {
         prompt += `  Step ${r.step} - ${r.stepTitle}:\n`
         Object.entries(r.answers).forEach(([_, value]: [string, any]) => {
-          if (value && value.trim()) {
+          if (value?.trim()) {
             prompt += `    • ${value.substring(0, 200)}${value.length > 200 ? '...' : ''}\n`
           }
         })
@@ -185,7 +189,7 @@ export async function POST(request: NextRequest) {
         role: 'system' as const,
         content: systemPrompt,
       },
-      ...(history || []).map((msg) => ({
+      ...(history || []).map((msg: AiMessage) => ({
         role: msg.role as 'user' | 'assistant',
         content: msg.content,
       })),
@@ -200,7 +204,7 @@ export async function POST(request: NextRequest) {
 
     if (profile?.subscription_tier === 'elite') {
       // Use Claude pentru Elite users
-      const response = await anthropic.messages.create({
+      const response = await (anthropic as any).messages.create({
         model: 'claude-3-5-sonnet-20241022',
         max_tokens: 1024,
         messages: messages.slice(1) as any,
@@ -213,7 +217,7 @@ export async function POST(request: NextRequest) {
       // Use GPT-4 pentru Pro users
       const response = await openai.chat.completions.create({
         model: 'gpt-4',
-        messages: messages,
+        messages,
         max_tokens: 800,
         temperature: 0.7,
       })
@@ -241,10 +245,11 @@ export async function POST(request: NextRequest) {
       hasContext: !!userContext,
       contextStats: userContext?.stats || null,
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('AI Chat Error:', error)
+    const message = error instanceof Error ? error.message : 'Failed to process AI request'
     return NextResponse.json(
-      { error: error.message || 'Failed to process AI request' },
+      { error: message },
       { status: 500 }
     )
   }

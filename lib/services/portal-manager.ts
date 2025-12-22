@@ -8,6 +8,7 @@
  */
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+
 import type { Database, Json } from '../../types/database.types'
 import type {
   UserPortalProgress,
@@ -16,12 +17,27 @@ import type {
   PortalSubscriptionTier,
   PortalUnlockResult,
   ServiceResponse,
-  ProgressUpdateRequest,
-  UnlockCheckRequest,
   PortalSession,
   BiometricReading,
   OfflineOperation,
 } from '../../types/portal-management'
+import { isQueryError, isQuerySuccess } from './supabase-helpers'
+
+// Local interfaces not exported from types
+interface ProgressUpdateRequest {
+  user_id: string
+  portal_id: string
+  progress_data?: Record<string, any>
+  step_id?: string
+  biometric_reading?: BiometricReading
+}
+
+interface UnlockCheckRequest {
+  user_id: string
+  portal_id: string
+  subscription_tier?: PortalSubscriptionTier
+  current_progress?: Record<string, UserPortalProgress>
+}
 
 // ————————————————————————————————————————————————————————————————
 // Config
@@ -62,8 +78,8 @@ export class PortalManager {
     this.config = config
     this.supabase = createClient<Database>(config.supabaseUrl, config.supabaseKey)
 
-    if (config.enableRealtime) this.setupRealtimeSubscriptions()
-    if (config.enableOfflineSync) this.initializeOfflineSync()
+    if (config.enableRealtime) {this.setupRealtimeSubscriptions()}
+    if (config.enableOfflineSync) {this.initializeOfflineSync()}
   }
 
   // ————————————————————————————————————————————————————————————————
@@ -85,33 +101,45 @@ export class PortalManager {
         }
       }
 
-      const { data: profile, error: profileError } = await this.supabase
+      const profileResult = await this.supabase
         .from('profiles')
         .select('subscription_tier, subscription_status, quantum_vault_unlocked')
         .eq('id', userId)
         .single()
 
-      if (profileError) throw new Error(`Failed to fetch user profile: ${profileError.message}`)
+      if (isQueryError(profileResult)) {
+        throw new Error(`Failed to fetch user profile: ${profileResult.error.message}`)
+      }
+      
+      const profile = profileResult.data
 
-      const { data: portals, error: portalsError } = await this.supabase
+      const portalsResult = await this.supabase
         .from('portals')
         .select('*')
         .eq('is_active', true)
         .order('order_index')
 
-      if (portalsError) throw new Error(`Failed to fetch portals: ${portalsError.message}`)
+      if (isQueryError(portalsResult)) {
+        throw new Error(`Failed to fetch portals: ${portalsResult.error.message}`)
+      }
+      
+      const portals = portalsResult.data
 
-      const { data: userProgress, error: progressError } = await this.supabase
+      const progressResult = await this.supabase
         .from('user_portal_progress')
         .select('*')
         .eq('user_id', userId)
 
-      if (progressError) throw new Error(`Failed to fetch user progress: ${progressError.message}`)
+      if (isQueryError(progressResult)) {
+        throw new Error(`Failed to fetch user progress: ${progressResult.error.message}`)
+      }
+      
+      const userProgress = progressResult.data
 
-      const progressMap: Map<string, UserPortalProgress> = new Map((userProgress || []).map((p) => [p.portal_id, p]))
+      const progressMap: Map<string, UserPortalProgress> = new Map((userProgress ?? []).map((p: UserPortalProgress) => [p.portal_id, p]))
 
-      const accessible: any[] = []
-      for (const portal of portals || []) {
+      const accessible: Array<{portal: Database['public']['Tables']['portals']['Row']; access: PortalAccessPermissions}> = []
+      for (const portal of portals ?? []) {
         const access = await this.checkPortalAccess(
           userId,
           portal.id,
@@ -147,8 +175,14 @@ export class PortalManager {
     progressMap: Map<string, UserPortalProgress>
   ): Promise<PortalAccessPermissions> {
     try {
-      const { data: portal, error } = await this.supabase.from('portals').select('*').eq('id', portalId).single()
-      if (error || !portal) {
+      const result = await this.supabase.from('portals').select('*').eq('id', portalId).single()
+      
+      if (isQueryError(result)) {
+        return { canAccess: false, requiresPayment: false, requiredTier: 'free', missingCriteria: ['Portal not found'] }
+      }
+      
+      const portal = result.data
+      if (!portal) {
         return { canAccess: false, requiresPayment: false, requiredTier: 'free', missingCriteria: ['Portal not found'] }
       }
 
@@ -164,7 +198,7 @@ export class PortalManager {
 
       if (portal.required_previous_portal) {
         const prev = progressMap.get(portal.required_previous_portal)
-        if (!prev || prev.status !== 'completed') missingCriteria.push('Previous portal must be completed')
+        if (prev?.status !== 'completed') {missingCriteria.push('Previous portal must be completed')}
       }
 
       if (portal.category === 'activation') {
@@ -183,7 +217,7 @@ export class PortalManager {
 
       const progressMap = new Map<string, UserPortalProgress>(Object.entries(request.current_progress || {}) as any)
 
-      const access = await this.checkPortalAccess(request.user_id, request.portal_id, request.subscription_tier, progressMap)
+      const access = await this.checkPortalAccess(request.user_id, request.portal_id, request.subscription_tier || 'free', progressMap)
 
       if (!access.canAccess) {
         return {
@@ -192,20 +226,28 @@ export class PortalManager {
             success: false,
             portal_id: request.portal_id,
             unlocked: false,
-            criteria_met: [],
-            missing_criteria: access.missingCriteria.map((d) => ({ code: 'access', description: d })),
+            criteria_met: false,
+            missing_criteria: access.missingCriteria.map((d) => ({
+              description: d,
+              type: 'subscription' as const,
+              current_value: 0,
+              required_value: 1,
+              satisfied: false,
+              weight: 1
+            })),
             recommended_actions: [],
             estimated_unlock_time: null,
             payment_required: access.requiresPayment
               ? {
-                  required_tier: access.requiredTier,
-                  price_monthly: 0,
-                  price_yearly: 0,
+                  required: true,
+                  amount: 0,
                   currency: 'USD',
-                  benefits: [],
-                  trial_available: true,
+                  payment_type: 'subscription' as const,
+                  subscription_tier: access.requiredTier
                 }
               : null,
+            special_conditions: null,
+            evaluated_at: new Date().toISOString()
           },
           metadata: { execution_time_ms: Date.now() - startTime, cache_hit: false, data_freshness: 'fresh', api_version: '2.1.0-enterprise' },
         }
@@ -239,7 +281,7 @@ export class PortalManager {
           time_spent_minutes: 0,
           metadata: toJson({}),
         })
-        if (insertError) throw new Error(`Failed to create progress record: ${insertError.message}`)
+        if (insertError) {throw new Error(`Failed to create progress record: ${insertError.message}`)}
       }
 
       this.cache.delete(`user_portals_${request.user_id}`)
@@ -251,11 +293,13 @@ export class PortalManager {
           success: true,
           portal_id: request.portal_id,
           unlocked: true,
-          criteria_met: [{ code: 'access', description: 'All access requirements satisfied' }],
-          missing_criteria: [],
-          recommended_actions: [],
-          estimated_unlock_time: 0,
+          criteria_met: true,
+          missing_criteria: null,
+          recommended_actions: null,
+          estimated_unlock_time: null,
           payment_required: null,
+          special_conditions: null,
+          evaluated_at: new Date().toISOString()
         },
         metadata: { execution_time_ms: Date.now() - startTime, cache_hit: false, data_freshness: 'fresh', api_version: '2.1.0-enterprise' },
       }
@@ -279,25 +323,33 @@ export class PortalManager {
         }
       }
 
-      const { data: progress, error: progressError } = await this.supabase
+      const progressResult = await this.supabase
         .from('user_portal_progress')
         .select('*')
         .eq('user_id', userId)
         .eq('portal_id', portalId)
         .single()
 
-      if (progressError) throw new Error(`Failed to fetch portal progress: ${progressError.message}`)
+      if (isQueryError(progressResult)) {
+        throw new Error(`Failed to fetch portal progress: ${progressResult.error.message}`)
+      }
+      
+      const progress = progressResult.data
 
-      const { data: stepProgress, error: stepError } = await this.supabase
+      const stepProgressResult = await this.supabase
         .from('user_step_progress')
         .select('*')
         .eq('user_id', userId)
         .eq('portal_id', portalId)
         .order('created_at')
 
-      if (stepError) throw new Error(`Failed to fetch step progress: ${stepError.message}`)
+      if (isQueryError(stepProgressResult)) {
+        throw new Error(`Failed to fetch step progress: ${stepProgressResult.error.message}`)
+      }
+      
+      const stepProgress = stepProgressResult.data
 
-      const result = { ...(progress as UserPortalProgress), steps: (stepProgress || []) as UserStepProgress[] }
+      const result = { ...progress, steps: (stepProgress ?? []) as UserStepProgress[] }
       this.cache.set(cacheKey, { data: result, timestamp: Date.now() })
 
       return { success: true, data: result, metadata: { execution_time_ms: Date.now() - startTime, cache_hit: false, data_freshness: 'fresh', api_version: '2.1.0-enterprise' } }
@@ -310,28 +362,32 @@ export class PortalManager {
     try {
       const startTime = Date.now()
 
-      const { data: current, error: fetchError } = await this.supabase
+      const currentResult = await this.supabase
         .from('user_portal_progress')
         .select('*')
         .eq('user_id', request.user_id)
         .eq('portal_id', request.portal_id)
         .single()
 
-      if (fetchError) throw new Error(`Failed to fetch current progress: ${fetchError.message}`)
+      if (isQueryError(currentResult)) {
+        throw new Error(`Failed to fetch current progress: ${currentResult.error.message}`)
+      }
+      
+      const current = currentResult.data
 
-      const newPct = this.calculateCompletionPercentage(current as UserPortalProgress, request.progress_data)
-      const newStatus = this.determineProgressStatus(current as UserPortalProgress, newPct, request.progress_data)
+      const newPct = this.calculateCompletionPercentage(current, request.progress_data ?? {})
+      const newStatus = this.determineProgressStatus(current, newPct, request.progress_data ?? {})
 
       const updatedPayload = {
         progress_percentage: newPct,
         status: newStatus,
         last_activity_at: new Date().toISOString(),
-        time_spent_minutes: safeNumber((current as any).time_spent_minutes, 0) + safeNumber((request.progress_data as any).time_spent_minutes, 0),
-        session_count: safeNumber((current as any).session_count, 0) + ((request.progress_data as any).new_session ? 1 : 0),
-        metadata: toJson({ ...(current as any).metadata, ...(request.progress_data || {}) }),
+        time_spent_minutes: safeNumber(current.time_spent_minutes, 0) + safeNumber((request.progress_data as Record<string, number> | undefined)?.['time_spent_minutes'], 0),
+        session_count: safeNumber(current.session_count, 0) + (((request.progress_data as Record<string, boolean> | undefined)?.['new_session']) ? 1 : 0),
+        metadata: toJson({ ...current.metadata, ...(request.progress_data ?? {}) }),
       }
 
-      const { data: updated, error: updateError } = await this.supabase
+      const updatedResult = await this.supabase
         .from('user_portal_progress')
         .update(updatedPayload)
         .eq('user_id', request.user_id)
@@ -339,15 +395,18 @@ export class PortalManager {
         .select()
         .single()
 
-      if (updateError) throw new Error(`Failed to update progress: ${updateError.message}`)
-
-      if (request.step_id) await this.updateStepProgress(request)
-      if (request.biometric_reading) await this.storeBiometricReading(request.biometric_reading)
+      if (isQueryError(updatedResult)) {
+        throw new Error(`Failed to update progress: ${updatedResult.error.message}`)
+      }
+      
+      const updated = updatedResult.data
+      if (request.step_id) {await this.updateStepProgress(request)}
+      if (request.biometric_reading) {await this.storeBiometricReading(request.biometric_reading)}
 
       this.cache.delete(`portal_progress_${request.user_id}_${request.portal_id}`)
       this.cache.delete(`user_portals_${request.user_id}`)
 
-      if (newStatus === 'completed') await this.handlePortalCompletion(request.user_id, request.portal_id)
+      if (newStatus === 'completed') {await this.handlePortalCompletion(request.user_id, request.portal_id)}
 
       return { success: true, data: updated as UserPortalProgress, metadata: { execution_time_ms: Date.now() - startTime, cache_hit: false, data_freshness: 'fresh', api_version: '2.1.0-enterprise' } }
     } catch (error) {
@@ -358,12 +417,12 @@ export class PortalManager {
           operation_type: 'progress_update',
           portal_id: request.portal_id,
           step_id: request.step_id || null,
-          data: request.progress_data,
+          data: request.progress_data || {},
           timestamp: new Date().toISOString(),
           retry_count: 0,
           max_retries: this.config.maxRetries,
           priority: 1,
-          status: 'queued',
+          status: 'pending',
           last_error: null,
         })
       }
@@ -378,9 +437,13 @@ export class PortalManager {
   async startPortalSession(userId: string, portalId: string): Promise<ServiceResponse<PortalSession>> {
     try {
       const insertPayload = { user_id: userId, portal_id: portalId, session_start: new Date().toISOString(), session_data: toJson({}) }
-      const { data, error } = await this.supabase.from('portal_sessions').insert(insertPayload as any).select().single()
-      if (error) throw new Error(`Failed to create session: ${error.message}`)
-      return { success: true, data: data as PortalSession }
+      const result = await this.supabase.from('portal_sessions').insert(insertPayload).select().single()
+      
+      if (isQueryError(result)) {
+        throw new Error(`Failed to create session: ${result.error.message}`)
+      }
+      
+      return { success: true, data: result.data as PortalSession }
     } catch (error) {
       return { success: false, error: { code: 'SESSION_START_ERROR', message: error instanceof Error ? error.message : 'Failed to start session', timestamp: new Date().toISOString() } }
     }
@@ -388,19 +451,22 @@ export class PortalManager {
 
   async endPortalSession(sessionId: string, sessionData: Partial<PortalSession>): Promise<ServiceResponse<PortalSession>> {
     try {
-      const { data, error } = await this.supabase
+      const result = await this.supabase
         .from('portal_sessions')
         .update({
           session_end: new Date().toISOString(),
-          duration_minutes: safeNumber((sessionData as any).duration_minutes, 0),
-          session_data: toJson((sessionData as any).session_data || {}),
+          duration_minutes: safeNumber((sessionData as Record<string, number>)['duration_minutes'], 0),
+          session_data: toJson((sessionData as Record<string, unknown>)['session_data'] ?? {}),
         })
         .eq('id', sessionId)
         .select()
         .single()
 
-      if (error) throw new Error(`Failed to end session: ${error.message}`)
-      return { success: true, data: data as PortalSession }
+      if (isQueryError(result)) {
+        throw new Error(`Failed to end session: ${result.error.message}`)
+      }
+      
+      return { success: true, data: result.data as PortalSession }
     } catch (error) {
       return { success: false, error: { code: 'SESSION_END_ERROR', message: error instanceof Error ? error.message : 'Failed to end session', timestamp: new Date().toISOString() } }
     }
@@ -425,14 +491,14 @@ export class PortalManager {
   }
 
   private determineProgressStatus(current: UserPortalProgress, pct: number, progressData: Record<string, any>): PortalProgressStatus {
-    if ((progressData as any).force_status) return (progressData as any).force_status
-    if (pct >= 100) return 'completed'
-    if (pct > 0) return 'in_progress'
+    if ((progressData as any).force_status) {return (progressData as any).force_status}
+    if (pct >= 100) {return 'completed'}
+    if (pct > 0) {return 'in_progress'}
     return (current as any).status
   }
 
   private getPortalAccessStatus(progress?: UserPortalProgress | null): string {
-    if (!progress) return 'locked'
+    if (!progress) {return 'locked'}
     return (progress as any).status || 'locked'
   }
 
@@ -450,7 +516,7 @@ export class PortalManager {
   }
 
   private async updateStepProgress(request: ProgressUpdateRequest): Promise<void> {
-    if (!request.step_id) return
+    if (!request.step_id) {return}
 
     await this.supabase
       .from('user_step_progress')
@@ -477,7 +543,7 @@ export class PortalManager {
 
   private addToOfflineQueue(operation: OfflineOperation): void {
     this.offlineQueue.push(operation)
-    if (typeof window !== 'undefined') localStorage.setItem('porverse_offline_queue', JSON.stringify(this.offlineQueue))
+    if (typeof window !== 'undefined') {localStorage.setItem('porverse_offline_queue', JSON.stringify(this.offlineQueue))}
   }
 
   private setupRealtimeSubscriptions(): void {
@@ -487,7 +553,7 @@ export class PortalManager {
   private initializeOfflineSync(): void {
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem('porverse_offline_queue')
-      if (stored) this.offlineQueue = JSON.parse(stored)
+      if (stored) {this.offlineQueue = JSON.parse(stored)}
     }
   }
 
@@ -509,12 +575,12 @@ export class PortalManager {
         }
       } catch (error) {
         if (operation.retry_count < operation.max_retries) {
-          this.offlineQueue.push({ ...operation, retry_count: operation.retry_count + 1, last_error: (error as Error).message, status: 'queued' })
+          this.offlineQueue.push({ ...operation, retry_count: operation.retry_count + 1, last_error: (error as Error).message, status: 'pending' })
         }
       }
     }
 
-    if (typeof window !== 'undefined') localStorage.setItem('porverse_offline_queue', JSON.stringify(this.offlineQueue))
+    if (typeof window !== 'undefined') {localStorage.setItem('porverse_offline_queue', JSON.stringify(this.offlineQueue))}
   }
 }
 
@@ -533,7 +599,7 @@ export function createPortalManager(overrides?: Partial<PortalManagerConfig>): P
 
 let portalManagerInstance: PortalManager | null = null
 export function getPortalManager(): PortalManager {
-  if (!portalManagerInstance) portalManagerInstance = createPortalManager()
+  if (!portalManagerInstance) {portalManagerInstance = createPortalManager()}
   return portalManagerInstance
 }
 

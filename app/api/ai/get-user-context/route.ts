@@ -2,7 +2,14 @@
 // Agregă toate răspunsurile utilizatorului pentru context AI
 
 import { NextRequest, NextResponse } from 'next/server'
+
 import { createClient } from '@/lib/supabase/server'
+import type { Database } from '@/types/database.types'
+
+type UserPortalProgress = Database['public']['Tables']['user_portal_progress']['Row']
+type StepResponse = Database['public']['Tables']['step_responses']['Row']
+
+export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   try {
@@ -21,7 +28,7 @@ export async function GET(request: NextRequest) {
       data: { user },
     } = await supabase.auth.getUser()
 
-    if (!user || user.id !== userId) {
+    if (user?.id !== userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -88,19 +95,19 @@ export async function GET(request: NextRequest) {
       
       journey: {
         totalPortals: 6,
-        startedPortals: portalProgress?.filter(p => p.status !== 'not_started').length || 0,
-        completedPortals: portalProgress?.filter(p => p.status === 'completed').length || 0,
+        startedPortals: portalProgress?.filter((p: UserPortalProgress) => p.status !== 'not_started').length || 0,
+        completedPortals: portalProgress?.filter((p: UserPortalProgress) => p.status === 'completed').length || 0,
         overallProgress: portalProgress && portalProgress.length > 0
           ? Math.round(
-              portalProgress.reduce((acc, p) => acc + p.completion_percentage, 0) / 
+              portalProgress.reduce((acc: number, p: UserPortalProgress) => acc + p.completion_percentage, 0) / 
               portalProgress.length
             )
           : 0,
       },
 
-      portals: portalProgress?.map(p => ({
-        code: p.portals?.portal_code,
-        title: p.portals?.title,
+      portals: portalProgress?.map((p: UserPortalProgress) => ({
+        code: (p as any).portals?.portal_code,
+        title: (p as any).portals?.title,
         currentStep: p.current_step,
         totalSteps: p.total_steps,
         completion: p.completion_percentage,
@@ -109,11 +116,11 @@ export async function GET(request: NextRequest) {
         completedAt: p.completed_at,
       })) || [],
 
-      responses: userResponses?.map(r => ({
-        portal: r.portals?.title,
-        portalCode: r.portals?.portal_code,
+      responses: userResponses?.map((r: StepResponse) => ({
+        portal: (r as any).portals?.title,
+        portalCode: (r as any).portals?.portal_code,
         step: r.step_number,
-        stepTitle: r.portal_steps?.title,
+        stepTitle: (r as any).portal_steps?.title,
         answers: r.responses,
         answeredAt: r.created_at,
       })) || [],
@@ -121,13 +128,13 @@ export async function GET(request: NextRequest) {
       // Summary statistics
       stats: {
         totalResponses: userResponses?.length || 0,
-        totalWordsWritten: userResponses?.reduce((acc, r) => {
+        totalWordsWritten: userResponses?.reduce((acc: number, r: StepResponse) => {
           const allAnswers = Object.values(r.responses || {}).join(' ')
           return acc + allAnswers.split(/\s+/).length
         }, 0) || 0,
         avgResponseLength: userResponses && userResponses.length > 0
           ? Math.round(
-              userResponses.reduce((acc, r) => {
+              userResponses.reduce((acc: number, r: StepResponse) => {
                 const allAnswers = Object.values(r.responses || {}).join(' ')
                 return acc + allAnswers.length
               }, 0) / userResponses.length
@@ -140,10 +147,11 @@ export async function GET(request: NextRequest) {
       success: true,
       context,
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Get User Context Error:', error)
+    const message = error instanceof Error ? error.message : 'Failed to get user context'
     return NextResponse.json(
-      { error: error.message || 'Failed to get user context' },
+      { error: message },
       { status: 500 }
     )
   }

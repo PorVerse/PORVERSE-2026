@@ -10,8 +10,8 @@
  * @description Emotion-aware AI response adaptation
  */
 
+import type { AIResponse, ConversationContext, GuidanceTone } from '@/types/ai-services'
 import type { EmotionReading, EmotionalState, StressLevel } from '@/types/biometric'
-import type { AIResponse, ConversationContext, EmotionalTone } from '@/types/ai-services'
 
 // ============================================================================
 // 🔧 TYPES & INTERFACES
@@ -45,7 +45,7 @@ const DEFAULT_CONFIG: BiometricAdapterConfig = {
  * Adaptation strategy based on emotion
  */
 interface AdaptationStrategy {
-  tone: EmotionalTone                     // Tone to use in response
+  tone: GuidanceTone                      // Tone to use in response
   approach: 'supportive' | 'empowering' | 'reflective' | 'energizing' | 'calming'
   pacing: 'slow' | 'moderate' | 'quick'   // Response pacing
   language: {
@@ -153,7 +153,7 @@ export class BiometricAIAdapter {
 
       // Step 3: Adapt the response
       const adaptedMessage = this.adaptResponseMessage(
-        aiResponse.message,
+        aiResponse.content,
         strategy,
         emotionReading
       )
@@ -173,8 +173,8 @@ export class BiometricAIAdapter {
       // Step 6: Create adapted response
       const adapted: AdaptedAIResponse = {
         ...aiResponse,
-        message: finalMessage,
-        originalResponse: aiResponse.message,
+        content: finalMessage,
+        originalResponse: aiResponse.content,
         adaptationApplied: true,
         adaptationStrategy: strategy,
         emotionalContext: {
@@ -184,12 +184,7 @@ export class BiometricAIAdapter {
           requiresIntervention: crisisDetected
         },
         metadata: {
-          ...aiResponse.metadata,
-          biometricAdaptation: {
-            applied: true,
-            strategy: strategy.approach,
-            emotionDetected: emotionReading.emotion
-          }
+          ...aiResponse.metadata
         }
       }
 
@@ -227,7 +222,7 @@ export class BiometricAIAdapter {
 
     // Create stress-aware strategy
     const strategy: AdaptationStrategy = {
-      tone: 'calming',
+      tone: 'supportive',
       approach: 'supportive',
       pacing: 'slow',
       language: {
@@ -240,7 +235,7 @@ export class BiometricAIAdapter {
     }
 
     const adaptedMessage = this.adaptResponseMessage(
-      aiResponse.message,
+      aiResponse.content,
       strategy,
       emotionReading
     )
@@ -251,8 +246,8 @@ export class BiometricAIAdapter {
 
     return {
       ...aiResponse,
-      message: finalMessage,
-      originalResponse: aiResponse.message,
+      content: finalMessage,
+      originalResponse: aiResponse.content,
       adaptationApplied: true,
       adaptationStrategy: strategy,
       emotionalContext: {
@@ -314,7 +309,7 @@ export class BiometricAIAdapter {
     // Strategy mapping based on emotion
     const strategyMap: Record<string, AdaptationStrategy> = {
       happy: {
-        tone: 'encouraging',
+        tone: 'motivational',
         approach: 'energizing',
         pacing: 'moderate',
         language: {
@@ -342,7 +337,7 @@ export class BiometricAIAdapter {
         ]
       },
       angry: {
-        tone: 'calming',
+        tone: 'supportive',
         approach: 'reflective',
         pacing: 'slow',
         language: {
@@ -358,7 +353,7 @@ export class BiometricAIAdapter {
         ]
       },
       fearful: {
-        tone: 'reassuring',
+        tone: 'empathetic',
         approach: 'supportive',
         pacing: 'slow',
         language: {
@@ -414,16 +409,27 @@ export class BiometricAIAdapter {
       }
     }
 
-    return strategyMap[emotion] || strategyMap.neutral
+    return strategyMap[emotion] || strategyMap['neutral'] || {
+      tone: 'neutral' as const,
+      approach: 'reflective' as const,
+      pacing: 'moderate' as const,
+      language: {
+        useEmpathy: false,
+        useValidation: false,
+        useEncouragement: false,
+        useHumor: false
+      },
+      interventions: []
+    }
   }
 
   /**
    * Checks if adaptation should be applied
    */
   private shouldAdapt(emotionReading: EmotionReading): boolean {
-    if (!this.config.enableEmotionalAdaptation) return false
-    if (emotionReading.confidence < this.config.minConfidence) return false
-    if (emotionReading.emotion === 'neutral' && emotionReading.intensity < 0.3) return false
+    if (!this.config.enableEmotionalAdaptation) {return false}
+    if (emotionReading.confidence < this.config.minConfidence) {return false}
+    if (emotionReading.emotion === 'neutral' && emotionReading.intensity < 0.3) {return false}
     return true
   }
 
@@ -431,7 +437,7 @@ export class BiometricAIAdapter {
    * Detects crisis situations
    */
   private detectCrisis(emotionReading: EmotionReading): boolean {
-    if (!this.config.enableCrisisDetection) return false
+    if (!this.config.enableCrisisDetection) {return false}
 
     const crisisEmotions: string[] = ['fearful', 'sad', 'angry']
     const isCrisisEmotion = crisisEmotions.includes(emotionReading.emotion)
@@ -546,7 +552,7 @@ export class BiometricAIAdapter {
   private addEmotionalSupport(
     message: string,
     strategy: AdaptationStrategy,
-    emotionReading: EmotionReading
+    _emotionReading: EmotionReading
   ): string {
     if (strategy.interventions.length === 0) {
       return message
@@ -577,12 +583,12 @@ export class BiometricAIAdapter {
     const crisisMessage = this.getCrisisResponse(emotionReading.emotion)
     const supportResources = this.getSupportResources()
 
-    const finalMessage = `${crisisMessage}\n\n${supportResources}\n\n${aiResponse.message}`
+    const finalMessage = `${crisisMessage}\n\n${supportResources}\n\n${aiResponse.content}`
 
     return {
       ...aiResponse,
-      message: finalMessage,
-      originalResponse: aiResponse.message,
+      content: finalMessage,
+      originalResponse: aiResponse.content,
       adaptationApplied: true,
       adaptationStrategy: {
         ...strategy,
@@ -601,7 +607,7 @@ export class BiometricAIAdapter {
   /**
    * Gets crisis-appropriate response
    */
-  private getCrisisResponse(emotion: string): string {
+  private getCrisisResponse(_emotion: string): string {
     return `I notice you might be going through a really difficult time right now. Your wellbeing is important, and it's okay to ask for help.`
   }
 
@@ -628,11 +634,11 @@ You don't have to go through this alone.`
     const { emotion, intensity } = emotionReading
 
     const stressfulEmotions: string[] = ['angry', 'fearful', 'sad', 'disgusted']
-    if (!stressfulEmotions.includes(emotion)) return 'low'
+    if (!stressfulEmotions.includes(emotion)) {return 'low'}
 
-    if (intensity > 0.8) return 'critical'
-    if (intensity > 0.6) return 'high'
-    if (intensity > 0.4) return 'moderate'
+    if (intensity > 0.8) {return 'critical'}
+    if (intensity > 0.6) {return 'high'}
+    if (intensity > 0.4) {return 'moderate'}
     return 'low'
   }
 
@@ -750,7 +756,7 @@ You don't have to go through this alone.`
   ): AdaptedAIResponse {
     return {
       ...aiResponse,
-      originalResponse: aiResponse.message,
+      originalResponse: aiResponse.content,
       adaptationApplied: false,
       adaptationStrategy: {
         tone: 'neutral',

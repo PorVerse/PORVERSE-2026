@@ -2,6 +2,7 @@
 // Authentication Helper Functions - Complete
 
 import { createClient } from '@/lib/supabase/client'
+
 import type { Database } from '@/types/database.types'
 
 type Profile = Database['public']['Tables']['profiles']['Row']
@@ -28,7 +29,7 @@ export async function signUpWithEmail(
     },
   })
 
-  if (error) throw new Error(error.message)
+  if (error) {throw new Error(error.message)}
   return data
 }
 
@@ -40,7 +41,7 @@ export async function signInWithEmail(email: string, password: string) {
     password,
   })
 
-  if (error) throw new Error(error.message)
+  if (error) {throw new Error(error.message)}
   return data
 }
 
@@ -54,7 +55,7 @@ export async function signInWithMagicLink(email: string) {
     },
   })
 
-  if (error) throw new Error(error.message)
+  if (error) {throw new Error(error.message)}
   return data
 }
 
@@ -65,7 +66,7 @@ export async function signInWithMagicLink(email: string) {
 export async function signOut() {
   const supabase = createClient()
   const { error } = await supabase.auth.signOut()
-  if (error) throw new Error(error.message)
+  if (error) {throw new Error(error.message)}
 }
 
 // ==========================================
@@ -79,7 +80,7 @@ export async function resetPassword(email: string) {
     redirectTo: `${window.location.origin}/auth/reset-password`,
   })
 
-  if (error) throw new Error(error.message)
+  if (error) {throw new Error(error.message)}
   return data
 }
 
@@ -90,7 +91,7 @@ export async function updatePassword(newPassword: string) {
     password: newPassword,
   })
 
-  if (error) throw new Error(error.message)
+  if (error) {throw new Error(error.message)}
   return data
 }
 
@@ -144,7 +145,7 @@ export async function updateUserProfile(
     .select()
     .single()
 
-  if (error) throw new Error(error.message)
+  if (error) {throw new Error(error.message)}
   return data
 }
 
@@ -157,7 +158,7 @@ export async function hasActiveSubscription(
 ): Promise<boolean> {
   const profile = await getUserProfile(userId)
 
-  if (!profile) return false
+  if (!profile) {return false}
 
   return (
     profile.subscription_status === 'active' ||
@@ -200,7 +201,7 @@ export async function refreshSession() {
     error,
   } = await supabase.auth.refreshSession()
 
-  if (error) throw new Error(error.message)
+  if (error) {throw new Error(error.message)}
   return session
 }
 

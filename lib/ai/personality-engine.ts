@@ -49,7 +49,7 @@ export class PersonalityEngine {
       learningStyle,
       preferences: {
         tone: communicationStyle === 'formal' ? 'professional' : 'friendly',
-        complexity: learningStyle === 'technical' ? 'technical' : 'simple'
+        complexity: learningStyle === 'textual' ? 'technical' : 'simple'
       },
       strengths: this.identifyStrengths(progressData),
       challenges: this.identifyChallenges(progressData),
@@ -179,7 +179,7 @@ export class PersonalityEngine {
     });
 
     const dominant = Object.keys(emotions).sort((a, b) => 
-      emotions[b] - emotions[a]
+      emotions[b]! - emotions[a]!
     )[0] || 'neutral';
 
     return { dominant, frequency: emotions };
@@ -191,12 +191,12 @@ export class PersonalityEngine {
       sum + (msg.content?.length || 0), 0
     ) / (conversationData.length || 1);
 
-    if (avgLength < 50) return 'direct';
-    if (avgLength > 200) return 'formal';
+    if (avgLength < 50) {return 'direct';}
+    if (avgLength > 200) {return 'formal';}
     return 'friendly';
   }
 
-  private analyzeLearningStyle(progressData: any): PersonalityProfile['learningStyle'] {
+  private analyzeLearningStyle(_progressData: any): PersonalityProfile['learningStyle'] {
     // Default: textual (poate fi extins)
     return 'textual';
   }

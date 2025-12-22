@@ -41,7 +41,7 @@ const NUM_TO_DIFFICULTY: Record<number, PortalDifficulty> = {
 function normalizeDifficultyInput(
   difficulty: number | PortalDifficulty
 ): number {
-  if (typeof difficulty === 'number') return difficulty
+  if (typeof difficulty === 'number') {return difficulty}
   return DIFFICULTY_TO_NUM[difficulty] ?? 0
 }
 
@@ -107,8 +107,8 @@ export function getNextPortal(portals: Portal[], currentPortalCode: string): Por
   const idx = sorted.findIndex(
     (p) => getLegacyField<string>(p, 'portal_code') === currentPortalCode || p.id === currentPortalCode
   )
-  if (idx === -1 || idx === sorted.length - 1) return null
-  return sorted[idx + 1]
+  if (idx === -1 || idx === sorted.length - 1) {return null}
+  return sorted[idx + 1] ?? null
 }
 
 /** Get the previous portal in sequence. */
@@ -117,8 +117,8 @@ export function getPreviousPortal(portals: Portal[], currentPortalCode: string):
   const idx = sorted.findIndex(
     (p) => getLegacyField<string>(p, 'portal_code') === currentPortalCode || p.id === currentPortalCode
   )
-  if (idx <= 0) return null
-  return sorted[idx - 1]
+  if (idx <= 0) {return null}
+  return sorted[idx - 1] ?? null
 }
 
 /** Get first incomplete portal (based on status !== 'completed'). */
@@ -129,7 +129,7 @@ export function getFirstIncompletePortal(
   const sorted = getSortedPortals(portals)
   for (const portal of sorted) {
     const progress = userProgress[portal.id]
-    if (!progress || progress.status !== 'completed') {
+    if (progress?.status !== 'completed') {
       return portal
     }
   }
@@ -162,12 +162,12 @@ export function isPortalAccessible(
   userProgress: Record<string, UserPortalProgress>,
   subscriptionTier: PortalSubscriptionTier
 ): boolean {
-  if (!hasRequiredSubscriptionTier(portal.subscription_tier as PortalSubscriptionTier, subscriptionTier)) {
+  if (!hasRequiredSubscriptionTier(portal.subscription_tier, subscriptionTier)) {
     return false
   }
   if (portal.required_previous_portal) {
     const prev = userProgress[portal.required_previous_portal]
-    if (!prev || prev.status !== 'completed') return false
+    if (prev?.status !== 'completed') {return false}
   }
   return true
 }
@@ -196,12 +196,12 @@ export function getPortalLockReason(
   userProgress: Record<string, UserPortalProgress>,
   subscriptionTier: PortalSubscriptionTier
 ): string | null {
-  if (!hasRequiredSubscriptionTier(portal.subscription_tier as PortalSubscriptionTier, subscriptionTier)) {
+  if (!hasRequiredSubscriptionTier(portal.subscription_tier, subscriptionTier)) {
     return `Requires ${String(portal.subscription_tier)} subscription`
   }
   if (portal.required_previous_portal) {
     const prev = userProgress[portal.required_previous_portal]
-    if (!prev || prev.status !== 'completed') return 'Complete the previous portal first'
+    if (prev?.status !== 'completed') {return 'Complete the previous portal first'}
   }
   return null
 }
@@ -215,8 +215,8 @@ export function calculateOverallProgress(
   userProgress: Record<string, UserPortalProgress>
 ): number {
   const items = Object.values(userProgress)
-  if (items.length === 0) return 0
-  const total = items.reduce((sum, p) => sum + safeNumber(p.completion_percentage), 0)
+  if (items.length === 0) {return 0}
+  const total = items.reduce((sum, p) => sum + safeNumber(p.progress_percentage), 0)
   return Math.round(total / items.length)
 }
 
@@ -241,7 +241,7 @@ export function calculateAverageQualityScore(
   const withQuality = completed
     .map((p) => (p as any).quality_score as number | null | undefined)
     .filter((q): q is number => typeof q === 'number' && Number.isFinite(q))
-  if (withQuality.length === 0) return 0
+  if (withQuality.length === 0) {return 0}
   const total = withQuality.reduce((s, q) => s + q, 0)
   return Math.round(total / withQuality.length)
 }
@@ -252,7 +252,7 @@ export function getPortalCompletionPercentage(
   userProgress: Record<string, UserPortalProgress>
 ): number {
   const p = userProgress[portalId]
-  return safeNumber(p?.completion_percentage)
+  return safeNumber(p?.progress_percentage)
 }
 
 /** Is portal completed? */
@@ -282,7 +282,7 @@ export function getCurrentStep(
   steps: PortalStep[],
   progress: UserPortalProgress | null
 ): PortalStep | null {
-  if (!progress) return steps[0] || null
+  if (!progress) {return steps[0] || null}
   return steps.find((s) => s.step_number === progress.current_step) || null
 }
 
@@ -374,13 +374,13 @@ export function getCategoryEmoji(category: PortalCategory): string {
 
 /** Format portal progress as percentage string */
 export function formatProgressPercentage(progress: UserPortalProgress | null): string {
-  return `${safeNumber(progress?.completion_percentage)}%`
+  return `${safeNumber(progress?.progress_percentage)}%`
 }
 
 /** Format minutes to `xh ym` */
 export function formatMinutes(minutes: number): string {
   const m = safeNumber(minutes)
-  if (m < 60) return `${m} min`
+  if (m < 60) {return `${m} min`}
   const h = Math.floor(m / 60)
   const r = m % 60
   return r === 0 ? `${h}h` : `${h}h ${r}m`
@@ -388,7 +388,7 @@ export function formatMinutes(minutes: number): string {
 
 /** Format portal title with emoji derived from category (no `icon` assumed). */
 export function formatPortalTitle(portal: Portal): string {
-  const category = (portal.category as PortalCategory) ?? 'activation'
+  const category = (portal.category) ?? 'activation'
   return `${getCategoryEmoji(category)} ${portal.name}`
 }
 
@@ -408,7 +408,7 @@ export function isValidStepNumber(stepNumber: number, totalSteps: number): boole
 
 /** Check if portal has required fields (relaxed – no `portal_code` required). */
 export function isValidPortal(portal: Partial<Portal>): portal is Portal {
-  return !!(portal && portal.id && portal.name && portal.subscription_tier)
+  return !!(portal?.id && portal.name && portal.subscription_tier)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -422,13 +422,13 @@ export function getRecommendedPortal(
   subscriptionTier: PortalSubscriptionTier
 ): Portal | null {
   const inProgress = portals.find((p) => userProgress[p.id]?.status === 'in_progress')
-  if (inProgress) return inProgress
+  if (inProgress) {return inProgress}
 
   const sorted = getSortedPortals(portals)
   for (const portal of sorted) {
     if (isPortalAccessible(portal, userProgress, subscriptionTier)) {
       const prog = userProgress[portal.id]
-      if (!prog || prog.status !== 'completed') return portal
+      if (prog?.status !== 'completed') {return portal}
     }
   }
   return null
@@ -440,10 +440,10 @@ export function getPortalsForSkillLevel(
   completedPortalsCount: number
 ): Portal[] {
   let target: number
-  if (completedPortalsCount === 0) target = 1
-  else if (completedPortalsCount <= 2) target = 2
-  else if (completedPortalsCount <= 4) target = 3
-  else target = 4
+  if (completedPortalsCount === 0) {target = 1}
+  else if (completedPortalsCount <= 2) {target = 2}
+  else if (completedPortalsCount <= 4) {target = 3}
+  else {target = 4}
 
   return portals.filter((p) => safeNumber(p.difficulty_level) === target)
 }

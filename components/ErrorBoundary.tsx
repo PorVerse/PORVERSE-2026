@@ -17,7 +17,7 @@ import React from 'react'
 /**
  * Sentry integration (conditional import to avoid build errors if not installed)
  */
-let Sentry: any = null
+let Sentry: typeof import('@sentry/nextjs') | null = null
 try {
   Sentry = require('@sentry/nextjs')
 } catch {
@@ -84,7 +84,7 @@ export class ErrorBoundary extends React.Component<
    * Handle caught error
    * Log to console, Sentry, and custom handler
    */
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
+  override componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
     // Update state with error info
     this.setState({ errorInfo })
 
@@ -127,8 +127,8 @@ export class ErrorBoundary extends React.Component<
   /**
    * Reset on props change (if resetKeys provided)
    */
-  componentDidUpdate(prevProps: ErrorBoundaryProps): void {
-    if (!this.state.hasError) return
+  override componentDidUpdate(prevProps: ErrorBoundaryProps): void {
+    if (!this.state.hasError) {return}
 
     // Check if reset keys changed
     const { resetKeys } = this.props
@@ -142,7 +142,7 @@ export class ErrorBoundary extends React.Component<
     }
   }
 
-  render(): React.ReactNode {
+  override render(): React.ReactNode {
     const { hasError, error, errorInfo } = this.state
     const { children, fallback: FallbackComponent } = this.props
 

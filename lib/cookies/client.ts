@@ -7,13 +7,13 @@ export const I18N_COOKIE_TIER = 'i18n_tier'
 const MAX_AGE = 60 * 60 * 24 * 180 // 180 zile
 
 export function getCookieClient(name: string): string | undefined {
-  if (typeof document === 'undefined') return undefined
-  const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'))
-  return match ? decodeURIComponent(match[2]) : undefined
+  if (typeof document === 'undefined') {return undefined}
+  const match = document.cookie.match(new RegExp(`(^| )${  name  }=([^;]+)`))
+  return match?.[2] ? decodeURIComponent(match[2]) : undefined
 }
 
 export function setCookieClient(name: string, value: string): void {
-  if (typeof document === 'undefined') return
+  if (typeof document === 'undefined') {return}
   const expires = new Date(Date.now() + MAX_AGE * 1000).toUTCString()
   document.cookie = `${name}=${encodeURIComponent(value)}; Path=/; SameSite=Lax; Expires=${expires}`
 }

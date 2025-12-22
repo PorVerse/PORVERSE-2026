@@ -5,8 +5,9 @@ export async function POST(req: Request) {
     // TODO: scrie în DB / Sentry dacă vrei
     console.debug('📥 telemetry event', data?.events?.[0]?.type ?? 'batch', data);
     return new Response(null, { status: 204 });
-  } catch (e: any) {
-    return new Response(JSON.stringify({ error: e?.message || 'bad payload' }), {
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : 'bad payload'
+    return new Response(JSON.stringify({ error: message }), {
       status: 400,
       headers: { 'Content-Type': 'application/json' },
     });

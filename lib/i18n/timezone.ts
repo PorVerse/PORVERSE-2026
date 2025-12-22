@@ -16,7 +16,7 @@ export function getBrowserTimeZone(): string | undefined {
  * Validează un identificator IANA time zone (ex: "Europe/Bucharest").
  */
 export function isValidTimeZone(tz?: string | null): tz is string {
-  if (!tz || typeof tz !== 'string') return false
+  if (!tz || typeof tz !== 'string') {return false}
   try {
     new Intl.DateTimeFormat('en-US', { timeZone: tz })
     return true

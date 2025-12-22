@@ -9,15 +9,15 @@ export const revalidate = 0
 const STRIPE_SECRET = process.env['STRIPE_SECRET_KEY']
 const STRIPE_WH_SECRET = process.env['STRIPE_WEBHOOK_SECRET']
 
-const stripe = STRIPE_SECRET ? new Stripe(STRIPE_SECRET, { apiVersion: '2024-06-20' }) : null
+const stripe = STRIPE_SECRET ? new Stripe(STRIPE_SECRET, { apiVersion: '2025-12-15.clover' as const }) : null
 
 // Stripe cere "raw body" pentru verificare semnătură
 async function readRawBody(req: NextRequest): Promise<string> {
   const reader = req.body?.getReader()
-  if (!reader) return ''
+  if (!reader) {return ''}
   const chunks: Uint8Array[] = []
   // @ts-ignore
-for await (const chunk of (async function* () { while (true) { const { done, value } = await reader.read(); if (done) break; yield value } })()) {
+for await (const chunk of (async function* () { while (true) { const { done, value } = await reader.read(); if (done) {break;} yield value } })()) {
     chunks.push(chunk)
   }
   const merged = Buffer.concat(chunks.map((c) => Buffer.from(c)))
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
     try {
       event = stripe.webhooks.constructEvent(raw, sig, STRIPE_WH_SECRET)
     } catch (err) {
-      if (process.env['NODE_ENV'] !== 'production') console.error('[stripe] bad signature', err)
+      if (process.env['NODE_ENV'] !== 'production') {console.error('[stripe] bad signature', err)}
       return new NextResponse('Bad signature', { status: 400 })
     }
 
@@ -53,13 +53,13 @@ export async function POST(req: NextRequest) {
     const type = event.type
 
     if (type === 'checkout.session.completed') {
-      const session = event.data.object as Stripe.Checkout.Session
+      const session = event.data.object
       const customerId = session.customer as string | null
       const priceId = (session.line_items?.data?.[0]?.price?.id ||
         (session as any).lines?.data?.[0]?.price?.id) as string | undefined
 
       // user_id l-am pus în metadata în timpul creării sesiunii
-      const userId = (session.metadata?.user_id || session.client_reference_id || '').trim() || null
+      const userId = (session.metadata?.['user_id'] || session.client_reference_id || '').trim() || null
 
       if (supabase && customerId) {
         if (userId) {
@@ -82,10 +82,10 @@ export async function POST(req: NextRequest) {
     }
 
     if (type === 'customer.subscription.updated' || type === 'customer.subscription.created') {
-      const sub = event.data.object as Stripe.Subscription
+      const sub = event.data.object
       const customerId = sub.customer as string
       const priceId = sub.items.data[0]?.price?.id
-      const periodEnd = new Date(sub.current_period_end * 1000).toISOString()
+      const periodEnd = new Date((sub as any).current_period_end * 1000).toISOString()
       const status = sub.status
 
       if (supabase) {
@@ -99,7 +99,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (type === 'invoice.paid') {
-      const invoice = event.data.object as Stripe.Invoice
+      const invoice = event.data.object
       if (invoice.customer && supabase) {
         await supabase.from('profiles').update({
           stripe_status: 'active',
@@ -108,7 +108,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (type === 'customer.subscription.deleted') {
-      const sub = event.data.object as Stripe.Subscription
+      const sub = event.data.object
       if (supabase) {
         await supabase.from('profiles').update({
           stripe_status: 'canceled',
@@ -118,7 +118,7 @@ export async function POST(req: NextRequest) {
 
     return new NextResponse(null, { status: 200 })
   } catch (e) {
-    if (process.env['NODE_ENV'] !== 'production') console.error('[stripe] webhook error', e)
+    if (process.env['NODE_ENV'] !== 'production') {console.error('[stripe] webhook error', e)}
     return new NextResponse(null, { status: 200 })
   }
 }

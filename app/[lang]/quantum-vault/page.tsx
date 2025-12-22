@@ -2,9 +2,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClient } from '@/lib/supabase/client';
-import { timelineSimulator } from '@/lib/quantum/timeline-simulator';
+
 import { memoryIntegrator } from '@/lib/quantum/memory-integrator';
+import { timelineSimulator } from '@/lib/quantum/timeline-simulator';
+import { createClient } from '@/lib/supabase/client';
+
 import type { Memory, MemoryPattern } from '@/lib/quantum/memory-integrator';
 import type { TimelinePoint, TimelineScenario } from '@/lib/quantum/timeline-simulator';
 
@@ -87,7 +89,7 @@ export default function QuantumVaultPage() {
 
   // Handlers
   const handleAddMemory = async () => {
-    if (!userId || !newMemory.title) return;
+    if (!userId || !newMemory.title) {return;}
 
     setIsLoading(true);
 
@@ -113,7 +115,7 @@ export default function QuantumVaultPage() {
   };
 
   const handleGenerateScenarios = async () => {
-    if (!userId) return;
+    if (!userId) {return;}
 
     setIsLoading(true);
 

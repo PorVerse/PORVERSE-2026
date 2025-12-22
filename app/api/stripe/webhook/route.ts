@@ -1,9 +1,10 @@
 // app/api/stripe/webhook/route.ts
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
-import { svLog, svMetric } from '@/lib/telemetry/server'
+
 import { sendMail } from '@/lib/email/mailer'
 import { stripeReceiptTemplate } from '@/lib/email/templates/stripeReceipt'
+import { svLog, svMetric } from '@/lib/telemetry/server'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -12,7 +13,7 @@ export const revalidate = 0
 const STRIPE_SECRET_KEY = process.env['STRIPE_SECRET_KEY'] || ''
 const WEBHOOK_SECRET = process.env['STRIPE_WEBHOOK_SECRET'] || ''
 
-const stripe = new Stripe(STRIPE_SECRET_KEY, { apiVersion: '2024-06-20' })
+const stripe = new Stripe(STRIPE_SECRET_KEY, { apiVersion: '2025-12-15.clover' as const })
 
 /** Stripe semnătură + raw body handling */
 export async function POST(req: Request) {
@@ -29,8 +30,9 @@ export async function POST(req: Request) {
     let event: Stripe.Event
     try {
       event = stripe.webhooks.constructEvent(buf, sig, WEBHOOK_SECRET)
-    } catch (err: any) {
-      await svLog('billing.webhook.signature_invalid', { error: err?.message })
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Unknown error'
+      await svLog('billing.webhook.signature_invalid', { error: message })
       return NextResponse.json({ ok: false, error: 'Invalid signature' }, { status: 400 })
     }
 
@@ -43,10 +45,10 @@ export async function POST(req: Request) {
         const session: Stripe.Checkout.Session = event.data.object
         const amount = session.amount_total ?? session.amount_subtotal ?? 0
         const currency = session.currency?.toUpperCase() ?? 'USD'
-        const customerEmail =
-          typeof session.customer === 'string'
-          ? undefined
-          : ('email' in (session.customer ?? {}) ? (session.customer as any)?.email : undefined)
+        const email = session.customer_details?.email ?? 
+          (typeof session.customer === 'string'
+            ? undefined
+            : ('email' in (session.customer ?? {}) ? (session.customer as any)?.email : undefined))
 
         await svLog('billing.checkout.completed', {
           sessionId: session.id,
@@ -77,15 +79,19 @@ export async function POST(req: Request) {
               html,
             })
             await svLog('billing.email.sent', { to: email, template: 'stripeReceipt' })
-          } catch (e: any) {
-            await svLog('billing.email.failed', { to: email, error: e?.message })
+          } catch (e: unknown) {
+            const message = e instanceof Error ? e.message : 'Unknown error'
+            await svLog('billing.email.failed', { to: email, error: message })
           }
         }
         break
       }
 
       case 'customer.subscription.updated': {
-        const sub: Stripe.Subscription = event.data.object
+        const sub = event.data.object as Stripe.Subscription & {
+          current_period_end?: number
+          cancel_at_period_end?: boolean
+        }
         await svLog('billing.subscription.updated', {
           id: sub.id,
           status: sub.status,
@@ -117,10 +123,11 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ ok: true })
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('[stripe.webhook.error]', err)
-    await svLog('billing.webhook.error', { error: err?.message })
-    return NextResponse.json({ ok: false, error: err?.message || 'Unknown error' }, { status: 500 })
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    await svLog('billing.webhook.error', { error: message })
+    return NextResponse.json({ ok: false, error: message }, { status: 500 })
   }
 }
 
@@ -129,7 +136,7 @@ export function GET() {
 }
 
 /** Stripe amount_minor_units → human string (ex: 1900, "EUR") => "19.00" */
-function formatMinorToMajor(minor: number, currency: string) {
+function formatMinorToMajor(minor: number, _currency: string) {
   // majoritatea monedelor au 2 zecimale; pentru JPY etc. poți extinde dacă ai nevoie
   const decimals = 2
   const base = Math.pow(10, decimals)

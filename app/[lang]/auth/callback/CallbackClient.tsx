@@ -1,8 +1,9 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
-import Link from 'next/link'
 import { Loader2, Sparkles, AlertCircle } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+
+import Link from 'next/link'
 
 type Lang = 'ro' | 'en'
 const safeLang = (x: string): Lang => (x === 'ro' ? 'ro' : 'en')
@@ -10,10 +11,10 @@ const first = (v: string | string[] | undefined): string | null =>
   !v ? null : Array.isArray(v) ? v[0] ?? null : v
 
 function sanitizeNext(nextRaw: string | null, fallback: string) {
-  if (!nextRaw) return fallback
-  if (!nextRaw.startsWith('/')) return fallback
-  if (nextRaw.startsWith('//')) return fallback
-  if (nextRaw.includes('://')) return fallback
+  if (!nextRaw) {return fallback}
+  if (!nextRaw.startsWith('/')) {return fallback}
+  if (nextRaw.startsWith('//')) {return fallback}
+  if (nextRaw.includes('://')) {return fallback}
   return nextRaw
 }
 
@@ -36,16 +37,16 @@ export default function CallbackClient({
     const type = first(searchParams['type'])
     const nextSafe = sanitizeNext(first(searchParams['next']), `/${lang}/portal-dashboard`)
 
-    if (code) qs.set('code', code)
-    if (token_hash) qs.set('token_hash', token_hash)
-    if (type) qs.set('type', type)
+    if (code) {qs.set('code', code)}
+    if (token_hash) {qs.set('token_hash', token_hash)}
+    if (type) {qs.set('type', type)}
     qs.set('next', nextSafe)
 
     return `/auth/callback?${qs.toString()}`
   }, [searchParams, lang])
 
   useEffect(() => {
-    if (looksInvalid) return
+    if (looksInvalid) {return}
     const t1 = window.setTimeout(() => window.location.replace(forwardUrl), 120)
     const t2 = window.setTimeout(() => setStuck(true), 4500)
     return () => {

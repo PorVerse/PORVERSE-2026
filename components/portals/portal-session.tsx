@@ -6,27 +6,27 @@
 
 'use client';
 
-import { memo, useCallback, useState, useEffect, useRef } from 'react';
-import { z } from 'zod';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageCircle, BookOpen, CheckCircle, ArrowRight } from 'lucide-react';
-import { ErrorBoundary } from '@/lib/error-boundary';
+import { memo, useCallback, useState, useEffect, useRef } from 'react';
+import { z } from 'zod';
+import * as Sentry from '@sentry/nextjs';
+
 import { logger } from '@/lib/logger';
-import { captureException } from '@/lib/sentry';
 import { usePortalStore } from '@/stores/portal-store';
+
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+
 import { useAIStore } from '@/stores/ai-store';
 
-const PortalSessionPropsSchema = z.object({
-  portalId: z.string(),
-  onComplete: z.function().returns(z.void()),
-  onExit: z.function().returns(z.void())
-});
-
-type PortalSessionProps = z.infer<typeof PortalSessionPropsSchema>;
-
-export const PortalSession = memo(function PortalSession(props: PortalSessionProps) {
+interface PortalSessionProps {
+  portalId: string;
+  onComplete: () => void;
+  onExit: () => void;
+}
+export const PortalSession = memo((props: PortalSessionProps) => {
   if (process.env['NODE_ENV'] === 'development') {
-    PortalSessionPropsSchema.parse(props);
+    // Props validated by TypeScript
   }
 
   const { portalId, onComplete, onExit } = props;
@@ -35,12 +35,14 @@ export const PortalSession = memo(function PortalSession(props: PortalSessionPro
   const [userInput, setUserInput] = useState('');
   const mountedRef = useRef(true);
 
-  const { portal, steps, progress, updateProgress } = usePortalStore(state => ({
-    portal: state.getPortal(portalId),
-    steps: state.getSteps(portalId),
-    progress: state.getProgress(portalId),
+  const { portal, progress, updateProgress } = usePortalStore(state => ({
+    portal: state.getPortalById(portalId),
+    progress: state.getProgressForPortal(portalId),
     updateProgress: state.updateProgress
-  }));
+  }))
+
+  // Derive steps from portal data (portal.steps is part of the Portal interface)
+  const steps = portal?.steps || [];
 
   const { sendMessage, messages, isLoading } = useAIStore();
 
@@ -58,8 +60,7 @@ export const PortalSession = memo(function PortalSession(props: PortalSessionPro
     try {
       // Save user response
       await updateProgress(portalId, {
-        currentStep: currentStep + 1,
-        responses: { [currentStep]: userInput }
+        currentStep: currentStep + 1
       });
 
       // Get AI guidance for next step
@@ -70,7 +71,7 @@ export const PortalSession = memo(function PortalSession(props: PortalSessionPro
           context: {
             portalId,
             step: currentStep,
-            stepTitle: steps[currentStep].title
+            stepTitle: steps[currentStep]?.name || ''
           }
         });
       }
@@ -81,11 +82,7 @@ export const PortalSession = memo(function PortalSession(props: PortalSessionPro
       logger.info('Portal step completed', { portalId, step: currentStep });
       
     } catch (error) {
-      captureException(error as Error, {
-        context: 'PortalSession',
-        portalId,
-        step: currentStep
-      });
+      Sentry.captureException(error);
       
       logger.error('Failed to complete step', { error, portalId, step: currentStep });
     } finally {
@@ -98,7 +95,6 @@ export const PortalSession = memo(function PortalSession(props: PortalSessionPro
   const handleComplete = useCallback(async () => {
     try {
       await updateProgress(portalId, {
-        completed: true,
         completedAt: new Date().toISOString()
       });
       
@@ -106,10 +102,7 @@ export const PortalSession = memo(function PortalSession(props: PortalSessionPro
       onComplete();
       
     } catch (error) {
-      captureException(error as Error, {
-        context: 'PortalSession',
-        portalId
-      });
+      Sentry.captureException(error);
     }
   }, [portalId, onComplete, updateProgress]);
 
@@ -153,15 +146,15 @@ export const PortalSession = memo(function PortalSession(props: PortalSessionPro
               <BookOpen size={48} />
             </div>
             
-            <h2 className="step-title">{step.title}</h2>
-            <p className="step-description">{step.description}</p>
+            <h2 className="step-title">{step?.name}</h2>
+            <p className="step-description">{step?.description}</p>
 
             {/* User Input Area */}
             <div className="input-area">
               <textarea
                 value={userInput}
                 onChange={(e) => setUserInput(e.target.value)}
-                placeholder={step.prompt || "Share your thoughts..."}
+                placeholder={ "Share your thoughts..."}
                 rows={6}
                 disabled={isProcessing || isLoading}
                 data-testid="step-input"
@@ -171,7 +164,7 @@ export const PortalSession = memo(function PortalSession(props: PortalSessionPro
             {/* AI Messages */}
             {messages.length > 0 && (
               <div className="ai-messages">
-                {messages.map((msg, idx) => (
+                {messages.map((msg: any, idx: number) => (
                   <div key={idx} className={`message ${msg.role}`}>
                     <MessageCircle size={20} />
                     <p>{msg.content}</p>

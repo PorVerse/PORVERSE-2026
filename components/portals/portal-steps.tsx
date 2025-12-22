@@ -3,14 +3,28 @@
 
 'use client'
 
-import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
+
 import type { Database } from '@/types/database.types'
 
 type Portal = Database['public']['Tables']['portals']['Row']
 type Step = Database['public']['Tables']['portal_steps']['Row']
 type Progress = Database['public']['Tables']['user_portal_progress']['Row']
+
+interface StepSection {
+  title?: string
+  content?: string
+  type?: 'exercise' | 'reflection' | 'info' | 'assessment'
+  prompt?: string
+  questions?: string[]
+}
+
+interface ParsedStepContent {
+  intro?: string
+  sections?: StepSection[]
+}
 
 interface PortalStepsProps {
   portal: Portal
@@ -19,15 +33,15 @@ interface PortalStepsProps {
   userId: string
 }
 
-function parseStepContent(content: any) {
+function parseStepContent(content: unknown): ParsedStepContent {
   if (typeof content === 'string') {
     try {
-      return JSON.parse(content)
+      return JSON.parse(content) as ParsedStepContent
     } catch {
       return { intro: content, sections: [] }
     }
   }
-  return content
+  return content as ParsedStepContent
 }
 
 function InteractiveStepContent({ 
@@ -35,7 +49,7 @@ function InteractiveStepContent({
   responses,
   onResponseChange 
 }: { 
-  content: any
+  content: unknown
   stepId: string
   responses: Record<string, string>
   onResponseChange: (key: string, value: string) => void
@@ -52,7 +66,7 @@ function InteractiveStepContent({
 
       {parsed.sections && parsed.sections.length > 0 && (
         <div className="space-y-6">
-          {parsed.sections.map((section: any, index: number) => (
+          {parsed.sections.map((section: StepSection, index: number) => (
             <div key={index} className="space-y-3">
               {section.title && (
                 <h4 className="font-bold text-lg text-gray-900 flex items-center gap-2">
@@ -180,7 +194,7 @@ export function PortalSteps({ portal, steps, progress, userId }: PortalStepsProp
   // Load saved responses când se expandează un step
   useEffect(() => {
     const loadResponses = async () => {
-      if (!expandedStep || loadedResponses.has(expandedStep)) return
+      if (!expandedStep || loadedResponses.has(expandedStep)) {return}
       
       try {
         const response = await fetch(`/api/portals/get-responses?stepId=${expandedStep}&userId=${userId}`)
@@ -255,7 +269,7 @@ export function PortalSteps({ portal, steps, progress, userId }: PortalStepsProp
         }),
       })
 
-      if (!saveResponse.ok) throw new Error('Failed to save responses')
+      if (!saveResponse.ok) {throw new Error('Failed to save responses')}
 
       // 2. Completează step-ul
       const completeResponse = await fetch('/api/portals/complete-step', {
@@ -268,7 +282,7 @@ export function PortalSteps({ portal, steps, progress, userId }: PortalStepsProp
         }),
       })
 
-      if (!completeResponse.ok) throw new Error('Failed to complete step')
+      if (!completeResponse.ok) {throw new Error('Failed to complete step')}
 
       toast.success('Step completed! Your responses have been saved.')
       
@@ -291,7 +305,7 @@ export function PortalSteps({ portal, steps, progress, userId }: PortalStepsProp
         const isCurrent = stepNumber === currentStepNumber
         const isLocked = stepNumber > currentStepNumber
         const isExpanded = expandedStep === step.id
-        const hasUnsavedChanges = stepResponses[step.id] && Object.keys(stepResponses[step.id]).length > 0 && !isCompleted
+        const hasUnsavedChanges = stepResponses[step.id] && Object.keys(stepResponses[step.id] || {}).length > 0 && !isCompleted
 
         return (
           <motion.div

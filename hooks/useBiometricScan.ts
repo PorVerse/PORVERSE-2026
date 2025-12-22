@@ -9,6 +9,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+
 import type {
   BiometricReading,
   EmotionType,
@@ -327,8 +328,8 @@ export function useBiometricScan(options: UseBiometricScanOptions): UseBiometric
   const saveBiometricReading = async (reading: BiometricReading) => {
     try {
       // Import Supabase client
-      const { createClientComponentClient } = await import('@supabase/ssr')
-      const supabase = createClientComponentClient()
+      const { createClient } = await import('@/lib/supabase/client')
+      const supabase = createClient()
 
       // Save to biometric_scans table
       const { error } = await supabase
@@ -421,8 +422,8 @@ export function useEmotionTracking(userId: string) {
   const loadHistory = useCallback(async () => {
     setIsLoading(true)
     try {
-      const { createClientComponentClient } = await import('@supabase/ssr')
-      const supabase = createClientComponentClient()
+      const { createClient } = await import('@/lib/supabase/client')
+      const supabase = createClient()
 
       const { data, error } = await supabase
         .from('biometric_scans')
@@ -434,7 +435,7 @@ export function useEmotionTracking(userId: string) {
 
       if (!error && data) {
         // Convert to BiometricReading format
-        const readings = data.map(scan => ({
+        const readings = data.map((scan: any) => ({
           userId: scan.user_id,
           timestamp: new Date(scan.created_at).getTime(),
           emotion: scan.scan_data.emotion,
@@ -493,8 +494,8 @@ export function useBiometricConsent(userId: string) {
       setConsent(consentData)
 
       // Optionally save to database
-      const { createClientComponentClient } = await import('@supabase/ssr')
-      const supabase = createClientComponentClient()
+      const { createClient } = await import('@/lib/supabase/client')
+      const supabase = createClient()
 
       await supabase
         .from('profiles')

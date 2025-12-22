@@ -1,7 +1,8 @@
 // lib/supabase/useSupabaseClient.ts
 'use client'
-import { useMemo } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
+import { useMemo } from 'react'
+
 import type { Database } from '@/types/database.types'
 
 export function useSupabaseClient() {

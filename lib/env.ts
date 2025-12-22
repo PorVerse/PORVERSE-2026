@@ -225,7 +225,7 @@ export function hasEnv(key: OptionalEnvVar): boolean {
  */
 export function getBooleanEnv(key: OptionalEnvVar, defaultValue = false): boolean {
   const value = process.env[key]
-  if (value == null) return defaultValue
+  if (value == null) {return defaultValue}
   const v = value.toLowerCase().trim()
   return v === 'true' || v === '1' || v === 'yes' || v === 'on'
 }
@@ -235,7 +235,7 @@ export function getBooleanEnv(key: OptionalEnvVar, defaultValue = false): boolea
  */
 export function getNumberEnv(key: OptionalEnvVar, defaultValue: number): number {
   const value = process.env[key]
-  if (value == null) return defaultValue
+  if (value == null) {return defaultValue}
   const num = Number.parseInt(value, 10)
   return Number.isNaN(num) ? defaultValue : num
 }
@@ -245,7 +245,7 @@ export function getNumberEnv(key: OptionalEnvVar, defaultValue: number): number 
  */
 export function getFloatEnv(key: OptionalEnvVar, defaultValue: number): number {
   const value = process.env[key]
-  if (value == null) return defaultValue
+  if (value == null) {return defaultValue}
   const num = Number.parseFloat(value)
   return Number.isNaN(num) ? defaultValue : num
 }
@@ -263,7 +263,7 @@ export const env = {
   app: {
     url: getEnv('NEXT_PUBLIC_APP_URL', 'http://localhost:3000'),
     apiUrl: getEnv('NEXT_PUBLIC_API_URL', 'http://localhost:3000/api'),
-    env: (process.env['NODE_ENV'] || 'development') as 'development' | 'production' | 'test',
+    env: (process.env['NODE_ENV'] || 'development'),
     isDevelopment: process.env['NODE_ENV'] === 'development',
     isProduction: process.env['NODE_ENV'] === 'production',
     isTest: process.env['NODE_ENV'] === 'test',
@@ -432,8 +432,8 @@ export function printEnvironmentInfo(): void {
   }
 
   const maskValue = (value: string): string => {
-    if (!value || value.length < 8) return '****'
-    return value.slice(0, 4) + '****' + value.slice(-4)
+    if (!value || value.length < 8) {return '****'}
+    return `${value.slice(0, 4)  }****${  value.slice(-4)}`
   }
 
   console.log('\n📋 PorVerse V2 - Environment Configuration:')

@@ -1,11 +1,12 @@
 // app/api/billing/paypal/checkout/route.ts
 import { NextRequest, NextResponse } from 'next/server';
+
 import { paypalService } from '@/lib/payments/paypal-service';
 import { createClient } from '@/lib/supabase/server';
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     
     // Get user
     const { data: { user } } = await supabase.auth.getUser();

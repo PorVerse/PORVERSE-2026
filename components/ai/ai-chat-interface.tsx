@@ -1,15 +1,24 @@
 // components/ai/ai-chat-interface.tsx
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Send, Bot, User, Loader2, Heart, Brain } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+
 import { conversationManager } from '@/lib/ai/advanced-conversation-manager';
 import { EmotionReading } from '@/types/biometric';
 
+// Portal context type matching MessageContext from ai-store
+interface PortalContext {
+  portalId?: string;
+  stepId?: string;
+  sessionId?: string;
+  [key: string]: unknown;
+}
+
 export interface AIChatProps {
   conversationId: string;
-  portalContext?: any;
+  portalContext?: PortalContext;
   biometricData?: EmotionReading;
   personalityAdaptation: boolean;
   onMessageSend?: (message: string) => void;
@@ -27,7 +36,7 @@ interface Message {
 
 export function AIChatInterface({
   conversationId,
-  portalContext,
+  portalContext: _portalContext,
   biometricData,
   personalityAdaptation = true,
   onMessageSend,
@@ -55,7 +64,7 @@ export function AIChatInterface({
   }, [biometricData]);
 
   const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
+    if (!input.trim() || isLoading) {return;}
 
     const userMessage: Message = {
       id: Date.now().toString(),

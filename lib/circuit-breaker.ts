@@ -18,7 +18,7 @@ export class CircuitBreaker {
       return await fn();
     } catch (error) {
       this.failureCount++;
-      if (this.failureCount >= 5) this.state = CircuitState.OPEN;
+      if (this.failureCount >= 5) {this.state = CircuitState.OPEN;}
       throw error;
     }
   }

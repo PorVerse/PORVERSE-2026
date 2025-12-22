@@ -7,6 +7,7 @@
  */
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+
 import type { Database, Json } from '../../types/database.types'
 import type {
   Portal,
@@ -18,6 +19,29 @@ import type {
   PortalUnlockCriteria,
   CulturalContext,
 } from '../../types/portal-management'
+import { isQueryError } from './supabase-helpers'
+
+// ————————————————————————————————————————————————————————————————
+// Type Aliases
+// ————————————————————————————————————————————————————————————————
+type Profile = Database['public']['Tables']['profiles']['Row']
+type PortalSession = Database['public']['Tables']['portal_sessions']['Row']
+
+interface SpecialCondition {
+  type: 'biometric_baseline' | 'payment_verification' | 'cultural_assessment' | 'community_milestone'
+  description?: string
+}
+
+interface UnlockCriteriaWithSpecial extends PortalUnlockCriteria {
+  special_conditions?: SpecialCondition[]
+}
+
+interface CompletionData {
+  portal_id?: string
+  completion_time?: number
+  quality_score?: number
+  [key: string]: unknown
+}
 
 // ————————————————————————————————————————————————————————————————
 // Config
@@ -122,21 +146,30 @@ export class UnlockEngine {
     try {
       const startTime = Date.now()
 
-      const { data: portal, error: portalError } = await this.supabase.from('portals').select('*').eq('id', portalId).single()
-      if (portalError || !portal) throw new Error(`Portal not found: ${portalError?.message ?? ''}`)
+      const portalResult = await this.supabase.from('portals').select('*').eq('id', portalId).single()
+      if (isQueryError(portalResult) || !portalResult.data) {
+        throw new Error(`Portal not found: ${isQueryError(portalResult) ? portalResult.error.message : ''}`)
+      }
+      const portal = portalResult.data
 
-      const { data: profile, error: profileError } = await this.supabase
+      const profileResult = await this.supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single()
-      if (profileError) throw new Error(`User profile not found: ${profileError.message}`)
+      if (isQueryError(profileResult)) {
+        throw new Error(`User profile not found: ${profileResult.error.message}`)
+      }
+      const profile = profileResult.data
 
-      const { data: userProgress, error: progressError } = await this.supabase
+      const progressResult = await this.supabase
         .from('user_portal_progress')
         .select('*')
         .eq('user_id', userId)
-      if (progressError) throw new Error(`Failed to fetch user progress: ${progressError.message}`)
+      if (isQueryError(progressResult)) {
+        throw new Error(`Failed to fetch user progress: ${progressResult.error.message}`)
+      }
+      const userProgress = progressResult.data
 
       const criteria: UnlockCriterion[] = []
 
@@ -144,14 +177,14 @@ export class UnlockEngine {
       criteria.push(
         await this.evaluateSubscriptionCriterion(
           portal as unknown as Portal,
-          (profile as any).subscription_tier as PortalSubscriptionTier,
-          (profile as any).subscription_status as string
+          profile.subscription_tier as PortalSubscriptionTier,
+          profile.subscription_status as string
         )
       )
 
       // 2) Previous portal completion
-      if ((portal as any).required_previous_portal) {
-        criteria.push(await this.evaluatePreviousPortalCriterion((portal as any).required_previous_portal as string, (userProgress || []) as any))
+      if (portal.required_previous_portal) {
+        criteria.push(await this.evaluatePreviousPortalCriterion(portal.required_previous_portal, userProgress ?? []))
       }
 
       // 3) Achievements
@@ -160,7 +193,7 @@ export class UnlockEngine {
           ...(
             await this.evaluateAchievementCriteria(
               userId,
-              (portal as any).unlock_criteria as PortalUnlockCriteria | null | undefined
+              (portal).unlock_criteria as PortalUnlockCriteria | null | undefined
             )
           )
         )
@@ -172,7 +205,7 @@ export class UnlockEngine {
           ...(
             await this.evaluateBiometricCriteria(
               userId,
-              (portal as any).unlock_criteria as PortalUnlockCriteria | null | undefined
+              (portal).unlock_criteria as PortalUnlockCriteria | null | undefined
             )
           )
         )
@@ -183,7 +216,7 @@ export class UnlockEngine {
         ...(
           await this.evaluateSpecialConditions(
             userId,
-            (portal as any).unlock_criteria as PortalUnlockCriteria | null | undefined,
+            (portal).unlock_criteria as PortalUnlockCriteria | null | undefined,
             culturalContext
           )
         )
@@ -194,15 +227,15 @@ export class UnlockEngine {
       const confidence = criteria.length === 0 ? 1 : satisfied.length / criteria.length
 
       const unsatisfied = criteria.filter((c) => !c.satisfied)
-      const recommendedActions = await this.generateRecommendedActions(unsatisfied, portal as any, profile)
+      const recommendedActions = await this.generateRecommendedActions(unsatisfied, portal, profile)
       const estimatedUnlockTime = this.estimateUnlockTime(unsatisfied, recommendedActions)
 
       const paymentRequired = criteria.find((c) => c.type === 'subscription' && !c.satisfied)
-        ? await this.generatePaymentRequirement(portal as any, profile)
+        ? await this.generatePaymentRequirement(portal, profile)
         : null
 
       const specialConditions: SpecialUnlockCondition[] =
-        ((portal as any).unlock_criteria?.special_conditions as SpecialUnlockCondition[] | undefined) || []
+        ((portal).unlock_criteria?.special_conditions as SpecialUnlockCondition[] | undefined) || []
 
       const evaluation: UnlockEvaluation = {
         canUnlock,
@@ -246,7 +279,9 @@ export class UnlockEngine {
         })
         .eq('user_id', userId)
         .eq('portal_id', portalId)
-      if (updateError) throw new Error(`Failed to mark portal complete: ${updateError.message}`)
+      if (updateError) {
+        throw new Error(`Failed to mark portal complete: ${updateError.message}`)
+      }
 
       const achievementsUnlocked = await this.calculateAchievementsUnlocked(userId, portalId, completionData)
       const nextPortalsUnlocked = await this.findNextPortalsToUnlock(userId, portalId)
@@ -258,7 +293,7 @@ export class UnlockEngine {
         await this.awardAchievement(userId, (a as any).id as string)
       }
       // Auto-unlock next portals
-      for (const pid of nextPortalsUnlocked) await this.autoUnlockPortal(userId, pid)
+      for (const pid of nextPortalsUnlocked) {await this.autoUnlockPortal(userId, pid)}
 
       const result: CompletionResult = {
         portalId,
@@ -283,7 +318,7 @@ export class UnlockEngine {
     userTier: PortalSubscriptionTier,
     subscriptionStatus: string
   ): Promise<UnlockCriterion> {
-    const pTier = (portal.subscription_tier as PortalSubscriptionTier) || ('free' as PortalSubscriptionTier)
+    const pTier = (portal.subscription_tier) || ('free' as PortalSubscriptionTier)
     const uTier = userTier || ('free' as PortalSubscriptionTier)
     const satisfied = tierOrder[pTier] <= tierOrder[uTier] && (subscriptionStatus === 'active' || pTier === 'free')
 
@@ -300,11 +335,12 @@ export class UnlockEngine {
 
   private async evaluateAchievementCriteria(userId: string, unlockCriteria?: PortalUnlockCriteria | null): Promise<UnlockCriterion[]> {
     const criteria: UnlockCriterion[] = []
-    const uc: any = unlockCriteria || {}
+    const uc: Partial<PortalUnlockCriteria> = unlockCriteria ?? {}
 
     if (typeof uc.minimum_total_points === 'number') {
       const { data: rows } = await this.supabase.from('user_portal_progress').select('achievement_points').eq('user_id', userId)
-      const total = (rows || []).reduce((s, r) => s + safeNumber((r as any).achievement_points, 0), 0)
+      type ProgressRow = { achievement_points?: number; [key: string]: unknown }
+      const total = (rows || []).reduce((s: number, r: ProgressRow) => s + safeNumber((r as Record<string, unknown>)['achievement_points'] as number, 0), 0)
       criteria.push({ type: 'achievement', description: `Earn ${uc.minimum_total_points} achievement points`, currentValue: total, requiredValue: uc.minimum_total_points, satisfied: total >= uc.minimum_total_points, weight: 0.8 })
     }
 
@@ -319,8 +355,8 @@ export class UnlockEngine {
 
   private async evaluateBiometricCriteria(userId: string, unlockCriteria?: PortalUnlockCriteria | null): Promise<UnlockCriterion[]> {
     const criteria: UnlockCriterion[] = []
-    const uc: any = unlockCriteria || {}
-    const specials: any[] = Array.isArray(uc.special_conditions) ? uc.special_conditions : []
+    const uc: Partial<UnlockCriteriaWithSpecial> = unlockCriteria ?? {}
+    const specials: SpecialCondition[] = Array.isArray(uc.special_conditions) ? uc.special_conditions : []
     const needsBaseline = specials.some((c) => c?.type === 'biometric_baseline')
 
     if (needsBaseline) {
@@ -337,8 +373,8 @@ export class UnlockEngine {
     culturalContext?: CulturalContext
   ): Promise<UnlockCriterion[]> {
     const criteria: UnlockCriterion[] = []
-    const uc: any = unlockCriteria || {}
-    const specials: any[] = Array.isArray(uc.special_conditions) ? uc.special_conditions : []
+    const uc: Partial<UnlockCriteriaWithSpecial> = unlockCriteria ?? {}
+    const specials: SpecialCondition[] = Array.isArray(uc.special_conditions) ? uc.special_conditions : []
 
     for (const cond of specials) {
       switch (cond?.type) {
@@ -367,7 +403,7 @@ export class UnlockEngine {
   // ————————————————————————————————————————————————————————————————
   // HELPERS
   // ————————————————————————————————————————————————————————————————
-  private async generateRecommendedActions(unsatisfied: UnlockCriterion[], _portal: Portal, _profile: any): Promise<RecommendedAction[]> {
+  private async generateRecommendedActions(unsatisfied: UnlockCriterion[], _portal: Portal, _profile: Profile): Promise<RecommendedAction[]> {
     const actions: RecommendedAction[] = []
     for (const c of unsatisfied) {
       switch (c.type) {
@@ -395,28 +431,27 @@ export class UnlockEngine {
   }
 
   private estimateUnlockTime(unsatisfied: UnlockCriterion[], actions: RecommendedAction[]): number | null {
-    if (unsatisfied.length === 0) return 0
+    if (unsatisfied.length === 0) {return 0}
     const hasPayment = unsatisfied.some((c) => c.type === 'subscription' || c.type === 'payment')
-    if (hasPayment && unsatisfied.length === 1) return 0.1
+    if (hasPayment && unsatisfied.length === 1) {return 0.1}
     return actions.reduce((s, a) => s + a.estimatedTimeHours, 0)
   }
 
-  private async generatePaymentRequirement(portal: Portal, profile: any): Promise<PaymentRequirement> {
+  private async generatePaymentRequirement(portal: Portal, _profile: Profile): Promise<PaymentRequirement> {
     const pricingMap: Record<string, { monthly: number; yearly: number }> = {
       basic: { monthly: 9.99, yearly: 99.99 },
       premium: { monthly: 19.99, yearly: 199.99 },
       quantum: { monthly: 49.99, yearly: 499.99 },
     }
-    const tier = (portal.subscription_tier as PortalSubscriptionTier) || 'free'
+    const tier = (portal.subscription_tier) || 'free'
     const pricing = pricingMap[tier] || { monthly: 0, yearly: 0 }
 
     return {
-      required_tier: tier,
-      price_monthly: pricing.monthly,
-      price_yearly: pricing.yearly,
+      required: true,
+      amount:        pricing.monthly,
       currency: 'USD',
-      benefits: this.getTierBenefits(tier),
-      trial_available: (profile?.subscription_status as string) !== 'trial_used',
+      payment_type: 'subscription' as const,
+      subscription_tier: tier
     }
   }
 
@@ -431,10 +466,10 @@ export class UnlockEngine {
   }
 
   private calculateCurrentStreak(sessions: { session_start: string }[]): number {
-    if (!sessions || sessions.length === 0) return 0
+    if (!sessions || sessions.length === 0) {return 0}
     const dates = [...new Set(sessions.map((s) => new Date(s.session_start).toDateString()))]
     let streak = 0
-    let cursor = new Date()
+    const cursor = new Date()
     while (dates.includes(cursor.toDateString())) {
       streak++
       cursor.setDate(cursor.getDate() - 1)
@@ -442,14 +477,15 @@ export class UnlockEngine {
     return streak
   }
 
-  private async calculateAchievementsUnlocked(_userId: string, _portalId: string, _completionData: any): Promise<Achievement[]> {
+  private async calculateAchievementsUnlocked(_userId: string, _portalId: string, _completionData: CompletionData): Promise<Achievement[]> {
     const { data } = await this.supabase.from('achievements').select('*').eq('category', 'completion').eq('is_active', true).limit(1)
     return (data || []) as Achievement[]
   }
 
   private async findNextPortalsToUnlock(_userId: string, completedPortalId: string): Promise<string[]> {
     const { data } = await this.supabase.from('portals').select('id').eq('required_previous_portal', completedPortalId).eq('is_active', true)
-    return (data || []).map((p) => (p as any).id as string)
+    type PortalIdRow = { id: string }
+    return (data || []).map((p: PortalIdRow) => p.id)
   }
 
   private async updateTierProgress(_userId: string, _completedPortalId: string): Promise<TierProgressUpdate | null> {
@@ -457,14 +493,16 @@ export class UnlockEngine {
     return null
   }
 
-  private async generateCelebrationData(_userId: string, portalId: string, completionData: any, achievements: Achievement[]): Promise<CelebrationData> {
+  private async generateCelebrationData(_userId: string, portalId: string, completionData: CompletionData, achievements: Achievement[]): Promise<CelebrationData> {
     const { data: portal } = await this.supabase.from('portals').select('name, category').eq('id', portalId).single()
+    type PortalNameRow = { name?: string; category?: string }
+    const portalRow = portal as PortalNameRow | null
     return {
-      title: `${(portal as any)?.name ?? 'Portal'} Complete!`,
-      message: `Congratulations! You've successfully completed the ${(portal as any)?.name ?? 'portal'}.`,
+      title: `${portalRow?.name ?? 'Portal'} Complete!`,
+      message: `Congratulations! You've successfully completed the ${portalRow?.name ?? 'portal'}.`,
       rewards: [
-        `${safeNumber(completionData.achievementPoints, 0)} achievement points`,
-        ...achievements.map((a) => (a as any).name as string),
+        `${safeNumber(completionData['achievementPoints'] as number, 0)} achievement points`,
+        ...achievements.map((a) => a.name),
       ],
       shareText: `I just completed the ${(portal as any)?.name ?? 'portal'} in PorVerse! 🎉`,
       nextSteps: ['Continue your spiritual journey', 'Explore newly unlocked portals', 'Review your progress insights'],

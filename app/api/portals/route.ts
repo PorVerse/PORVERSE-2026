@@ -14,13 +14,13 @@
  * - Optimistic concurrency control
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { Redis } from '@upstash/redis';
-import { Ratelimit } from '@upstash/ratelimit';
-import * as Sentry from '@sentry/nextjs';
-import { z } from 'zod';
 import { trace, SpanStatusCode } from '@opentelemetry/api';
+import * as Sentry from '@sentry/nextjs';
+import { createClient } from '@supabase/supabase-js';
+import { Ratelimit } from '@upstash/ratelimit';
+import { Redis } from '@upstash/redis';
+import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // CONFIGURATION

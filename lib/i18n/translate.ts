@@ -15,13 +15,13 @@ function getByPath(obj: any, path: Path): unknown {
  * Interpolare simplă: "Hello, {name}!" + { name: "Bogdan" } => "Hello, Bogdan!"
  */
 function interpolate(template: string, params?: Record<string, string | number>): string {
-  if (!params) return template
+  if (!params) {return template}
   return template.replace(/\{(\w+)\}/g, (_, key) => String(params[key] ?? `{${key}}`))
 }
 
 export function t(dict: Dict, key: Path, params?: Record<string, string | number>): string {
   const raw = getByPath(dict, key)
-  if (typeof raw === 'string') return interpolate(raw, params)
+  if (typeof raw === 'string') {return interpolate(raw, params)}
   // Fail-safe: întoarce cheia ca text, util la QA pentru găsirea lipsurilor
   return key
 }

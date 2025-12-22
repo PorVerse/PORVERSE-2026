@@ -3,8 +3,10 @@
 
 'use client'
 
-import Link from 'next/link'
 import { motion } from 'framer-motion'
+
+import Link from 'next/link'
+
 import type { Database } from '@/types/database.types'
 
 type Portal = Database['public']['Tables']['portals']['Row']

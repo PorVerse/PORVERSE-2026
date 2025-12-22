@@ -6,8 +6,8 @@
  * @production-ready YES
  */
 
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import * as Sentry from '@sentry/nextjs';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 
 // ============================================================================
 // TYPES & INTERFACES
@@ -98,6 +98,7 @@ export function useCircuitBreaker(
         }
       };
     }
+    return undefined;
   }, [state, lastFailureTime, timeout]);
 
   const execute = useCallback(

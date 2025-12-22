@@ -1,0 +1,2 @@
+﻿node_modules/@vitejs/plugin-react/dist/index.d.ts(64,113): error TS1003: Identifier expected.
+node_modules/@vitejs/plugin-react/dist/index.d.ts(64,130): error TS1128: Declaration or statement expected.

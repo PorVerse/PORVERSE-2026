@@ -1,15 +1,15 @@
 // app/api/i18n/timezone/route.ts - Production-safe (@supabase/ssr)
-import { NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
 import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
+import { NextResponse } from 'next/server'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
 function isValidTimeZone(tz?: string): boolean {
-  if (!tz || typeof tz !== 'string') return false
-  if (tz.length > 50 || tz.includes('..') || tz.includes('//')) return false
+  if (!tz || typeof tz !== 'string') {return false}
+  if (tz.length > 50 || tz.includes('..') || tz.includes('//')) {return false}
 
   try {
     Intl.DateTimeFormat('en-US', { timeZone: tz })
@@ -28,9 +28,9 @@ function logOperation(
   const timestamp = new Date().toISOString()
   const logEntry = { timestamp, operation, level, context, service: 'timezone-api' }
 
-  if (level === 'error') console.error('[TIMEZONE-API]', logEntry)
-  else if (level === 'warn') console.warn('[TIMEZONE-API]', logEntry)
-  else console.log('[TIMEZONE-API]', logEntry)
+  if (level === 'error') {console.error('[TIMEZONE-API]', logEntry)}
+  else if (level === 'warn') {console.warn('[TIMEZONE-API]', logEntry)}
+  else {console.log('[TIMEZONE-API]', logEntry)}
 }
 
 async function ensureProfileExists(
@@ -44,7 +44,7 @@ async function ensureProfileExists(
       .eq('id', userId)
       .single()
 
-    if (existingProfile) return { success: true }
+    if (existingProfile) {return { success: true }}
 
     if (checkError && checkError.code !== 'PGRST116') {
       logOperation('profile-check-failed', { userId, error: checkError.message }, 'warn')
@@ -55,8 +55,9 @@ async function ensureProfileExists(
       await supabase.rpc('ensure_profile')
       logOperation('profile-created-via-rpc', { userId })
       return { success: true }
-    } catch (rpcError: any) {
-      logOperation('rpc-ensure-profile-failed', { userId, error: rpcError?.message }, 'warn')
+    } catch (rpcError: unknown) {
+      const message = rpcError instanceof Error ? rpcError.message : 'Unknown error'
+      logOperation('rpc-ensure-profile-failed', { userId, error: message }, 'warn')
     }
 
     const { error: insertError } = await supabase.from('profiles').insert({
@@ -76,9 +77,10 @@ async function ensureProfileExists(
 
     logOperation('profile-created-directly', { userId })
     return { success: true }
-  } catch (error: any) {
-    logOperation('ensure-profile-exception', { userId, error: error.message }, 'error')
-    return { success: false, error: error.message }
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error'
+    logOperation('ensure-profile-exception', { userId, error: message }, 'error')
+    return { success: false, error: message }
   }
 }
 
@@ -127,9 +129,10 @@ async function updateTimezoneWithFallback(
     }
 
     return { success: false, error: error.message }
-  } catch (exception: any) {
-    logOperation('timezone-update-exception', { userId, error: exception.message }, 'error')
-    return { success: false, error: exception.message }
+  } catch (exception: unknown) {
+    const message = exception instanceof Error ? exception.message : 'Unknown error'
+    logOperation('timezone-update-exception', { userId, error: message }, 'error')
+    return { success: false, error: message }
   }
 }
 
@@ -223,8 +226,9 @@ export async function POST(req: Request) {
       timezone,
       timestamp: new Date().toISOString(),
     })
-  } catch (error: any) {
-    logOperation('timezone-request-exception', { requestId, error: error.message }, 'error')
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error'
+    logOperation('timezone-request-exception', { requestId, error: message }, 'error')
     return NextResponse.json(
       { ok: false, error: 'internal_server_error', message: 'An unexpected error occurred' },
       { status: 500 }

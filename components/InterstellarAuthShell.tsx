@@ -1,7 +1,8 @@
 'use client'
 
-import type { ReactNode } from 'react'
 import { Shield } from 'lucide-react'
+
+import type { ReactNode } from 'react'
 
 export default function InterstellarAuthShell({
   title,

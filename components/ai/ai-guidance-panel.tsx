@@ -3,9 +3,10 @@
 
 'use client'
 
-import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useState } from 'react'
 import { toast } from 'sonner'
+
 import type { Database } from '@/types/database.types'
 
 type Portal = Database['public']['Tables']['portals']['Row']
@@ -34,7 +35,7 @@ export function AIGuidancePanel({ portal, userId }: AIGuidancePanelProps) {
   const [isLoading, setIsLoading] = useState(false)
 
   const handleSendMessage = async () => {
-    if (!input.trim()) return
+    if (!input.trim()) {return}
 
     const userMessage: Message = {
       role: 'user',
@@ -58,7 +59,7 @@ export function AIGuidancePanel({ portal, userId }: AIGuidancePanelProps) {
         }),
       })
 
-      if (!response.ok) throw new Error('Failed to get AI response')
+      if (!response.ok) {throw new Error('Failed to get AI response')}
 
       const data = await response.json()
 

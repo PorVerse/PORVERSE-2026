@@ -9,9 +9,11 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+
 import { BiometricScanner } from '@/components/biometric/biometric-scanner'
 import { PrivacyConsent } from '@/components/biometric/privacy-consent'
-import { useBiometricScan, useBiometricConsent, useEmotionTracking } from '@/hooks/useBiometricScan'
+import { useBiometricConsent, useEmotionTracking } from '@/hooks/useBiometricScan'
+
 import type { BiometricReading, ConsentLevel } from '@/types/biometric'
 
 // ============================================================================
@@ -56,7 +58,7 @@ export default function BiometricScanPage() {
   // ========================================================================
   
   const [readings, setReadings] = useState<BiometricReading[]>([])
-  const [isScanning, setIsScanning] = useState(false)
+  const [_isScanning, _setIsScanning] = useState(false)
 
   const handleScanComplete = (reading: BiometricReading) => {
     console.log('✅ Scan complete:', reading)

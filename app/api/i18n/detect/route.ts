@@ -1,5 +1,6 @@
 // app/api/i18n/detect/route.ts
 import { NextResponse } from 'next/server'
+
 import { detect } from '@/lib/i18n/language-detector'
 
 export const runtime = 'nodejs'
@@ -21,8 +22,9 @@ export async function GET(req: Request) {
         },
       },
     )
-  } catch (e: any) {
+  } catch (e: unknown) {
     // degradează grațios
+    const errorMessage = e instanceof Error ? e.message : 'fallback'
     return new NextResponse(
       JSON.stringify({
         ok: true,
@@ -33,7 +35,7 @@ export async function GET(req: Request) {
           confidence: 0.3,
           source: 'fallback',
         },
-        meta: { error: e?.message || 'fallback' },
+        meta: { error: errorMessage },
       }),
       {
         status: 200,

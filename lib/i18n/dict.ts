@@ -17,7 +17,7 @@ const cache = g[GLOBAL_KEY] as Partial<Record<Lang, Messages>>
  * Folosește import dinamic pentru a nu încărca ambele limbi în același bundle.
  */
 export async function getDictionary(lang: Lang): Promise<Messages> {
-  if (cache[lang]) return cache[lang] as Messages
+  if (cache[lang]) {return cache[lang] as Messages}
   switch (lang) {
     case 'ro': {
       const { messages } = await import('@/lib/i18n/dictionaries/ro')

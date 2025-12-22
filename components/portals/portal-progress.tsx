@@ -4,6 +4,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
+
 import type { Database } from '@/types/database.types'
 
 type Portal = Database['public']['Tables']['portals']['Row']
@@ -165,7 +166,7 @@ function StatCard({
   return (
     <div
       className="rounded-lg p-3 border-2"
-      style={{ borderColor: color + '40', backgroundColor: color + '10' }}
+      style={{ borderColor: `${color  }40`, backgroundColor: `${color  }10` }}
     >
       <div className="text-lg mb-1">{icon}</div>
       <div className="text-sm font-bold text-gray-900">{value}</div>

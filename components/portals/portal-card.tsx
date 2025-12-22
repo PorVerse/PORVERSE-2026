@@ -9,13 +9,15 @@
 
 'use client';
 
-import React, { useCallback, useMemo, useState, useRef } from 'react';
+import * as Sentry from '@sentry/nextjs';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Lock, Unlock, Star, Clock, TrendingUp, ChevronRight, AlertCircle } from 'lucide-react';
+import React, { useCallback, useMemo, useState, useRef } from 'react';
 import { toast } from 'sonner';
-import * as Sentry from '@sentry/nextjs';
-import { usePortalStore, type Portal, type UserProgress } from '@/store/portal-store';
+
 import { useCircuitBreaker, useOptimisticUpdate, usePerformance } from '@/hooks';
+
+import { usePortalStore, type Portal, type UserProgress } from '@/stores/portal-store';
 
 // ============================================================================
 // TYPES & INTERFACES
@@ -51,7 +53,7 @@ class PortalCardErrorBoundary extends React.Component<
   { children: React.ReactNode; portalId: string },
   ErrorBoundaryState
 > {
-  constructor(props: any) {
+  constructor(props: { children: React.ReactNode; portalId: string }) {
     super(props);
     this.state = { hasError: false, error: null };
   }
@@ -60,7 +62,7 @@ class PortalCardErrorBoundary extends React.Component<
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+  override componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     Sentry.captureException(error, {
       contexts: {
         react: {
@@ -79,7 +81,7 @@ class PortalCardErrorBoundary extends React.Component<
     this.setState({ hasError: false, error: null });
   };
 
-  render() {
+  override render() {
     if (this.state.hasError) {
       return (
         <div
@@ -183,7 +185,7 @@ const PortalCardComponent: React.FC<PortalCardProps> = ({
   const canAccess = useMemo(() => !portal.isLocked, [portal.isLocked]);
 
   const completionPercentage = useMemo(() => {
-    if (!progress || progress.totalSteps === 0) return 0;
+    if (!progress || progress.totalSteps === 0) {return 0;}
     return Math.round((progress.currentStep / progress.totalSteps) * 100);
   }, [progress]);
 
@@ -192,7 +194,7 @@ const PortalCardComponent: React.FC<PortalCardProps> = ({
   }, [portal.difficulty]);
 
   const gradientClass = useMemo(() => {
-    if (portal.gradient) return portal.gradient;
+    if (portal.gradient) {return portal.gradient;}
     
     // Default gradients based on category
     const gradients: Record<string, string> = {
@@ -203,7 +205,7 @@ const PortalCardComponent: React.FC<PortalCardProps> = ({
       default: 'from-gray-500 to-gray-600',
     };
 
-    return gradients[portal.category] || gradients.default;
+    return gradients[portal.category] || gradients['default'];
   }, [portal.category, portal.gradient]);
 
   // ============================================================
@@ -509,5 +511,4 @@ PortalCard.displayName = 'PortalCard';
 // EXPORTS
 // ============================================================================
 
-export type { PortalCardProps };
 export default PortalCard;

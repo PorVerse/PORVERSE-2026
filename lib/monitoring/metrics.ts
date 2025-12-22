@@ -11,8 +11,8 @@
  * - Business metrics tracking
  */
 
+// @ts-ignore - node-statsd doesn't have types
 import { StatsD } from 'node-statsd'
-import { getEnv } from '@/lib/env'
 
 /**
  * Metric types
@@ -34,8 +34,8 @@ export class MetricsService {
   constructor(prefix = 'porverse') {
     this.prefix = prefix
     this.statsd = new StatsD({
-      host: getEnv('STATSD_HOST'),
-      port: getEnv('STATSD_PORT'),
+      host: process.env['STATSD_HOST'] || 'localhost',
+      port: parseInt(process.env['STATSD_PORT'] || '8125', 10),
       prefix: `${this.prefix}.`,
       cacheDns: true,
       mock: process.env['NODE_ENV'] === 'test' // Mock in tests
@@ -155,7 +155,7 @@ export class MetricsService {
    * Converts { key: value } to ['key:value']
    */
   private formatTags(tags?: Record<string, string>): string[] {
-    if (!tags) return []
+    if (!tags) {return []}
     return Object.entries(tags).map(([key, value]) => `${key}:${value}`)
   }
 }
@@ -180,13 +180,13 @@ export const metrics = {
    * HTTP Request metrics
    */
   http: {
-    request(method: string, path: string, status: number, duration: number): void {
+    request(method: string, _path: string, status: number, duration: number): void {
       const m = getMetricsService()
       m.increment('http.requests', 1, { method, status: status.toString() })
       m.timing('http.duration', duration, { method, status: status.toString() })
     },
 
-    error(method: string, path: string, error: string): void {
+    error(method: string, _path: string, error: string): void {
       getMetricsService().increment('http.errors', 1, { method, error })
     }
   },

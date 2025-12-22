@@ -1,8 +1,9 @@
 'use client'
 
-import { createContext, useContext, useMemo } from 'react'
-// ✅ FIX: Funcția corectă din @supabase/ssr
 import { createBrowserClient } from '@supabase/ssr'
+import { createContext, useContext, useMemo } from 'react'
+
+// ✅ FIX: Funcția corectă din @supabase/ssr
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 type Ctx = { supabase: SupabaseClient }

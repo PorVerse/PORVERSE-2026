@@ -8,9 +8,13 @@
  * @description AI brain for personalized spiritual guidance and coaching with biometric adaptation
  */
 
-import OpenAI from 'openai'
 import Anthropic from '@anthropic-ai/sdk'
+import OpenAI from 'openai'
+
+import { getEnv } from '@/lib/env'
+
 import { createBiometricAIAdapter, type BiometricAIAdapter } from './biometric-adapter'
+
 import type { EmotionReading } from '../../types/biometric'
 import type {
   UserPortalProgress,
@@ -18,6 +22,8 @@ import type {
   CulturalContext,
   ServiceResponse
 } from '../../types/portal-management'
+import type { AIResponse } from '../../types/ai-services'
+
 
 /**
  * AI service configuration
@@ -169,10 +175,22 @@ export class AIServiceManager {
         console.log('🎭 Adapting AI response to detected emotion:', context.currentEmotion.emotion)
         
         try {
-          // Create a simple AIResponse object for the adapter
-          const aiResponse = {
-            message: baseResponse,
-            metadata: {}
+          // Create a proper AIResponse object for the adapter
+          const aiResponse: AIResponse = {
+            content: baseResponse,
+            model: model,
+            tokens_used: 0,
+            processing_time_ms: 0,
+            metadata: {
+              request_id: crypto.randomUUID(),
+              provider: this.config.defaultModel,
+              model: model,
+              cached: false,
+              cost: 0,
+              timestamp: new Date().toISOString(),
+              culturally_adapted: false,
+              biometric_adapted: false
+            }
           }
 
           // Adapt the response using biometric adapter
@@ -183,7 +201,7 @@ export class AIServiceManager {
           )
 
           if (adapted.adaptationApplied) {
-            finalResponse = adapted.message
+            finalResponse = adapted.content
             biometricallyAdapted = true
             emotionDetected = context.currentEmotion.emotion
             console.log('✨ Response adapted successfully for emotion:', emotionDetected)
@@ -220,8 +238,7 @@ export class AIServiceManager {
         metadata: {
           execution_time_ms: Date.now() - startTime,
           cache_hit: false,
-          api_version: '2.0.0',
-          biometric_adaptation_applied: biometricallyAdapted // WAVE 2 NEW
+          api_version: '2.0.0'
         }
       }
 
@@ -376,7 +393,7 @@ export class AIServiceManager {
    * @returns Adapted AI guidance
    */
   async generateAdaptedResponse(
-    userMessage: string,
+    _userMessage: string,
     context: ConversationContext,
     emotionReading?: EmotionReading
   ): Promise<ServiceResponse<AIGuidance>> {
@@ -401,12 +418,24 @@ export class AIServiceManager {
   async adaptResponseForStress(
     baseResponse: string,
     emotionReading: EmotionReading,
-    userId: string
+    _userId: string
   ): Promise<string> {
     try {
-      const aiResponse = {
-        message: baseResponse,
-        metadata: {}
+      const aiResponse: AIResponse = {
+        content: baseResponse,
+        model: this.config.defaultModel,
+        tokens_used: 0,
+        processing_time_ms: 0,
+        metadata: {
+          request_id: crypto.randomUUID(),
+          provider: this.config.defaultModel,
+          model: this.config.defaultModel,
+          cached: false,
+          cost: 0,
+          timestamp: new Date().toISOString(),
+          culturally_adapted: false,
+          biometric_adapted: false
+        }
       }
 
       const adapted = await this.biometricAdapter.detectStressAndRespond(
@@ -414,7 +443,7 @@ export class AIServiceManager {
         emotionReading
       )
 
-      return adapted.message
+      return adapted.content
     } catch (error) {
       console.error('❌ Stress adaptation failed:', error)
       return baseResponse
@@ -467,7 +496,7 @@ export class AIServiceManager {
   ): Promise<string> {
     const messages = [
       ...context.conversationHistory.map(msg => ({
-        role: msg.role as 'user' | 'assistant' | 'system',
+        role: msg.role,
         content: msg.content
       })),
       { role: 'user' as const, content: prompt }
@@ -495,7 +524,7 @@ export class AIServiceManager {
       .filter(msg => msg.role !== 'system')
       .map(msg => ({ role: msg.role as 'user' | 'assistant', content: msg.content }))
 
-    const response = await this.anthropic.messages.create({
+    const response = await (this.anthropic as any).messages.create({
       model: 'claude-3-5-sonnet-20241022',
       max_tokens: this.config.maxTokens,
       temperature: this.config.temperature,
@@ -605,6 +634,8 @@ export class AIServiceManager {
    */
   private addBiometricContext(biometricData: BiometricReading[]): string {
     const latestReading = biometricData[biometricData.length - 1]
+    
+    if (!latestReading) return ''
     
     let context = `Based on their current biometric readings: `
     
@@ -729,14 +760,14 @@ export class AIServiceManager {
     let score = 0.7 // Base confidence
 
     // Increase confidence with more context
-    if (context.biometricData && context.biometricData.length > 0) score += 0.1
-    if (context.culturalContext) score += 0.1
-    if (context.conversationHistory.length > 2) score += 0.1
-    if (context.currentEmotion) score += 0.05 // WAVE 2 NEW
+    if (context.biometricData && context.biometricData.length > 0) {score += 0.1}
+    if (context.culturalContext) {score += 0.1}
+    if (context.conversationHistory.length > 2) {score += 0.1}
+    if (context.currentEmotion) {score += 0.05} // WAVE 2 NEW
 
     // Adjust based on response length and quality
-    if (response.length > 200 && response.length < 1000) score += 0.05
-    if (this.extractActionItems(response).length > 0) score += 0.05
+    if (response.length > 200 && response.length < 1000) {score += 0.05}
+    if (this.extractActionItems(response).length > 0) {score += 0.05}
 
     return Math.min(0.95, score) // Cap at 95%
   }
@@ -839,13 +870,13 @@ export class AIServiceManager {
   }
 
   private getPortalCategory(portalId: string): string {
-    if (portalId.includes('activation')) return 'activation'
-    if (portalId.includes('foundation')) return 'foundation'
-    if (portalId.includes('health')) return 'health'
-    if (portalId.includes('mind')) return 'mind'
-    if (portalId.includes('flow')) return 'flow'
-    if (portalId.includes('well')) return 'well'
-    if (portalId.includes('quantum')) return 'quantum'
+    if (portalId.includes('activation')) {return 'activation'}
+    if (portalId.includes('foundation')) {return 'foundation'}
+    if (portalId.includes('health')) {return 'health'}
+    if (portalId.includes('mind')) {return 'mind'}
+    if (portalId.includes('flow')) {return 'flow'}
+    if (portalId.includes('well')) {return 'well'}
+    if (portalId.includes('quantum')) {return 'quantum'}
     return 'activation'
   }
 
@@ -877,8 +908,8 @@ export class AIServiceManager {
  */
 export function createAIServiceManager(overrides?: Partial<AIServiceConfig>): AIServiceManager {
   const config: AIServiceConfig = {
-    openAIKey: process.env['OPENAI_API_KEY']!,
-    anthropicKey: process.env['ANTHROPIC_API_KEY']!,
+    openAIKey: getEnv('OPENAI_API_KEY'),
+    anthropicKey: getEnv('ANTHROPIC_API_KEY') || '',
     defaultModel: 'openai',
     maxTokens: 1500,
     temperature: 0.7,

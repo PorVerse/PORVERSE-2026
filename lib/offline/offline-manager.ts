@@ -102,13 +102,13 @@ export class OfflineManager {
 
   // Singleton accessor
   static get(opts?: OfflineManagerOptions) {
-    if (!OfflineManager.instance) OfflineManager.instance = new OfflineManager(opts);
+    if (!OfflineManager.instance) {OfflineManager.instance = new OfflineManager(opts);}
     return OfflineManager.instance;
   }
 
   // Init: register SW, set up listeners, pre-cache URLs
   async init(): Promise<void> {
-    if (this.ready || typeof window === 'undefined') return;
+    if (this.ready || typeof window === 'undefined') {return;}
 
     // Online status listeners
     window.addEventListener('online', () => { this.setOnline(true); });
@@ -133,7 +133,7 @@ export class OfflineManager {
       navigator.serviceWorker.addEventListener('message', (event) => this.handleSWMessage(event.data));
 
       // Pre-cache URLs (optional)
-      if (this.options.preCacheUrls && this.options.preCacheUrls.length) {
+      if (this.options.preCacheUrls?.length) {
         this.cacheUrls(this.options.preCacheUrls).catch(() => void 0);
       }
     }
@@ -152,7 +152,7 @@ export class OfflineManager {
   // Send a lightweight ping to SW (optional diagnostics)
   async pingSW(timeoutMs = 2000): Promise<{ ok: boolean; sw?: string; app?: string; }>
   {
-    if (!navigator.serviceWorker?.controller) return { ok: false };
+    if (!navigator.serviceWorker?.controller) {return { ok: false };}
     return new Promise((resolve) => {
       const mc = new MessageChannel();
       const timer = setTimeout(() => resolve({ ok: false }), timeoutMs);
@@ -167,7 +167,7 @@ export class OfflineManager {
 
   // Ask SW to cache some URLs now (e.g., last visited portal pages)
   async cacheUrls(urls: string[]): Promise<void> {
-    if (!navigator.serviceWorker?.controller) return;
+    if (!navigator.serviceWorker?.controller) {return;}
     navigator.serviceWorker.controller.postMessage({ type: 'CACHE_URLS', payload: { urls } });
   }
 
@@ -230,7 +230,7 @@ export class OfflineManager {
 
   // Process messages coming from the Service Worker
   private handleSWMessage(data: any) {
-    if (!data) return;
+    if (!data) {return;}
 
     if (data.type === 'SYNC_COMPLETE') {
       // Clear our local mirror so UI reflects latest state; SW is the source of truth
@@ -241,7 +241,7 @@ export class OfflineManager {
     }
 
     if (data.type === 'ONLINE_STATUS') {
-      if (typeof data.online === 'boolean') this.setOnline(data.online);
+      if (typeof data.online === 'boolean') {this.setOnline(data.online);}
       return;
     }
   }

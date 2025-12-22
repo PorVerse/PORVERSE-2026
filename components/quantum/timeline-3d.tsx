@@ -1,11 +1,19 @@
 // components/quantum/timeline-3d.tsx
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Stars, Text, Sphere } from '@react-three/drei';
+import { Canvas, useFrame } from '@react-three/fiber';
+import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
-import { TimelineData, TimelinePoint } from '@/lib/quantum/timeline-simulator';
+
+import { TimelinePoint } from '@/lib/quantum/timeline-simulator';
+
+// Define TimelineData locally as it's not exported from timeline-simulator
+export interface TimelineData {
+  past: TimelinePoint[];
+  present: TimelinePoint[];
+  future: TimelinePoint[];
+}
 
 export interface Timeline3DProps {
   timelineData: TimelineData;
@@ -20,7 +28,7 @@ export function Timeline3D({
   currentPosition,
   onTimelineNavigation,
   renderMode = '3D',
-  interactionMode = 'exploration'
+  interactionMode: _interactionMode = 'exploration'
 }: Timeline3DProps) {
   
   if (renderMode === '2D') {
@@ -89,7 +97,7 @@ function TimelinePath({
 
   // Create curve through points
   const curve = new THREE.CatmullRomCurve3(
-    points.map((p, i) => new THREE.Vector3(i * 2, Math.sin(i * 0.5) * 2, 0))
+    points.map((_p, i) => new THREE.Vector3(i * 2, Math.sin(i * 0.5) * 2, 0))
   );
 
   // Animate line

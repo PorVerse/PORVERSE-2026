@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+
 import { OfflineManager, offlineManager, initializeOffline } from "@/lib/offline/offline-manager";
 
 export interface UseOfflineSyncOptions {
@@ -58,7 +59,7 @@ export function useOfflineSync(options?: UseOfflineSyncOptions) {
       // Ping SW (optional)
       const ping = await offlineManager.pingSW().catch(() => ({ ok: false }));
 
-      if (!mounted) return;
+      if (!mounted) {return;}
       setState((s) => ({
         ...s,
         isReady: true,
@@ -69,13 +70,13 @@ export function useOfflineSync(options?: UseOfflineSyncOptions) {
       }));
 
       // Subscribe to online/offline changes
-      unsubOnline = mgrRef.current!.onOnlineChange((online) => {
+      unsubOnline = mgrRef.current.onOnlineChange((online) => {
         setState((s) => ({ ...s, isOnline: online }));
       });
 
       // Subscribe to sync completion
-      unsubSync = mgrRef.current!.onSyncComplete((res) => {
-        if (debug) console.log("[useOfflineSync] SYNC_COMPLETE", res);
+      unsubSync = mgrRef.current.onSyncComplete((res) => {
+        if (debug) {console.log("[useOfflineSync] SYNC_COMPLETE", res);}
         setState((s) => ({ ...s, lastSync: { success: res.success, failed: res.failed } }));
         // Refresh queue length after sync
         offlineManager.getQueue().then((list) => setState((s) => ({ ...s, queuedCount: list.length })));

@@ -1,7 +1,7 @@
 // app/api/i18n/save/route.ts
 import { NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
-import { createRouteHandlerClient } from '@supabase/ssr'
+
+import { createClient } from '@/lib/supabase/server'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -22,8 +22,7 @@ interface SaveBody {
 export async function POST(req: Request) {
   try {
     const body = (await req.json().catch(() => ({}))) as SaveBody
-    const cookieStore = cookies()
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+    const supabase = await createClient()
 
     const { data: { user }, error: getUserErr } = await supabase.auth.getUser()
     if (getUserErr || !user) {
@@ -32,17 +31,17 @@ export async function POST(req: Request) {
 
     // Construim payload doar cu câmpurile furnizate (nu suprascriem inutil)
     const update: Record<string, unknown> = {}
-    if (body.language) update.language = body.language
-    if (typeof body.country !== 'undefined') update.country = body.country
-    if (body.currency) update.currency = body.currency
-    if (typeof body.timezone !== 'undefined') update.timezone = body.timezone
-    if (body.pricingTier) update.pricing_tier = body.pricingTier
+    if (body.language) {update['language'] = body.language}
+    if (typeof body.country !== 'undefined') {update['country'] = body.country}
+    if (body.currency) {update['currency'] = body.currency}
+    if (typeof body.timezone !== 'undefined') {update['timezone'] = body.timezone}
+    if (body.pricingTier) {update['pricing_tier'] = body.pricingTier}
 
     if (Object.keys(update).length === 0) {
       return NextResponse.json({ ok: true, skipped: true })
     }
 
-    update.i18n_updated_at = new Date().toISOString()
+    update['i18n_updated_at'] = new Date().toISOString()
 
     const { error: upErr } = await supabase
       .from('profiles')
@@ -56,12 +55,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: upErr.message }, { status: 400 })
     }
 
-    return NextResponse.json({ ok: true })
-  } catch (e: any) {
-    if (process.env['NODE_ENV'] !== 'production') {
-      console.error('[i18n.save] fatal', e)
+      return NextResponse.json({ ok: true })
+  } catch (e: unknown) {
+      if (process.env['NODE_ENV'] !== 'production') {
+        console.error('[i18n.save] fatal', e)
     }
-    return NextResponse.json({ ok: false, error: e?.message || 'Unknown error' }, { status: 500 })
+    const message = e instanceof Error ? e.message : 'Unknown error'
+    return NextResponse.json({ ok: false, error: message }, { status: 500 })
   }
 }
 

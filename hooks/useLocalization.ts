@@ -10,13 +10,15 @@
  * - Idempotent (guard + coalesce în-flight)
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+
 import { cookiesClient } from '@/lib/cookies/client'
-import type { PricingTier } from '@/lib/i18n/price-map' // 'romania' | 'eu' | 'us'
 import { getBrowserTimeZone, isValidTimeZone } from '@/lib/i18n/timezone'
 import { logger } from '@/lib/telemetry/logger'
 import { metrics } from '@/lib/telemetry/metrics'
+
+import type { PricingTier } from '@/lib/i18n/price-map' // 'romania' | 'eu' | 'us'
 
 // --------------------------- types ---------------------------
 
@@ -48,7 +50,7 @@ export type Supported = (typeof SUPPORTED)[number]
 // --------------------------- helpers ---------------------------
 
 function normalizeLang(lang?: string): Supported {
-  const base = (lang ?? 'en').split('-')[0].toLowerCase()
+  const base = ((lang ?? 'en').split('-')[0] || 'en').toLowerCase()
   return (SUPPORTED.includes(base as any) ? base : 'en') as Supported
 }
 
@@ -66,7 +68,7 @@ function inferCurrencyFromTier(tier: PricingTier): IsoCurrency {
 
 function ensureValidCurrency(currency: string | undefined, tier: PricingTier): IsoCurrency {
   const c = (currency || '').toUpperCase()
-  if (c === 'RON' || c === 'EUR' || c === 'USD') return c
+  if (c === 'RON' || c === 'EUR' || c === 'USD') {return c}
   return inferCurrencyFromTier(tier)
 }
 
@@ -83,9 +85,8 @@ function withLocaleInPath(pathname: string, newLang: Supported): string {
 /** verifică sesiunea Supabase fără a crea instanțe multiple inutil */
 async function hasSupabaseSession(): Promise<boolean> {
   try {
-    const mod = await import('@supabase/ssr').catch(() => null)
-    if (!mod?.createClientComponentClient) return false
-    const supabase = mod.createClientComponentClient()
+    const { createClient } = await import('@/lib/supabase/client')
+    const supabase = createClient()
     const { data } = await supabase.auth.getSession()
     return !!data?.session
   } catch {
@@ -115,20 +116,19 @@ async function persistPreferences(payload: {
 
   // 2) fallback direct Supabase (opțional)
   try {
-    const mod = await import('@supabase/ssr').catch(() => null)
-    if (!mod?.createClientComponentClient) return
-    const supabase = mod.createClientComponentClient()
+    const { createClient } = await import('@/lib/supabase/client')
+    const supabase = createClient()
     const { data: userData } = await supabase.auth.getUser()
     const userId = userData?.user?.id
-    if (!userId) return
+    if (!userId) {return}
 
     const update: Record<string, any> = {
       i18n_updated_at: new Date().toISOString(),
     }
-    if (payload.timezone) update.timezone = payload.timezone
-    if (payload.language) update.language = payload.language
-    if (payload.currency) update.currency = payload.currency
-    if (payload.pricingTier) update.pricing_tier = payload.pricingTier
+    if (payload.timezone) {update['timezone'] = payload.timezone}
+    if (payload.language) {update['language'] = payload.language}
+    if (payload.currency) {update['currency'] = payload.currency}
+    if (payload.pricingTier) {update['pricing_tier'] = payload.pricingTier}
 
     if (Object.keys(update).length > 1) {
       await supabase.from('profiles').update(update).eq('id', userId)
@@ -156,8 +156,8 @@ export function useLocalization() {
   const initInFlight = useRef<Promise<void> | null>(null)
 
   const init = useCallback(async () => {
-    if (initialized.current) return
-    if (initInFlight.current) return
+    if (initialized.current) {return}
+    if (initInFlight.current) {return}
     initialized.current = true
 
     setIsLoading(true)
@@ -173,7 +173,7 @@ export function useLocalization() {
         const data = json?.data
 
         const language = normalizeLang(data?.language)
-        const pricingTier = (data?.pricingTier ?? 'eu') as PricingTier
+        const pricingTier = (data?.pricingTier ?? 'eu')
         const currency = ensureValidCurrency(data?.currency, pricingTier)
 
         // 2) Timezone din browser dacă e validă
@@ -194,14 +194,14 @@ export function useLocalization() {
         // 3) Cookie-uri client → nav corect
         cookiesClient.setLocale(language)
         cookiesClient.setTier(pricingTier)
-        if (payload.country) cookiesClient.setCountry(payload.country)
+        if (payload.country) {cookiesClient.setCountry(payload.country)}
 
         // 4) Setare stare
         setState(payload)
 
         // 5) Telemetrie
         try {
-          const source = (json?.meta?.source ?? data?.source ?? 'unknown') as SourceTag
+          const source = (json?.meta?.source ?? data?.source ?? 'unknown')
           logger.info('i18n.detected', {
             language,
             pricingTier,
@@ -247,7 +247,7 @@ export function useLocalization() {
       // 2) Navigație localizată (no-scroll)
       if (pathname) {
         const target = withLocaleInPath(pathname, nextLang)
-        if (target !== pathname) router.replace(target, { scroll: false })
+        if (target !== pathname) {router.replace(target, { scroll: false })}
       }
 
       // 3) Telemetrie
@@ -258,21 +258,19 @@ export function useLocalization() {
 
       // 4) Persistă preferința doar dacă există sesiune
       try {
-        const mod = await import('@supabase/ssr').catch(() => null)
-        if (mod?.createClientComponentClient) {
-          const supabase = mod.createClientComponentClient()
-          const { data: userData } = await supabase.auth.getUser()
-          const userId = userData?.user?.id
-          if (userId) {
-            await supabase
-              .from('profiles')
-              .update({
-                language: nextLang,
-                i18n_updated_at: new Date().toISOString(),
-              })
-              .eq('id', userId)
-            logger.info('i18n.preference.persisted', { userId, language: nextLang })
-          }
+        const { createClient } = await import('@/lib/supabase/client')
+        const supabase = createClient()
+        const { data: userData } = await supabase.auth.getUser()
+        const userId = userData?.user?.id
+        if (userId) {
+          await supabase
+            .from('profiles')
+            .update({
+              language: nextLang,
+              i18n_updated_at: new Date().toISOString(),
+            })
+            .eq('id', userId)
+          logger.info('i18n.preference.persisted', { userId, language: nextLang })
         }
       } catch {}
     },

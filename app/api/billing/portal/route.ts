@@ -1,8 +1,8 @@
 // app/api/billing/portal/route.ts
 import { NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
 import Stripe from 'stripe'
-import { createRouteHandlerClient } from '@supabase/ssr'
+
+import { createClient } from '@/lib/supabase/server'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -24,11 +24,11 @@ function inferSiteUrl(req: Request): string {
 function pickLang(headers: Headers): 'en' | 'ro' {
   const cookie = headers.get('cookie') || ''
   const m = cookie.match(/i18n_locale=([^;]+)/)
-  const fromCookie = m ? decodeURIComponent(m[1]).split('-')[0].toLowerCase() : ''
-  if (fromCookie === 'ro') return 'ro'
-  if (fromCookie === 'en') return 'en'
+  const fromCookie = m && m[1] ? decodeURIComponent(m[1]).split('-')[0]?.toLowerCase() : ''
+  if (fromCookie === 'ro') {return 'ro'}
+  if (fromCookie === 'en') {return 'en'}
   const ref = headers.get('referer') || ''
-  if (/\/ro(\/|$)/.test(ref)) return 'ro'
+  if (/\/ro(\/|$)/.test(ref)) {return 'ro'}
   return 'en'
 }
 
@@ -39,8 +39,7 @@ export async function POST(req: Request) {
     }
 
     // 1) user (dacă există)
-    const cookieStore = cookies()
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+    const supabase = await createClient()
     const { data: userRes } = await supabase.auth.getUser()
     const user = userRes?.user || null
 
@@ -58,7 +57,7 @@ export async function POST(req: Request) {
         .eq('id', user.id)
         .maybeSingle()
       if (profErr) {
-        if (process.env['NODE_ENV'] !== 'production') console.error('[billing] profile read error', profErr)
+        if (process.env['NODE_ENV'] !== 'production') {console.error('[billing] profile read error', profErr)}
         return NextResponse.json({ ok: false, error: 'Profile read failed.' }, { status: 500 })
       }
 
@@ -110,9 +109,9 @@ export async function POST(req: Request) {
     })
 
     return NextResponse.json({ ok: true, url: session.url })
-  } catch (err: any) {
-    const msg = err?.message || 'Unknown error'
-    if (process.env['NODE_ENV'] !== 'production') console.error('[billing] portal error:', msg)
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Unknown error'
+    if (process.env['NODE_ENV'] !== 'production') {console.error('[billing] portal error:', msg)}
     return NextResponse.json({ ok: false, error: msg }, { status: 500 })
   }
 }

@@ -9,12 +9,12 @@ const nextConfig = {
     return config
   },
 
-  // ── CORE FIXES pentru deployment
+  // ── CORE FIXES pour deployment
   eslint: {
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: false, // Must lint during build for production readiness
   },
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false, // Must type-check during build for production readiness
   },
   
   // ── FIX PRINCIPAL pentru useSearchParams errors

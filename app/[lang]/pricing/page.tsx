@@ -1,9 +1,10 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+
 import { useLocalization } from '@/hooks/useLocalization'
-import { getPrice, type PricingTier } from '@/lib/i18n/price-map'
 import { formatCurrency, langToLocale } from '@/lib/i18n/format'
+import { getPrice, type PricingTier } from '@/lib/i18n/price-map'
 import Link from 'next/link'
 
 type Plan = {

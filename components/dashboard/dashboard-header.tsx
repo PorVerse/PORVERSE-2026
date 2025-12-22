@@ -3,13 +3,15 @@
 
 'use client'
 
-import Link from 'next/link'
-import { useState } from 'react'
-import { signOut } from '@/lib/auth/auth-helpers'
 import { useRouter } from 'next/navigation'
+import { useState } from 'react'
 import { toast } from 'sonner'
-import type { User } from '@supabase/supabase-js'
+
+import { signOut } from '@/lib/auth/auth-helpers'
+import Link from 'next/link'
+
 import type { Database } from '@/types/database.types'
+import type { User } from '@supabase/supabase-js'
 
 // Profile type from Supabase
 type Profile = Database['public']['Tables']['profiles']['Row']
@@ -37,7 +39,7 @@ export function DashboardHeader({ user, profile }: DashboardHeaderProps) {
   // ---- Subscription Badge (robust typing + normalization) ----
   const getSubscriptionBadge = () => {
     // The DB might store: 'free' | 'premium' | 'enterprise' | 'pro' | 'elite' | unknown
-    const rawTier = (profile?.subscription_tier || 'free') as string
+    const rawTier = (profile?.subscription_tier || 'free')
 
     // Normalize to one of: 'free' | 'pro' | 'elite'
     const normalizedTier = ((): 'free' | 'pro' | 'elite' => {

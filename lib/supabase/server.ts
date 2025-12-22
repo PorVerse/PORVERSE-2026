@@ -3,14 +3,17 @@
 
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+
+import { getEnv } from '@/lib/env'
+import { isQueryError } from '@/lib/services/supabase-helpers'
 import { Database } from '@/types/database.types'
 
 export async function createClient() {
   const cookieStore = await cookies()
 
   return createServerClient<Database>(
-    process.env['NEXT_PUBLIC_SUPABASE_URL']!,
-    process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!,
+    getEnv('NEXT_PUBLIC_SUPABASE_URL'),
+    getEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY'),
     {
       cookies: {
         get(name: string) {
@@ -72,18 +75,20 @@ export async function getUserProfile() {
   const supabase = await createClient()
   const user = await getCurrentUser()
 
-  if (!user) return null
+  if (!user) {
+    return null
+  }
 
-  const { data: profile, error } = await supabase
+  const profileResult = await supabase
     .from('profiles')
     .select('*')
     .eq('id', user.id)
     .single()
 
-  if (error) {
-    console.error('Error getting user profile:', error)
+  if (isQueryError(profileResult)) {
+    console.error('Error getting user profile:', profileResult.error)
     return null
   }
 
-  return profile
+  return profileResult.data
 }

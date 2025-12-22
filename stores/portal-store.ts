@@ -6,10 +6,10 @@
  * @production-ready YES
  */
 
-import { create } from 'zustand';
+import * as Sentry from '@sentry/nextjs';
+import { create, type StateCreator } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
-import * as Sentry from '@sentry/nextjs';
 
 // ============================================================================
 // TYPES & INTERFACES
@@ -139,8 +139,10 @@ const initialState: PortalState = {
 // MIDDLEWARE: LOGGER
 // ============================================================================
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const logger = (config: any) => (set: any, get: any, api: any) =>
   config(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (...args: any[]) => {
       const [updates] = args;
       console.log('[Store Update]', {
@@ -159,8 +161,10 @@ const logger = (config: any) => (set: any, get: any, api: any) =>
 // MIDDLEWARE: TELEMETRY
 // ============================================================================
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const telemetry = (config: any) => (set: any, get: any, api: any) =>
   config(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (...args: any[]) => {
       const start = performance.now();
       set(...args);
@@ -188,7 +192,7 @@ export const usePortalStore = create<PortalStore>()(
   devtools(
     persist(
       telemetry(
-        immer((set, get) => ({
+        immer((set, get: () => PortalStore) => ({
           // Initial State
           ...initialState,
 
@@ -197,7 +201,7 @@ export const usePortalStore = create<PortalStore>()(
           // ============================================================
 
           setPortals: (portals: Portal[]) => {
-            set((state) => {
+            set((state: PortalState) => {
               state.portals = portals;
               state.lastFetch = Date.now();
               state.cacheValid = true;
@@ -214,7 +218,7 @@ export const usePortalStore = create<PortalStore>()(
           },
 
           addPortal: (portal: Portal) => {
-            set((state) => {
+            set((state: PortalState) => {
               state.portals.push(portal);
               state.cacheValid = false;
             });
@@ -228,11 +232,14 @@ export const usePortalStore = create<PortalStore>()(
           },
 
           updatePortal: (id: string, updates: Partial<Portal>) => {
-            set((state) => {
+            set((state: PortalState) => {
               const index = state.portals.findIndex((p) => p.id === id);
               if (index !== -1) {
-                state.portals[index] = { ...state.portals[index], ...updates };
-                state.cacheValid = false;
+                const portal = state.portals[index];
+                if (portal) {
+                  Object.assign(portal, updates);
+                  state.cacheValid = false;
+                }
               }
             });
 
@@ -245,7 +252,7 @@ export const usePortalStore = create<PortalStore>()(
           },
 
           deletePortal: (id: string) => {
-            set((state) => {
+            set((state: PortalState) => {
               state.portals = state.portals.filter((p) => p.id !== id);
               delete state.progress[id];
               if (state.selectedPortalId === id) {
@@ -263,18 +270,16 @@ export const usePortalStore = create<PortalStore>()(
           },
 
           setProgress: (portalId: string, progress: UserProgress) => {
-            set((state) => {
+            set((state: PortalState) => {
               state.progress[portalId] = progress;
             });
           },
 
           updateProgress: (portalId: string, updates: Partial<UserProgress>) => {
-            set((state) => {
-              if (state.progress[portalId]) {
-                state.progress[portalId] = {
-                  ...state.progress[portalId],
-                  ...updates,
-                };
+            set((state: PortalState) => {
+              const current = state.progress[portalId];
+              if (current) {
+                Object.assign(current, updates);
               } else {
                 // Initialize if doesn't exist
                 const portal = state.portals.find((p) => p.id === portalId);
@@ -301,25 +306,25 @@ export const usePortalStore = create<PortalStore>()(
           },
 
           selectPortal: (id: string | null) => {
-            set((state) => {
+            set((state: PortalState) => {
               state.selectedPortalId = id;
             });
           },
 
           setFilters: (filters: Partial<PortalFilters>) => {
-            set((state) => {
+            set((state: PortalState) => {
               state.filters = { ...state.filters, ...filters };
             });
           },
 
           setLoading: (loading: boolean) => {
-            set((state) => {
+            set((state: PortalState) => {
               state.loading = loading;
             });
           },
 
           setError: (error: Error | null) => {
-            set((state) => {
+            set((state: PortalState) => {
               state.error = error;
               state.loading = false;
             });
@@ -332,7 +337,7 @@ export const usePortalStore = create<PortalStore>()(
           },
 
           invalidateCache: () => {
-            set((state) => {
+            set((state: PortalState) => {
               state.cacheValid = false;
               state.lastFetch = null;
             });
@@ -394,7 +399,7 @@ export const usePortalStore = create<PortalStore>()(
 
           isPortalCompleted: (portalId: string) => {
             const progress = get().progress[portalId];
-            if (!progress) return false;
+            if (!progress) {return false;}
             return progress.currentStep >= progress.totalSteps;
           },
 
@@ -458,15 +463,4 @@ export const portalStoreActions = {
   reset: () => usePortalStore.getState().reset(),
 };
 
-// ============================================================================
-// EXPORTS
-// ============================================================================
-
-export type {
-  Portal,
-  PortalStep,
-  UserProgress,
-  PortalFilters,
-  PortalState,
-  PortalActions,
-};
+// Note: Types Portal, PortalStep, UserProgress, PortalFilters already exported above

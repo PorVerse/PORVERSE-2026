@@ -1,11 +1,32 @@
 // components/navigation/portal-navigation.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Check, Lock, ChevronRight } from 'lucide-react';
+import { useState, useEffect } from 'react';
+
 import { createClient } from '@/lib/supabase/client';
-import { Portal, PortalProgress } from '@/types/portal';
+
+import { Portal } from '@/types';
+
+// PortalProgress type - matches UserPortalProgress from types
+interface PortalProgress {
+  portalId: string;
+  status: 'locked' | 'unlocked' | 'in_progress' | 'completed';
+  progressPercentage: number;
+  completed_steps?: number;
+  total_steps?: number;
+}
+
+// Nav component props - shared by HorizontalNav and CircularNav
+interface NavComponentProps {
+  portals: Portal[];
+  currentPortal: Portal;
+  progressData: Record<string, PortalProgress>;
+  isPortalUnlocked: (portal: Portal) => boolean;
+  handlePortalClick: (portal: Portal) => void;
+  showProgress?: boolean;
+}
 
 export interface PortalNavigationProps {
   currentPortal: Portal;
@@ -53,8 +74,19 @@ export function PortalNavigation({
 
       if (progressData) {
         const progressMap: Record<string, PortalProgress> = {};
-        progressData.forEach((p: any) => {
-          progressMap[p.portal_id] = p;
+        progressData.forEach((p: { 
+          portal_id: string; 
+          status: 'locked' | 'unlocked' | 'in_progress' | 'completed';
+          completed_steps: number;
+          total_steps: number;
+        }) => {
+          progressMap[p.portal_id] = {
+            portalId: p.portal_id,
+            status: p.status,
+            progressPercentage: (p.completed_steps / p.total_steps) * 100,
+            completed_steps: p.completed_steps,
+            total_steps: p.total_steps
+          };
         });
         setProgressData(progressMap);
       }
@@ -65,11 +97,11 @@ export function PortalNavigation({
 
   const isPortalUnlocked = (portal: Portal): boolean => {
     // P0 is always unlocked
-    if (portal.id === 'P0') return true;
+    if (portal.id === 'P0') {return true;}
 
-    // Check if requirements are met
-    const requiredPortal = portal.unlock_requirements?.required_portal;
-    if (!requiredPortal) return true;
+    // Check if requirements are met - using required_previous_portal
+    const requiredPortal = portal.required_previous_portal;
+    if (!requiredPortal) {return true;}
 
     const requiredProgress = progressData[requiredPortal];
     return requiredProgress?.status === 'completed';
@@ -98,7 +130,7 @@ export function PortalNavigation({
             const progress = progressData[portal.id];
             const isUnlocked = isPortalUnlocked(portal);
             const isCurrent = portal.id === currentPortal.id;
-            const completionPercentage = progress
+            const completionPercentage = progress && progress.completed_steps && progress.total_steps
               ? Math.round((progress.completed_steps / progress.total_steps) * 100)
               : 0;
 
@@ -139,7 +171,7 @@ export function PortalNavigation({
                 <div className="flex items-center gap-3">
                   {/* Icon */}
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/10">
-                    <span className="text-xl">{portal.icon || '🌟'}</span>
+                    <span className="text-xl">{portal.icon_name || '🌟'}</span>
                   </div>
 
                   {/* Name & ID */}
@@ -194,14 +226,14 @@ function HorizontalNav({
   isPortalUnlocked, 
   handlePortalClick,
   showProgress 
-}: any) {
+}: NavComponentProps) {
   return (
     <div className="flex gap-4 overflow-x-auto pb-4">
       {portals.map((portal: Portal) => {
         const progress = progressData[portal.id];
         const isUnlocked = isPortalUnlocked(portal);
         const isCurrent = portal.id === currentPortal.id;
-        const completionPercentage = progress
+        const completionPercentage = (progress?.completed_steps && progress?.total_steps)
           ? Math.round((progress.completed_steps / progress.total_steps) * 100)
           : 0;
 
@@ -223,7 +255,7 @@ function HorizontalNav({
           >
             {/* Icon */}
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/10">
-              <span className="text-3xl">{portal.icon || '🌟'}</span>
+              <span className="text-3xl">{portal.icon_name || '🌟'}</span>
             </div>
 
             {/* Name */}
@@ -261,10 +293,10 @@ function HorizontalNav({
 function CircularNav({ 
   portals, 
   currentPortal, 
-  progressData, 
+  progressData: _progressData, 
   isPortalUnlocked, 
   handlePortalClick 
-}: any) {
+}: NavComponentProps) {
   const radius = 200;
   const centerX = 250;
   const centerY = 250;
@@ -274,7 +306,7 @@ function CircularNav({
       {/* Center - Current Portal */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
         <div className="flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-r from-purple-500 to-pink-500">
-          <span className="text-4xl">{currentPortal.icon || '🌟'}</span>
+          <span className="text-4xl">{currentPortal.icon_name || '🌟'}</span>
         </div>
       </div>
 
@@ -287,7 +319,7 @@ function CircularNav({
         const isUnlocked = isPortalUnlocked(portal);
         const isCurrent = portal.id === currentPortal.id;
 
-        if (isCurrent) return null; // Skip current portal (it's in center)
+        if (isCurrent) {return null;} // Skip current portal (it's in center)
 
         return (
           <motion.button
@@ -311,7 +343,7 @@ function CircularNav({
               transform: 'translate(-50%, -50%)'
             }}
           >
-            <span className="text-2xl">{portal.icon || '🌟'}</span>
+            <span className="text-2xl">{portal.icon_name || '🌟'}</span>
           </motion.button>
         );
       })}
@@ -319,7 +351,7 @@ function CircularNav({
       {/* Connection Lines */}
       <svg className="absolute inset-0 pointer-events-none">
         {portals.map((portal: Portal, index: number) => {
-          if (portal.id === currentPortal.id) return null;
+          if (portal.id === currentPortal.id) {return null;}
           
           const angle = (index / portals.length) * 2 * Math.PI - Math.PI / 2;
           const x = centerX + radius * Math.cos(angle);

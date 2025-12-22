@@ -15,6 +15,8 @@
  * - GDPR compliant (delete & export)
  */
 
+import * as tf from '@tensorflow/tfjs'
+
 import type {
   FaceLandmarks,
   FaceLandmark,
@@ -27,8 +29,6 @@ import type {
   EmotionReport,
   TimeRange,
 } from '../../types/biometric'
-
-import * as tf from '@tensorflow/tfjs'
 
 // ============================================================================
 // 🔧 CONFIGURATION (Configurare)
@@ -47,6 +47,46 @@ interface EmotionAnalyzerConfig {
     moderate: number               // Prag stress moderat
     high: number                   // Prag stress ridicat
   }
+}
+
+/**
+ * Features extracted from facial landmarks for emotion detection
+ */
+interface EmotionFeatures {
+  mouthOpenness: number
+  mouthSmile: number
+  leftEyeOpenness: number
+  rightEyeOpenness: number
+  leftBrowRaise: number
+  rightBrowRaise: number
+  jawDrop: number
+}
+
+/**
+ * Scan data for storage
+ */
+interface ScanData {
+  emotion_category?: string
+  timestamp?: number
+  emotion?: string
+  intensity?: number
+  confidence?: number
+  facial_features?: Record<string, unknown>
+  [key: string]: unknown
+}
+
+/**
+ * Analysis results for storage
+ */
+interface AnalysisResults {
+  emotional_state?: string
+  general_intensity?: string
+  emotion?: string
+  intensity?: number
+  confidence?: number
+  all_emotions?: Record<string, number>
+  facial_metrics?: Record<string, unknown>
+  [key: string]: unknown
 }
 
 /**
@@ -198,7 +238,7 @@ export class EmotionAnalyzer {
     })
     
     // Reshape la [1, 468, 3] (batch_size=1, num_landmarks=468, coordinates=3)
-    const tensor = tf.tensor3d([coords], [1, 468, 3])
+    const tensor = tf.tensor3d([coords as any], [1, 468, 3])
     
     return tensor
   }
@@ -240,14 +280,16 @@ export class EmotionAnalyzer {
           'happy', 'sad', 'angry', 'surprised', 'fearful', 'disgusted', 'neutral'
         ]
         
+        const scoresArray = scores[0] || []
+        
         emotionLabels.forEach((label, idx) => {
-          rawScores[label] = scores[0][idx]
+          rawScores[label] = scoresArray[idx] || 0
         })
         
         // Găsește emoția cu cel mai mare scor
-        const maxIdx = scores[0].indexOf(Math.max(...scores[0]))
-        emotion = emotionLabels[maxIdx]
-        confidence = scores[0][maxIdx]
+        const maxIdx = scoresArray.indexOf(Math.max(...scoresArray))
+        emotion = emotionLabels[maxIdx] || 'neutral'
+        confidence = scoresArray[maxIdx] || 0
         
         console.log('🤖 Predicție TensorFlow:', { emotion, confidence: confidence.toFixed(3) })
         
@@ -317,7 +359,7 @@ export class EmotionAnalyzer {
    * @param landmarks - Punctele de pe față
    * @returns Features pentru detectare emoții
    */
-  private extractEmotionFeatures(landmarks: FaceLandmarks): any {
+  private extractEmotionFeatures(landmarks: FaceLandmarks): EmotionFeatures {
     const points = landmarks.landmarks
 
     // Features importante:
@@ -349,7 +391,7 @@ export class EmotionAnalyzer {
    */
   private calculateMouthOpenness(points: FaceLandmark[]): number {
     // Upper lip: 13, Lower lip: 14
-    if (!points[13] || !points[14]) return 0
+    if (!points[13] || !points[14]) {return 0}
     
     const distance = Math.abs(points[14].y - points[13].y)
     return Math.min(1.0, distance * 10) // Normalizare
@@ -360,7 +402,7 @@ export class EmotionAnalyzer {
    */
   private calculateMouthSmile(points: FaceLandmark[]): number {
     // Mouth corners: 61 (left), 291 (right)
-    if (!points[61] || !points[291] || !points[0]) return 0
+    if (!points[61] || !points[291] || !points[0]) {return 0}
     
     const leftCorner = points[61]
     const rightCorner = points[291]
@@ -379,7 +421,7 @@ export class EmotionAnalyzer {
   private calculateEyeOpenness(points: FaceLandmark[], eye: 'left' | 'right'): number {
     // Simplified - în producție ar folosi mai multe puncte
     const idx = eye === 'left' ? 159 : 386
-    if (!points[idx]) return 0.7 // Default deschis
+    if (!points[idx]) {return 0.7} // Default deschis
     
     return 0.7 // Placeholder
   }
@@ -387,7 +429,7 @@ export class EmotionAnalyzer {
   /**
    * Calculează ridicarea sprâncenei
    */
-  private calculateBrowRaise(points: FaceLandmark[], brow: 'left' | 'right'): number {
+  private calculateBrowRaise(_points: FaceLandmark[], _brow: 'left' | 'right'): number {
     // Simplified
     return 0.5 // Placeholder
   }
@@ -395,7 +437,7 @@ export class EmotionAnalyzer {
   /**
    * Calculează coborârea maxilarului
    */
-  private calculateJawDrop(points: FaceLandmark[]): number {
+  private calculateJawDrop(_points: FaceLandmark[]): number {
     // Simplified
     return 0.3 // Placeholder
   }
@@ -407,7 +449,7 @@ export class EmotionAnalyzer {
    * @param features - Features extrase
    * @returns EmotionType
    */
-  private detectEmotion(features: any): EmotionType {
+  private detectEmotion(features: EmotionFeatures): EmotionType {
     // Reguli simple bazate pe features
     
     // HAPPY: Zâmbet + ochi deschiși
@@ -437,7 +479,7 @@ export class EmotionAnalyzer {
   /**
    * Calculează intensitatea emoției
    */
-  private calculateIntensity(features: any): number {
+  private calculateIntensity(features: EmotionFeatures): number {
     // Media absolută a deviațiilor de la neutral
     const deviations = [
       Math.abs(features.mouthOpenness - 0.3),
@@ -452,7 +494,7 @@ export class EmotionAnalyzer {
   /**
    * Calculează confidence-ul detectării
    */
-  private calculateEmotionConfidence(features: any, emotion: EmotionType): number {
+  private calculateEmotionConfidence(_features: EmotionFeatures, _emotion: EmotionType): number {
     // Simplified - în producție ar folosi modelul
     return 0.75
   }
@@ -460,7 +502,7 @@ export class EmotionAnalyzer {
   /**
    * Calculează score-uri pentru toate emoțiile
    */
-  private calculateAllEmotionScores(features: any): Record<string, number> {
+  private calculateAllEmotionScores(features: EmotionFeatures): Record<string, number> {
     return {
       happy: features.mouthSmile,
       sad: 1 - features.mouthSmile,
@@ -539,12 +581,12 @@ export class EmotionAnalyzer {
     if (readings.length === 0) {
       return {
         dominantEmotion: 'neutral',
+        emotionDistribution: { happy: 0, sad: 0, angry: 0, surprised: 0, fearful: 0, disgusted: 0, neutral: 1 },
         averageIntensity: 0.5,
         emotionalStability: 1.0,
         stressLevel: 'low' as StressLevel,
         valence: 0,
         arousal: 0.5,
-        timestamp: Date.now(),
       }
     }
     
@@ -582,14 +624,26 @@ export class EmotionAnalyzer {
     const avgArousal =
       readings.reduce((sum, r) => sum + (r.arousal || 0), 0) / readings.length
     
+    // Calculate emotion distribution
+    const emotionDistribution: Record<EmotionType, number> = {
+      happy: 0, sad: 0, angry: 0, surprised: 0, fearful: 0, disgusted: 0, neutral: 0
+    }
+    readings.forEach(r => {
+      emotionDistribution[r.emotion] = (emotionDistribution[r.emotion] || 0) + 1
+    })
+    // Normalize to percentages
+    Object.keys(emotionDistribution).forEach(key => {
+      emotionDistribution[key as EmotionType] /= readings.length
+    })
+    
     return {
       dominantEmotion,
+      emotionDistribution,
       averageIntensity: avgIntensity,
       emotionalStability,
       stressLevel,
       valence: avgValence,
       arousal: avgArousal,
-      timestamp: Date.now(),
     }
   }
 
@@ -600,7 +654,7 @@ export class EmotionAnalyzer {
    * @returns StressLevel
    */
   detectStressLevels(readings: EmotionReading[]): StressLevel {
-    if (readings.length === 0) return 'low'
+    if (readings.length === 0) {return 'low'}
     
     // Factori de stress:
     // 1. Emoții negative frecvente
@@ -622,9 +676,9 @@ export class EmotionAnalyzer {
     // Clasificăm nivelul
     const thresholds = this.config.stressThresholds
     
-    if (stressScore < thresholds.low) return 'low'
-    if (stressScore < thresholds.moderate) return 'moderate'
-    if (stressScore < thresholds.high) return 'high'
+    if (stressScore < thresholds.low) {return 'low'}
+    if (stressScore < thresholds.moderate) {return 'moderate'}
+    if (stressScore < thresholds.high) {return 'high'}
     return 'critical'
   }
 
@@ -632,7 +686,7 @@ export class EmotionAnalyzer {
    * Calculează variația (variance) unui array
    */
   private calculateVariance(values: number[]): number {
-    if (values.length === 0) return 0
+    if (values.length === 0) {return 0}
     
     const mean = values.reduce((sum, v) => sum + v, 0) / values.length
     const squaredDiffs = values.map((v) => Math.pow(v - mean, 2))
@@ -718,14 +772,10 @@ export class EmotionAnalyzer {
     const report: EmotionReport = {
       userId,
       timeRange,
-      emotionalState,
-      patterns,
-      totalReadings: relevantReadings.length,
-      summary: {
-        dominantEmotion: emotionalState.dominantEmotion,
-        averageStress: emotionalState.stressLevel,
-        emotionalStability: emotionalState.emotionalStability,
-      },
+      dominantEmotion: emotionalState.dominantEmotion,
+      emotionDistribution: emotionalState.emotionDistribution,
+      averageIntensity: emotionalState.averageIntensity,
+      stressLevel: emotionalState.stressLevel,
       insights: this.generateInsights(emotionalState, patterns),
       recommendations: this.generateRecommendations(emotionalState),
     }
@@ -733,7 +783,7 @@ export class EmotionAnalyzer {
     console.log('📋 Raport emoțional generat:', {
       period: `${new Date(timeRange.start).toLocaleDateString()} - ${new Date(timeRange.end).toLocaleDateString()}`,
       readings: relevantReadings.length,
-      dominant: report.summary.dominantEmotion,
+      dominant: report.dominantEmotion,
     })
     
     return report
@@ -744,7 +794,7 @@ export class EmotionAnalyzer {
    */
   private generateInsights(
     state: EmotionalState,
-    patterns: EmotionalPattern[]
+    _patterns: EmotionalPattern[]
   ): string[] {
     const insights: string[] = []
     
@@ -901,7 +951,7 @@ export class EmotionAnalyzer {
   private prepareDataForStorage(
     reading: EmotionReading,
     privacyLevel: 'strict' | 'balanced' | 'permissive'
-  ): { scanData: any; analysisResults: any } {
+  ): { scanData: ScanData; analysisResults: AnalysisResults } {
     
     if (privacyLevel === 'strict') {
       // MOD STRICT: Date minime
@@ -976,8 +1026,8 @@ export class EmotionAnalyzer {
    * Categorizează intensitatea
    */
   private categorizeIntensity(intensity: number): 'low' | 'medium' | 'high' {
-    if (intensity < 0.33) return 'low'
-    if (intensity < 0.67) return 'medium'
+    if (intensity < 0.33) {return 'low'}
+    if (intensity < 0.67) {return 'medium'}
     return 'high'
   }
 
@@ -1002,11 +1052,11 @@ export class EmotionAnalyzer {
     const negativeEmotions: EmotionType[] = ['angry', 'fearful', 'disgusted', 'sad']
     const isNegative = negativeEmotions.includes(reading.emotion)
     
-    if (!isNegative) return 'low'
+    if (!isNegative) {return 'low'}
     
-    if (reading.intensity > 0.8) return 'critical'
-    if (reading.intensity > 0.6) return 'high'
-    if (reading.intensity > 0.4) return 'moderate'
+    if (reading.intensity > 0.8) {return 'critical'}
+    if (reading.intensity > 0.6) {return 'high'}
+    if (reading.intensity > 0.4) {return 'moderate'}
     return 'low'
   }
 
@@ -1068,7 +1118,7 @@ export class EmotionAnalyzer {
       
       const { data, error } = await query
       
-      if (error) throw error
+      if (error) {throw error}
       return data || []
       
     } catch (error) {
@@ -1157,7 +1207,7 @@ export class EmotionAnalyzer {
         .eq('user_id', userId)
         .select('id')
       
-      if (error) throw error
+      if (error) {throw error}
       
       const deletedCount = data?.length || 0
       console.log(`🗑️  Șterse ${deletedCount} înregistrări biometrice`)
@@ -1235,7 +1285,8 @@ export class EmotionAnalyzer {
       
       await this.updateLastScanTimestamp(userId)
       
-      return data.map(record => record.id)
+      type IdRecord = { id: string }
+      return data.map((record: IdRecord) => record.id)
       
     } catch (error) {
       console.error('❌ Eroare în batch storage:', error)

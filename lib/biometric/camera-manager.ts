@@ -42,7 +42,7 @@ export class CameraManager {
 
   async initializeCamera(constraints?: MediaStreamConstraints): Promise<void> {
     try {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      if (!navigator.mediaDevices?.getUserMedia) {
         throw new Error('Browser does not support camera access!')
       }
 
@@ -215,7 +215,7 @@ export class CameraManager {
     console.log('🧹 Camera cleaned up')
   }
 
-  private handleCameraError(error: any): string {
+  private handleCameraError(error: unknown): string {
     let message = 'Unknown error'
 
     if (error instanceof Error) {
@@ -248,10 +248,10 @@ export class CameraManager {
   }
 
   private getActiveDeviceId(): string | null {
-    if (!this.stream) return null
+    if (!this.stream) {return null}
 
     const videoTrack = this.stream.getVideoTracks()[0]
-    if (!videoTrack) return null
+    if (!videoTrack) {return null}
 
     const settings = videoTrack.getSettings()
     return settings.deviceId || null

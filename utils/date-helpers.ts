@@ -558,7 +558,7 @@ export function isBetween(date: DateInput, start: DateInput, end: DateInput): bo
  * Calculate current streak from array of dates
  */
 export function calculateStreak(dates: DateInput[]): number {
-  if (dates.length === 0) return 0
+  if (dates.length === 0) {return 0}
   
   // Sort dates in descending order (newest first)
   const sortedDates = dates
@@ -567,6 +567,10 @@ export function calculateStreak(dates: DateInput[]): number {
   
   // Check if most recent date is today or yesterday
   const mostRecent = sortedDates[0]
+  if (!mostRecent) {
+    return 0 // No dates provided
+  }
+  
   const todayStart = startOfDay(now())
   const yesterdayStart = subtractDays(todayStart, 1)
   
@@ -579,6 +583,10 @@ export function calculateStreak(dates: DateInput[]): number {
   for (let i = 1; i < sortedDates.length; i++) {
     const currentDate = sortedDates[i]
     const previousDate = sortedDates[i - 1]
+    if (!currentDate || !previousDate) {
+      break
+    }
+    
     const daysDiff = calculateDurationDays(currentDate, previousDate)
     
     if (daysDiff === 1) {

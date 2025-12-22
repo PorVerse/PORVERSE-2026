@@ -11,6 +11,7 @@
 
 import { Ratelimit } from '@upstash/ratelimit'
 import { Redis } from '@upstash/redis'
+
 import { getEnv, hasEnv } from '@/lib/env'
 
 /**
@@ -20,13 +21,13 @@ let redis: Redis | null = null
 
 function getRedis(): Redis {
   if (!redis) {
-    if (!hasEnv('UPSTASH_REDIS_REST_URL') || !hasEnv('UPSTASH_REDIS_REST_TOKEN')) {
+    if (!process.env['UPSTASH_REDIS_REST_URL'] || !process.env['UPSTASH_REDIS_REST_TOKEN']) {
       throw new Error('Redis configuration missing. Set UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN')
     }
 
     redis = new Redis({
-      url: getEnv('UPSTASH_REDIS_REST_URL'),
-      token: getEnv('UPSTASH_REDIS_REST_TOKEN')
+      url: process.env['UPSTASH_REDIS_REST_URL']!,
+      token: process.env['UPSTASH_REDIS_REST_TOKEN']!
     })
   }
   return redis

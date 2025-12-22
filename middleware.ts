@@ -95,22 +95,22 @@ function shouldBypass(req: NextRequest): boolean {
 function pickLocale(req: NextRequest): Supported {
   // 1) cookie
   const v = req.cookies.get('i18n_locale')?.value
-  if (v && SUPPORTED.includes(v as Supported)) return v as Supported
+  if (v && SUPPORTED.includes(v as Supported)) {return v as Supported}
   // 2) Accept-Language
   const al = req.headers.get('accept-language') ?? ''
   const base = al.split(',')[0]?.trim().toLowerCase().split('-')[0]
-  if (base && SUPPORTED.includes(base as Supported)) return base as Supported
+  if (base && SUPPORTED.includes(base as Supported)) {return base as Supported}
   // 3) fallback
   return DEFAULT_LOCALE
 }
 
 function needsCanonicalHostRedirect(req: NextRequest): boolean {
-  if (!CANONICAL_HOST) return false
+  if (!CANONICAL_HOST) {return false}
   return req.nextUrl.hostname.toLowerCase() !== CANONICAL_HOST
 }
 
 function needsHttpsRedirect(req: NextRequest): boolean {
-  if (!ENFORCE_HTTPS) return false
+  if (!ENFORCE_HTTPS) {return false}
   const xfProto = req.headers.get('x-forwarded-proto')
   return !!xfProto && xfProto !== 'https'
 }
@@ -128,7 +128,7 @@ function ensureI18nCookie(req: NextRequest, res: NextResponse, locale: Supported
 
 /** Heuristică Supabase în Edge: în dev → OFF; în prod → verifică cookie-uri relevante */
 function isAuthenticated(req: NextRequest): boolean {
-  if (DISABLE_GUARD_DEV) return true
+  if (DISABLE_GUARD_DEV) {return true}
   const names = req.cookies.getAll().map((c) => c.name.toLowerCase())
   const hasAccess = names.includes('sb-access-token')
   const hasToken =
@@ -140,7 +140,7 @@ function isAuthenticated(req: NextRequest): boolean {
 
 function buildRedirect(req: NextRequest, targetUrl: URL, localeToSet?: Supported) {
   const res = NextResponse.redirect(targetUrl, { status: 307 })
-  if (localeToSet) ensureI18nCookie(req, res, localeToSet)
+  if (localeToSet) {ensureI18nCookie(req, res, localeToSet)}
   res.headers.set('Vary', 'Accept-Language, Cookie')
   res.headers.set('X-PV-Auth-Guard', DISABLE_GUARD_DEV ? 'disabled-dev' : 'enabled')
   

@@ -8,14 +8,15 @@
 
 'use client';
 
-import { useEffect, useState, useCallback, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
-import { PortalCard } from '@/components/portals/portal-card';
-import { usePortalStore, type Portal, type UserProgress } from '@/stores/portal-store';
-import { useRetry, useDebounce } from '@/hooks';
 import * as Sentry from '@sentry/nextjs';
-import { z } from 'zod';
 import { Search, Filter, AlertCircle, RefreshCw } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState, useCallback, useMemo } from 'react';
+import { z } from 'zod';
+
+import { PortalCard } from '@/components/portals/portal-card';
+import { useRetry, useDebounce } from '@/hooks';
+import { usePortalStore, type Portal } from '@/stores/portal-store';
 
 // ============================================================================
 // VALIDATION SCHEMAS
@@ -133,7 +134,7 @@ export default function PortalsPage() {
   
   // Store state
   const {
-    portals: storePortals,
+    portals: _storePortals,
     progress: storeProgress,
     setPortals: setStorePortals,
     setLoading: setStoreLoading,
@@ -232,7 +233,7 @@ export default function PortalsPage() {
         tags: {
           page: 'portals',
           action: 'fetch',
-          attempt: attempt,
+          attempt,
         },
         extra: {
           searchTerm: debouncedSearch,

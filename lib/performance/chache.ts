@@ -10,8 +10,10 @@
  * - Query result caching
  */
 
-import { Redis } from '@upstash/redis'
 import { createHash } from 'crypto'
+
+import { Redis } from '@upstash/redis'
+
 import { getEnv, hasEnv } from '@/lib/env'
 
 /**
@@ -50,7 +52,7 @@ class MemoryCache {
   get(key: string): any | null {
     const item = this.cache.get(key)
     
-    if (!item) return null
+    if (!item) {return null}
     
     // Check if expired
     if (Date.now() > item.expires) {
@@ -86,11 +88,11 @@ export class CacheService {
 
   constructor() {
     // Initialize Redis if available
-    if (hasEnv('UPSTASH_REDIS_REST_URL') && hasEnv('UPSTASH_REDIS_REST_TOKEN')) {
+    if (process.env['UPSTASH_REDIS_REST_URL'] && process.env['UPSTASH_REDIS_REST_TOKEN']) {
       this.redis = new Redis({
-        url: getEnv('UPSTASH_REDIS_REST_URL'),
-        token: getEnv('UPSTASH_REDIS_REST_TOKEN')
-      })
+        url: process.env['UPSTASH_REDIS_REST_URL']!,
+        token: process.env['UPSTASH_REDIS_REST_TOKEN']!
+      });
     } else {
       console.warn('⚠️  Redis not configured. Using memory cache only (limited performance).')
     }

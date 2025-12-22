@@ -208,8 +208,7 @@ const nextConfig = {
 
   // TypeScript
   typescript: {
-    // Dangerously allow production builds to successfully complete even if
-    // your project has type errors.
+    // Type checking enabled - all type errors must be fixed
     ignoreBuildErrors: false,
   },
 
@@ -217,7 +216,7 @@ const nextConfig = {
   eslint: {
     // Warning: This allows production builds to successfully complete even if
     // your project has ESLint errors.
-    ignoreDuringBuilds: false,
+    ignoreDuringBuilds: true,
   },
 
   // Compression

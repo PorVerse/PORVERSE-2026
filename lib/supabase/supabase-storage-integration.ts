@@ -1,4 +1,6 @@
 import { createClient } from '@/lib/supabase/client'
+import { isQueryError } from '@/lib/services/supabase-helpers'
+
 import type { EmotionReading, PrivacyMode } from '@/types/biometric'
 
 type EmotionType = 'happy' | 'sad' | 'angry' | 'fearful' | 'disgusted' | 'surprised' | 'neutral'
@@ -18,8 +20,12 @@ function generalizeEmotion(emotion: EmotionType): string {
 }
 
 function categorizeIntensity(intensity: number): 'low' | 'medium' | 'high' {
-  if (intensity < 0.33) return 'low'
-  if (intensity < 0.67) return 'medium'
+  if (intensity < 0.33) {
+    return 'low'
+  }
+  if (intensity < 0.67) {
+    return 'medium'
+  }
   return 'high'
 }
 
@@ -32,10 +38,18 @@ function calculateStressFromEmotion(reading: EmotionReading): 'low' | 'moderate'
   const negativeEmotions: EmotionType[] = ['angry', 'fearful', 'disgusted', 'sad']
   const isNegative = negativeEmotions.includes(reading.emotion as EmotionType)
 
-  if (!isNegative) return 'low'
-  if (reading.intensity > 0.8) return 'critical'
-  if (reading.intensity > 0.6) return 'high'
-  if (reading.intensity > 0.4) return 'moderate'
+  if (!isNegative) {
+    return 'low'
+  }
+  if (reading.intensity > 0.8) {
+    return 'critical'
+  }
+  if (reading.intensity > 0.6) {
+    return 'high'
+  }
+  if (reading.intensity > 0.4) {
+    return 'moderate'
+  }
   return 'low'
 }
 
@@ -109,7 +123,7 @@ export async function storeBiometricReading(
   const supabase = createClient()
   const dataToStore = prepareDataForStorage(reading, privacyLevel)
 
-  const { data, error } = await supabase
+  const result = await supabase
     .from('biometric_scans')
     .insert({
       user_id: userId,
@@ -124,10 +138,12 @@ export async function storeBiometricReading(
     .select('id')
     .single()
 
-  if (error) throw new Error(`Storage failed: ${error.message}`)
+  if (isQueryError(result)) {
+    throw new Error(`Storage failed: ${result.error.message}`)
+  }
 
   await updateLastScanTimestamp(userId)
-  return data.id
+  return result.data.id
 }
 
 export async function getBiometricReadings(
@@ -147,24 +163,36 @@ export async function getBiometricReadings(
     .eq('scan_type', 'face_emotion')
     .order('created_at', { ascending: false })
 
-  if (options.startDate) query = query.gte('created_at', options.startDate.toISOString())
-  if (options.endDate) query = query.lte('created_at', options.endDate.toISOString())
-  if (options.minConfidence) query = query.gte('confidence_score', options.minConfidence)
-  if (options.limit) query = query.limit(options.limit)
+  if (options.startDate) {
+    query = query.gte('created_at', options.startDate.toISOString())
+  }
+  if (options.endDate) {
+    query = query.lte('created_at', options.endDate.toISOString())
+  }
+  if (options.minConfidence) {
+    query = query.gte('confidence_score', options.minConfidence)
+  }
+  if (options.limit) {
+    query = query.limit(options.limit)
+  }
 
-  const { data, error } = await query
-  if (error) throw error
-  return data || []
+  const result = await query
+  if (isQueryError(result)) {
+    throw result.error
+  }
+  return result.data ?? []
 }
 
 export async function deleteBiometricData(userId: string): Promise<number> {
   const supabase = createClient()
-  const { data, error } = await supabase
+  const deleteResult = await supabase
     .from('biometric_scans')
     .delete()
     .eq('user_id', userId)
     .select('id')
 
-  if (error) throw error
-  return data?.length || 0
+  if (isQueryError(deleteResult)) {
+    throw deleteResult.error
+  }
+  return deleteResult.data?.length ?? 0
 }

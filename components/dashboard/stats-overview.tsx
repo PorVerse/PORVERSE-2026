@@ -4,6 +4,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
+
 import type { Database } from '@/types/database.types'
 
 type Progress = Database['public']['Tables']['user_portal_progress']['Row']

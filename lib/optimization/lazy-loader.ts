@@ -21,9 +21,9 @@ export class LazyLoader {
     }
 
     const components = {
-      card: dynamic(() => import(`@/components/portals/portal-card`)),
-      session: dynamic(() => import(`@/components/portals/portal-session`)),
-      progress: dynamic(() => import(`@/components/portals/portal-progress`))
+      card: dynamic(() => import('@/components/portals/portal-card').then(m => m.PortalCard)),
+      session: dynamic(() => import('@/components/portals/portal-session').then(m => m.PortalSession)),
+      progress: dynamic(() => import('@/components/portals/portal-progress').then(m => m.PortalProgress))
     };
 
     this.loadedModules.set(portalId, components);
@@ -72,8 +72,8 @@ export class LazyLoader {
 
     const modules = {
       scanner: dynamic(() => import('@/components/biometric/biometric-scanner')),
-      display: dynamic(() => import('@/components/biometric/emotion-display')),
-      privacy: dynamic(() => import('@/components/biometric/privacy-dashboard'))
+      display: dynamic(() => import('@/components/biometric/emotion-display'))
+      // privacy: dynamic(() => import('@/components/biometric/privacy-dashboard')) // TODO: Component not yet implemented
     };
 
     this.loadedModules.set('biometric', modules);
@@ -89,9 +89,9 @@ export class LazyLoader {
     }
 
     const modules = {
-      timeline3d: dynamic(() => import('@/components/quantum/timeline-3d')),
-      memoryNode: dynamic(() => import('@/components/quantum/memory-node')),
-      simulator: dynamic(() => import('@/components/quantum/future-simulator'))
+      timeline3d: dynamic(() => import('@/components/quantum/timeline-3d'))
+      // memoryNode: dynamic(() => import('@/components/quantum/memory-node')), // TODO: Component not yet implemented
+      // simulator: dynamic(() => import('@/components/quantum/future-simulator')) // TODO: Component not yet implemented
     };
 
     this.loadedModules.set('quantum', modules);
@@ -109,7 +109,7 @@ export class LazyLoader {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
           const img = entry.target as HTMLImageElement;
-          img.src = img.dataset.lazy || '';
+          img.src = img.dataset['lazy'] || '';
           observer.unobserve(img);
         }
       });

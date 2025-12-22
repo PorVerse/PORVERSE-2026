@@ -31,8 +31,8 @@ class MetricsRegistry {
   }
 
   private ensureTimer() {
-    if (typeof window === 'undefined') return
-    if (this.timer != null) return
+    if (typeof window === 'undefined') {return}
+    if (this.timer != null) {return}
     this.timer = window.setInterval(() => { this.flush().catch(() => void 0) }, this.opts.flushIntervalMs)
   }
 
@@ -67,14 +67,14 @@ class MetricsRegistry {
 
   async flush() {
     const endpoint = this.opts.endpointUrl
-    if (!endpoint || typeof window === 'undefined') return
+    if (!endpoint || typeof window === 'undefined') {return}
     const payload = JSON.stringify({ metrics: this.snapshot() })
 
     try {
       if (typeof navigator !== 'undefined' && 'sendBeacon' in navigator) {
         const blob = new Blob([payload], { type: 'application/json' })
         const ok = (navigator as any).sendBeacon(endpoint, blob)
-        if (ok) return
+        if (ok) {return}
       }
       await fetch(endpoint, {
         method: 'POST',
@@ -88,7 +88,7 @@ class MetricsRegistry {
   }
 
   private debug(kind: string, name: string, value: number) {
-    if (!this.opts.enableConsole) return
+    if (!this.opts.enableConsole) {return}
     // eslint-disable-next-line no-console
     console.debug(`[metrics:${kind}]`, name, value)
   }

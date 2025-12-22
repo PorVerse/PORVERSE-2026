@@ -1,16 +1,17 @@
 'use client'
 
-import { useEffect, useState, useCallback, useRef } from 'react'
-import { useRouter } from 'next/navigation'
 import { createBrowserClient } from '@supabase/ssr'
-import { Loader2, AlertCircle, RefreshCw, ShieldAlert } from 'lucide-react'
-import { PortalGrid } from '@/components/portals/portal-grid'
-import { DashboardHeader } from '@/components/dashboard/dashboard-header'
-import { StatsOverview } from '@/components/dashboard/stats-overview'
-import { OfflinePanel } from '@/components/dashboard/offline-panel'
+import { Loader2, AlertCircle, RefreshCw } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { useEffect, useState, useCallback } from 'react'
 
-import type { User, Session } from '@supabase/supabase-js'
+import { DashboardHeader } from '@/components/dashboard/dashboard-header'
+import { OfflinePanel } from '@/components/dashboard/offline-panel'
+import { StatsOverview } from '@/components/dashboard/stats-overview'
+import { PortalGrid } from '@/components/portals/portal-grid'
+
 import type { Database } from '@/types/database.types'
+import type { User, Session } from '@supabase/supabase-js'
 
 type DBProfile = Database['public']['Tables']['profiles']['Row']
 type DBProgress = Database['public']['Tables']['user_portal_progress']['Row']

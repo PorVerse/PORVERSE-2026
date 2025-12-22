@@ -1,9 +1,10 @@
 "use client"
 
 import { useEffect } from "react"
+
+import { useOfflineSync, OfflineStatusBadge } from "@/hooks/useOfflineSync"
 import { logger } from "@/lib/telemetry/logger"
 import { metrics } from "@/lib/telemetry/metrics"
-import { useOfflineSync, OfflineStatusBadge } from "@/hooks/useOfflineSync"
 
 /**
  * Client-only mini panel for Portal Dashboard

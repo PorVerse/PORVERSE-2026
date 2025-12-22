@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { z } from 'zod'
+
 import { buildCheckoutSessionParams } from '@/lib/billing/checkout'
 
 export const runtime = 'nodejs'
@@ -9,8 +10,8 @@ export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
 const STRIPE_SECRET = process.env['STRIPE_SECRET_KEY']
-if (!STRIPE_SECRET) console.warn('[billing] Missing STRIPE_SECRET_KEY env')
-const stripe = STRIPE_SECRET ? new Stripe(STRIPE_SECRET, { apiVersion: '2024-06-20' }) : null
+if (!STRIPE_SECRET) {console.warn('[billing] Missing STRIPE_SECRET_KEY env')}
+const stripe = STRIPE_SECRET ? new Stripe(STRIPE_SECRET, { apiVersion: '2025-12-15.clover' as const }) : null
 
 const BodySchema = z.object({
   productId: z.string().min(1),
@@ -25,13 +26,13 @@ const EU_COUNTRIES = new Set([
   'NL','PL','PT','RO','SK','SI','ES','SE',
 ])
 function tierFromAL(al?: string): 'romania' | 'eu' | 'us' {
-  if (!al) return 'eu'
+  if (!al) {return 'eu'}
   const tag = al.split(',')[0]?.trim().toLowerCase()
   const [lang, region] = (tag || '').split('-')
   const country = (region || '').toUpperCase()
-  if (country === 'RO' || lang === 'ro') return 'romania'
-  if (country === 'US') return 'us'
-  if (country && EU_COUNTRIES.has(country)) return 'eu'
+  if (country === 'RO' || lang === 'ro') {return 'romania'}
+  if (country === 'US') {return 'us'}
+  if (country && EU_COUNTRIES.has(country)) {return 'eu'}
   return 'eu'
 }
 
@@ -57,12 +58,10 @@ export async function POST(req: NextRequest) {
 
     let userId: string | undefined
     try {
-      const mod: any = await import('@supabase/ssr').catch(() => null)
-      if (mod?.createRouteHandlerClient) {
-        const supabase = mod.createRouteHandlerClient({ cookies: () => req.cookies })
-        const { data } = await supabase.auth.getUser()
-        userId = data?.user?.id
-      }
+      const { createClient } = await import('@/lib/supabase/server')
+      const supabase = await createClient()
+      const { data } = await supabase.auth.getUser()
+      userId = data?.user?.id
     } catch {}
 
     const params = buildCheckoutSessionParams({

@@ -1,6 +1,7 @@
 // app/api/telemetry/metrics/route.ts
-import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'node:crypto'
+
+import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
 export const runtime = 'nodejs'
@@ -31,20 +32,20 @@ function rateLimit(ipHash: string): boolean {
     hits.set(ipHash, { c: 1, t: now })
     return true
   }
-  if (r.c >= RATE_MAX_HITS) return false
+  if (r.c >= RATE_MAX_HITS) {return false}
   r.c++; return true
 }
 
 async function readBodyCapped(req: NextRequest): Promise<unknown> {
   const reader = req.body?.getReader?.()
-  if (!reader) return await req.json().catch(() => ({}))
+  if (!reader) {return await req.json().catch(() => ({}))}
   let received = 0
   const chunks: Uint8Array[] = []
   while (true) {
     const { done, value } = await reader.read()
-    if (done) break
+    if (done) {break}
     received += value?.byteLength ?? 0
-    if (received > MAX_BODY_BYTES) throw new Error('payload_too_large')
+    if (received > MAX_BODY_BYTES) {throw new Error('payload_too_large')}
     chunks.push(value)
   }
   const bytes = Buffer.concat(chunks.map((u) => Buffer.from(u)))
@@ -59,19 +60,19 @@ export async function POST(req: NextRequest) {
   try {
     const ip = req.headers.get('x-forwarded-for') || '0.0.0.0'
     const ipHash = hash(ip)
-    if (!rateLimit(ipHash)) return new NextResponse(null, { status: 204, headers: { 'Cache-Control': 'no-store' } })
+    if (!rateLimit(ipHash)) {return new NextResponse(null, { status: 204, headers: { 'Cache-Control': 'no-store' } })}
 
     const body = await readBodyCapped(req)
     const arr = Array.isArray(body) ? body : [body]
-    if (arr.length > MAX_POINTS) arr.length = MAX_POINTS
+    if (arr.length > MAX_POINTS) {arr.length = MAX_POINTS}
 
     const nowIso = new Date().toISOString()
     const sanitized = arr
       .map((p) => {
         const parsed = MetricSchema.safeParse(p)
-        if (!parsed.success) return null
+        if (!parsed.success) {return null}
         const m = parsed.data
-        if (!ALLOWED.has(m.name)) return null
+        if (!ALLOWED.has(m.name)) {return null}
         return {
           name: m.name,
           type: m.type ?? 'counter',
@@ -88,8 +89,8 @@ export async function POST(req: NextRequest) {
       console.info('[telemetry/metrics]', JSON.stringify(sanitized))
     }
     return new NextResponse(null, { status: 204, headers: { 'Cache-Control': 'no-store' } })
-  } catch (e: any) {
-    const code = e?.message === 'payload_too_large' ? 413 : 204
+  } catch (e: unknown) {
+    const code = (e instanceof Error && e.message === 'payload_too_large') ? 413 : 204
     return new NextResponse(null, { status: code, headers: { 'Cache-Control': 'no-store' } })
   }
 }

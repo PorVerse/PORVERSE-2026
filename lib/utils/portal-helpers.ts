@@ -12,22 +12,28 @@ export function calculatePortalProgress(
   completedLessons: number,
   totalLessons: number
 ): number {
-  if (totalLessons === 0) return 0
+  if (totalLessons === 0) {
+    return 0
+  }
   return Math.round((completedLessons / totalLessons) * 100)
 }
 
 /**
- * Check if portal is locked
+ * Check if portal is locked (based on user progress)
+ * Note: Portal entity doesn't contain unlock state - use UserPortalProgress instead
+ * @deprecated Use utils/portal-helpers.ts isPortalCompleted with UserPortalProgress
  */
-export function isPortalLocked(portal: Portal): boolean {
-  return !portal.is_unlocked
+export function isPortalLocked(progress: { status: string } | undefined): boolean {
+  return !progress || progress.status === 'locked'
 }
 
 /**
- * Check if portal is completed
+ * Check if portal is completed (based on user progress)
+ * Note: Portal entity doesn't contain completion state - use UserPortalProgress instead
+ * @deprecated Use utils/portal-helpers.ts isPortalCompleted with UserPortalProgress
  */
-export function isPortalCompleted(portal: Portal): boolean {
-  return portal.completion_percentage === 100
+export function isPortalCompleted(progress: { status: string } | undefined): boolean {
+  return progress?.status === 'completed'
 }
 
 /**
@@ -35,12 +41,13 @@ export function isPortalCompleted(portal: Portal): boolean {
  */
 export function getCategoryColor(category: PortalCategory): string {
   const colors: Record<PortalCategory, string> = {
-    mindfulness: 'bg-purple-500',
-    physical: 'bg-blue-500',
-    emotional: 'bg-pink-500',
-    social: 'bg-green-500',
-    spiritual: 'bg-yellow-500',
-    intellectual: 'bg-indigo-500'
+    activation: 'bg-purple-500',
+    foundation: 'bg-blue-500',
+    health: 'bg-pink-500',
+    mind: 'bg-green-500',
+    flow: 'bg-yellow-500',
+    well: 'bg-indigo-500',
+    quantum: 'bg-violet-500'
   }
   return colors[category] || 'bg-gray-500'
 }
@@ -50,12 +57,13 @@ export function getCategoryColor(category: PortalCategory): string {
  */
 export function getCategoryIcon(category: PortalCategory): string {
   const icons: Record<PortalCategory, string> = {
-    mindfulness: '🧘',
-    physical: '💪',
-    emotional: '❤️',
-    social: '👥',
-    spiritual: '✨',
-    intellectual: '🧠'
+    activation: '⚡',
+    foundation: '🏛️',
+    health: '❤️',
+    mind: '🧠',
+    flow: '🌊',
+    well: '🌟',
+    quantum: '✨'
   }
   return icons[category] || '📚'
 }
@@ -64,7 +72,7 @@ export function getCategoryIcon(category: PortalCategory): string {
  * Format portal duration (in minutes)
  */
 export function formatDuration(minutes: number): string {
-  if (minutes < 60) return `${minutes}m`
+  if (minutes < 60) {return `${minutes}m`}
   const hours = Math.floor(minutes / 60)
   const mins = minutes % 60
   return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`
@@ -96,20 +104,26 @@ export function getDifficultyBadge(difficulty: 'beginner' | 'intermediate' | 'ad
 }
 
 /**
- * Sort portals by priority
+ * Sort portals by order index and difficulty
+ * Note: For sorting by user progress, use utils/portal-helpers.ts with UserPortalProgress
  */
 export function sortPortalsByPriority(portals: Portal[]): Portal[] {
   return [...portals].sort((a, b) => {
-    // Unlocked first
-    if (a.is_unlocked && !b.is_unlocked) return -1
-    if (!a.is_unlocked && b.is_unlocked) return 1
+    // Active portals first
+    if (a.is_active && !b.is_active) {
+      return -1
+    }
+    if (!a.is_active && b.is_active) {
+      return 1
+    }
     
-    // Then by completion (incomplete first)
-    if (a.completion_percentage < 100 && b.completion_percentage === 100) return -1
-    if (a.completion_percentage === 100 && b.completion_percentage < 100) return 1
+    // Then by order index (lower first)
+    if (a.order_index !== b.order_index) {
+      return a.order_index - b.order_index
+    }
     
-    // Then by progress (higher progress first)
-    return b.completion_percentage - a.completion_percentage
+    // Then by difficulty level (easier first)
+    return a.difficulty_level - b.difficulty_level
   })
 }
 
@@ -120,17 +134,24 @@ export function filterByCategory(
   portals: Portal[],
   category: PortalCategory | 'all'
 ): Portal[] {
-  if (category === 'all') return portals
+  if (category === 'all') {return portals}
   return portals.filter(portal => portal.category === category)
 }
 
 /**
- * Get next unlockable portal
+ * Get next portal in sequence based on order_index
+ * Note: For checking unlock status, use UserPortalProgress data
  */
-export function getNextUnlockable(
+export function getNextPortalInSequence(
   portals: Portal[],
   currentPortalId: string
 ): Portal | null {
-  const lockedPortals = portals.filter(p => !p.is_unlocked && p.id !== currentPortalId)
-  return lockedPortals.length > 0 ? lockedPortals[0] : null
+  const currentPortal = portals.find(p => p.id === currentPortalId)
+  if (!currentPortal) {return null}
+  
+  const nextPortals = portals
+    .filter(p => p.order_index > currentPortal.order_index && p.is_active)
+    .sort((a, b) => a.order_index - b.order_index)
+  
+  return nextPortals[0] ?? null
 }

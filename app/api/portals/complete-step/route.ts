@@ -2,6 +2,7 @@
 // Complete Step API - Update user progress
 
 import { NextRequest, NextResponse } from 'next/server'
+
 import { createClient } from '@/lib/supabase/server'
 
 export async function POST(request: NextRequest) {
@@ -71,17 +72,18 @@ export async function POST(request: NextRequest) {
       .select()
       .single()
 
-    if (error) throw error
+    if (error) {throw error}
 
     return NextResponse.json({
       success: true,
       progress: updatedProgress,
       completed: isCompleted,
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Complete Step Error:', error)
+    const message = error instanceof Error ? error.message : 'Failed to complete step'
     return NextResponse.json(
-      { error: error.message || 'Failed to complete step' },
+      { error: message },
       { status: 500 }
     )
   }

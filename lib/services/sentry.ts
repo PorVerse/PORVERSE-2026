@@ -1,24 +1,31 @@
-import * as Sentry from '@sentry/nextjs';
+import * as Sentry from '@sentry/nextjs'
+import { env, isDevelopment, isProduction } from '@/lib/env'
 
-import { env } from '@/lib/env';
+let isInitialized = false
 
-let isInitialized = false;
-
-export function initializeSentry() {
-  if (isInitialized || !env.analytics.sentry.enabled) {
-    return;
+export function initSentry() {
+  // Skip dacă nu avem SENTRY_DSN sau dacă e deja inițializat
+  if (isInitialized || !env.SENTRY_DSN) {
+    return
   }
 
   Sentry.init({
-    dsn: env.analytics.sentry.dsn,
-    environment: env.app.env,
-    tracesSampleRate: env.app.isProduction ? 0.1 : 1.0,
-    debug: env.app.isDevelopment,
-    replaysSessionSampleRate: 0.1,
-    replaysOnErrorSampleRate: 1.0,
-    // Remove problematic integrations that may not be available
-    // These can be added back if needed with proper feature detection
-  });
+    dsn: env.SENTRY_DSN,
+    environment: env.NODE_ENV,
+    tracesSampleRate: isProduction() ? 0.1 : 1.0,
+    debug: isDevelopment(),
+    
+    beforeSend(event) {
+      // Nu trimite PII în producție
+      if (isProduction()) {
+        delete event.user
+        delete event.request?.cookies
+      }
+      return event
+    },
+  })
 
-  isInitialized = true;
+  isInitialized = true
 }
+
+export { Sentry }

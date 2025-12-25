@@ -1,33 +1,44 @@
-// app/api/portals/save-responses/route.ts
-// API pentru salvarea răspunsurilor utilizatorului
+/**
+ * Portal Save Responses API Route
+ * Example cu error handling, CSRF, și rate limiting integrate
+ */
 
 import { NextRequest, NextResponse } from 'next/server'
-
 import { createClient } from '@/lib/supabase/server'
+import { handleError } from '@/lib/errors/handler'
+import { AuthenticationError, ValidationError } from '@/lib/errors/types'
+import { checkRateLimit } from '@/lib/middleware/rate-limit'
+import { validateCsrfForRoute } from '@/lib/middleware/csrf'
 
 export async function POST(request: NextRequest) {
   try {
+    // 1. Rate limiting (double-check, deja în middleware)
+    const rateLimitResponse = await checkRateLimit(request, 'api', true)
+    if (rateLimitResponse) return rateLimitResponse
+
+    // 2. CSRF validation (double-check, deja în middleware)
+    const csrfValid = await validateCsrfForRoute(request)
+    if (!csrfValid) {
+      throw new AuthenticationError('Invalid CSRF token')
+    }
+
+    // 3. Parse body
     const { userId, portalId, stepId, stepNumber, responses } = await request.json()
 
-    // Verifică autentificarea
+    // 4. Auth check
     const supabase = await createClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
+    const { data: { user } } = await supabase.auth.getUser()
 
     if (!user || user.id !== userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      throw new AuthenticationError()
     }
 
-    // Verifică că există răspunsuri
+    // 5. Validation
     if (!responses || Object.keys(responses).length === 0) {
-      return NextResponse.json(
-        { error: 'No responses provided' },
-        { status: 400 }
-      )
+      throw new ValidationError('No responses provided')
     }
 
-    // Verifică dacă există deja răspunsuri pentru acest step
+    // 6. Check existing
     const { data: existing } = await supabase
       .from('step_responses')
       .select('id')
@@ -38,7 +49,7 @@ export async function POST(request: NextRequest) {
     let result
 
     if (existing) {
-      // Update răspunsurile existente
+      // Update
       const { data, error } = await supabase
         .from('step_responses')
         .update({
@@ -49,10 +60,10 @@ export async function POST(request: NextRequest) {
         .select()
         .single()
 
-      if (error) {throw error}
+      if (error) throw error
       result = data
     } else {
-      // Inserează răspunsuri noi
+      // Insert
       const { data, error } = await supabase
         .from('step_responses')
         .insert({
@@ -65,7 +76,7 @@ export async function POST(request: NextRequest) {
         .select()
         .single()
 
-      if (error) {throw error}
+      if (error) throw error
       result = data
     }
 
@@ -73,12 +84,8 @@ export async function POST(request: NextRequest) {
       success: true,
       data: result,
     })
-  } catch (error: unknown) {
-    console.error('Save Responses Error:', error)
-    const message = error instanceof Error ? error.message : 'Failed to save responses'
-    return NextResponse.json(
-      { error: message },
-      { status: 500 }
-    )
+
+  } catch (error) {
+    return handleError(error)
   }
 }

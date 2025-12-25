@@ -15,7 +15,15 @@
  * - GDPR compliant (delete & export)
  */
 
-import * as tf from '@tensorflow/tfjs'
+// TensorFlow loaded dynamically
+let tf: typeof import('@tensorflow/tfjs') | null = null
+
+async function getTensorFlow() {
+  if (!tf) {
+    tf = await import('@tensorflow/tfjs')
+  }
+  return tf
+}
 
 import type {
   FaceLandmarks,

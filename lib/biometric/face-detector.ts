@@ -13,7 +13,15 @@
  * - Calculează metrici despre față (dimensiune, poziție, claritate)
  */
 
-import { FaceMesh } from '@mediapipe/face_mesh'
+let FaceMesh: typeof import('@mediapipe/face_mesh').FaceMesh | null = null
+
+async function getFaceMesh() {
+  if (!FaceMesh) {
+    const module = await import('@mediapipe/face_mesh')
+    FaceMesh = module.FaceMesh
+  }
+  return FaceMesh
+}
 
 import type {
   FaceDetection,

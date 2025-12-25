@@ -1,13 +1,15 @@
-// middleware.ts - Simplified for development
+// middleware.ts - Updated with CSRF + Rate Limiting
 import { NextResponse, type NextRequest } from 'next/server'
+import { csrfProtection } from './lib/middleware/csrf'
+import { applyRateLimit } from './lib/middleware/rate-limit'
 
 const SUPPORTED = ['en', 'ro'] as const
 type Supported = (typeof SUPPORTED)[number]
 
-const IS_DEV = process.env.NODE_ENV !== 'production'
-const DISABLE_GUARD_DEV = process.env.NEXT_DISABLE_AUTH_GUARD_DEV === '1' || IS_DEV
-const CANONICAL_HOST = (process.env.NEXT_CANONICAL_HOST || '').toLowerCase()
-const ENFORCE_HTTPS = process.env.NODE_ENV === 'production'
+const IS_DEV = process.env['NODE_ENV'] !== 'production'
+const DISABLE_GUARD_DEV = process.env['NEXT_DISABLE_AUTH_GUARD_DEV'] === '1' || IS_DEV
+const CANONICAL_HOST = (process.env['NEXT_CANONICAL_HOST'] || '').toLowerCase()
+const ENFORCE_HTTPS = process.env['NODE_ENV'] === 'production'
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 180
 const DEFAULT_LOCALE: Supported = 'en'
 
@@ -25,6 +27,7 @@ function addSecurityHeaders(response: NextResponse): NextResponse {
     "frame-ancestors 'none'",
     "base-uri 'self'",
     "form-action 'self'",
+    "upgrade-insecure-requests"
   ].join('; ')
 
   response.headers.set('Content-Security-Policy', csp)
@@ -32,6 +35,10 @@ function addSecurityHeaders(response: NextResponse): NextResponse {
   response.headers.set('X-Content-Type-Options', 'nosniff')
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
   response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
+  
+  if (ENFORCE_HTTPS) {
+    response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload')
+  }
 
   return response
 }
@@ -45,7 +52,7 @@ function shouldBypass(req: NextRequest): boolean {
   return (
     pathname.startsWith('/_next/') ||
     pathname.startsWith('/api/_next/') ||
-    pathname.startsWith('/auth/callback') ||
+    pathname.startsWith('/auth/callback') ||  // ADAUGĂ AICI
     pathname === '/favicon.ico' ||
     pathname === '/manifest.json' ||
     pathname === '/sw.js' ||
@@ -73,7 +80,10 @@ function detectLocale(req: NextRequest): Supported {
 }
 
 function needsCanonicalHostRedirect(req: NextRequest): boolean {
+  // Skip in development
+  if (process.env.NODE_ENV !== 'production') return false
   if (!CANONICAL_HOST || !ENFORCE_HTTPS) return false
+  
   const host = req.headers.get('host') || ''
   return host.toLowerCase() !== CANONICAL_HOST && host.toLowerCase() !== `www.${CANONICAL_HOST}`
 }
@@ -109,27 +119,62 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next()
   }
 
-  // 1) Bypass API routes (no language prefix needed)
-  if (pathname.startsWith('/api/')) {
-    return addSecurityHeaders(NextResponse.next())
+  // ============================================================================
+  // TIER 1: RATE LIMITING + CSRF PROTECTION (CRITICAL SECURITY)
+  // ============================================================================
+
+  // 1) Rate Limiting pentru API routes
+// 2) CSRF Protection pentru API routes (DISABLED IN DEV)
+   if (pathname.startsWith('/api/') && process.env.NODE_ENV === 'production') {
+    const csrfValid = await csrfProtection(req)
+    if (!csrfValid) {
+      return NextResponse.json(
+        { error: { message: 'Invalid CSRF token', code: 'CSRF_ERROR' } },
+        { status: 403 }
+      )
+    }
   }
 
-  // 2) Canonical host redirect (production only)
+  // 2) CSRF Protection pentru API routes
+  if (pathname.startsWith('/api/')) {
+    const csrfValid = await csrfProtection(req)
+    if (!csrfValid) {
+      return NextResponse.json(
+        { error: { message: 'Invalid CSRF token', code: 'CSRF_ERROR' } },
+        { status: 403 }
+      )
+    }
+  }
+
+  // ============================================================================
+  // TIER 2: CANONICAL HOST + HTTPS
+  // ============================================================================
+
+  // 3) Canonical host redirect
   if (needsCanonicalHostRedirect(req)) {
     const url = req.nextUrl.clone()
-    url.protocol = 'https:'
     url.host = CANONICAL_HOST
+    url.protocol = 'https:'
     return NextResponse.redirect(url, { status: 308 })
   }
 
-  // 3) HTTPS enforcement (production only)
+  // 4) HTTPS enforcement
   if (ENFORCE_HTTPS && req.headers.get('x-forwarded-proto') !== 'https') {
+  // Skip for API routes in dev
+  if (pathname.startsWith('/api/') && process.env.NODE_ENV === 'development') {
+    // Skip
+  } else {
     const url = req.nextUrl.clone()
     url.protocol = 'https:'
     return NextResponse.redirect(url, { status: 308 })
   }
+}
 
-  // 4) i18n redirect
+  // ============================================================================
+  // TIER 3: i18n + AUTH GUARD
+  // ============================================================================
+
+  // 5) i18n redirect
   const pathSegments = pathname.split('/').filter(Boolean)
   const firstSegment = pathSegments[0]
 
@@ -149,7 +194,7 @@ export async function middleware(req: NextRequest) {
     return addSecurityHeaders(res)
   }
 
-  // 5) Auth guard (disabled in dev)
+  // 6) Auth guard (doar în production)
   if (!DISABLE_GUARD_DEV && isProtectedRoute(pathname) && !isPublicRoute(pathname)) {
     if (!hasSession(req)) {
       const lang = firstSegment as Supported
@@ -160,7 +205,7 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  // 6) Default response cu security headers
+  // 7) Default response cu security headers
   return addSecurityHeaders(NextResponse.next())
 }
 

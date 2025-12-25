@@ -36,6 +36,11 @@ async function verifyToken(token: string, sessionId: string): Promise<boolean> {
 }
 
 export async function csrfProtection(request: NextRequest): Promise<NextResponse | null> {
+  // DISABLE in development
+  if (process.env.NODE_ENV !== 'production') {
+    return null
+  }
+  
   const method = request.method.toUpperCase()
   
   if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(method)) {

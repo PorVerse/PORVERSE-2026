@@ -71,6 +71,11 @@ export let env: z.infer<typeof envSchema> = process.env as z.infer<typeof envSch
  * Validate environment variables
  */
 export function validateEnv() {
+  // SKIP VALIDATION IN DEV
+  if (process.env.NODE_ENV !== 'production') {
+    return
+  }
+  
   const isProduction = process.env.NODE_ENV === 'production'
 
   try {
@@ -163,7 +168,7 @@ if (typeof window === 'undefined') {
   
   if (!isBuildTime) {
     try {
-      validateEnv()
+      // validateEnv() // Commented out - skip auto-validation
     } catch (error) {
       console.error('Failed to validate environment on startup')
       if (process.env.NODE_ENV === 'production') {

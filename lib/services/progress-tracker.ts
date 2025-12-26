@@ -108,13 +108,13 @@ export class ProgressTracker {
       if (progressError) {throw new Error(`Failed to fetch progress data: ${progressError.message}`)}
 
       // Basic metrics
-      const completedPortals = (portalProgress || []).filter((p: any) => p.status === 'completed')
+      const completedPortals = (portalProgress || []).filter((p: unknown) => p.status === 'completed')
       const totalTimeSpent = (portalProgress || []).reduce(
-        (sum: number, p: any) => sum + safeNumber((p).time_spent_minutes, 0),
+        (sum: number, p: unknown) => sum + safeNumber((p).time_spent_minutes, 0),
         0
       )
       const totalPoints = (portalProgress || []).reduce(
-        (sum: number, p: any) => sum + safeNumber((p).achievement_points, 0),
+        (sum: number, p: unknown) => sum + safeNumber((p).achievement_points, 0),
         0
       )
 
@@ -415,7 +415,7 @@ export class ProgressTracker {
       .not('quality_score', 'is', null)
 
     if (error || !data || data.length === 0) {return 0}
-    const scores = data.map((r: any) => safeNumber(r.quality_score, 0))
+    const scores = data.map((r: unknown) => safeNumber(r.quality_score, 0))
     return scores.reduce((a: number, b: number) => a + b, 0) / scores.length
   }
 
@@ -496,8 +496,8 @@ export class ProgressTracker {
 
       if (!data || data.length < 5) {return null}
       const mid = Math.floor(data.length / 2)
-      const oldAvg = data.slice(0, mid).reduce((s: number, r: any) => s + safeNumber(r.quality_score, 0), 0) / mid
-      const newAvg = data.slice(mid).reduce((s: number, r: any) => s + safeNumber(r.quality_score, 0), 0) / Math.max(1, data.length - mid)
+      const oldAvg = data.slice(0, mid).reduce((s: number, r: unknown) => s + safeNumber(r.quality_score, 0), 0) / mid
+      const newAvg = data.slice(mid).reduce((s: number, r: unknown) => s + safeNumber(r.quality_score, 0), 0) / Math.max(1, data.length - mid)
 
       return {
         metric_name: 'Quality Score',
@@ -550,7 +550,7 @@ export class ProgressTracker {
       return { currentStreak: 0, longestStreak: 0, averageSessionGap: 0, recentSessionGap: 0, consistencyImprovement: 0 }
     }
 
-    const dates = sessions.map((s: any) => new Date(s.session_start).toDateString())
+    const dates = sessions.map((s: unknown) => new Date(s.session_start).toDateString())
     const uniqueDates = [...new Set(dates)]
 
     let currentStreak = 0
@@ -577,7 +577,7 @@ export class ProgressTracker {
     portalProgress: UserPortalProgress[]
   ): Promise<PortalRecommendation[]> {
     const recs: PortalRecommendation[] = []
-    const inProgress = (portalProgress || []).filter((p: any) => p.status === 'in_progress')
+    const inProgress = (portalProgress || []).filter((p: unknown) => p.status === 'in_progress')
 
     for (const p of inProgress) {
       recs.push({

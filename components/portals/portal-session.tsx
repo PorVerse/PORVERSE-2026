@@ -164,7 +164,7 @@ export const PortalSession = memo((props: PortalSessionProps) => {
             {/* AI Messages */}
             {messages.length > 0 && (
               <div className="ai-messages">
-                {messages.map((msg: any, idx: number) => (
+                {messages.map((msg: unknown, idx: number) => (
                   <div key={idx} className={`message ${msg.role}`}>
                     <MessageCircle size={20} />
                     <p>{msg.content}</p>

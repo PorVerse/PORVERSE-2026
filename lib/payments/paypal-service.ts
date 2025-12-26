@@ -1,5 +1,5 @@
 // lib/payments/paypal-service.ts
-// @ts-ignore - @paypal/checkout-server-sdk has no type declarations
+// @ts-expect-error - @paypal/checkout-server-sdk has no type declarations
 import paypal from '@paypal/checkout-server-sdk';
 
 import { createClient } from '@/lib/supabase/server';

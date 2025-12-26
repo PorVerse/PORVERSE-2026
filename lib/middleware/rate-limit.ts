@@ -12,7 +12,7 @@ import { Redis } from '@upstash/redis'
 // ============================================================================
 
 let redis: Redis | null = null
-let rateLimiters: Map<string, Ratelimit> = new Map()
+const rateLimiters: Map<string, Ratelimit> = new Map()
 
 /**
  * Initialize Redis client (lazy loading)
@@ -21,7 +21,6 @@ function getRedis(): Redis {
   if (!redis) {
     const url = process.env['UPSTASH_REDIS_REST_URL']
     const token = process.env['UPSTASH_REDIS_REST_TOKEN']
-
 
     if (!url || !token) {
       throw new Error('Upstash Redis credentials not configured')

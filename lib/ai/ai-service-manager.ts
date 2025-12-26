@@ -24,7 +24,6 @@ import type {
 } from '../../types/portal-management'
 import type { AIResponse } from '../../types/ai-services'
 
-
 /**
  * AI service configuration
  */

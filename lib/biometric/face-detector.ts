@@ -17,8 +17,8 @@ let FaceMesh: typeof import('@mediapipe/face_mesh').FaceMesh | null = null
 
 async function getFaceMesh() {
   if (!FaceMesh) {
-    const module = await import('@mediapipe/face_mesh')
-    FaceMesh = module.FaceMesh
+    const faceMeshModule = await import('@mediapipe/face_mesh')
+    FaceMesh = faceMeshModule.FaceMesh
   }
   return FaceMesh
 }

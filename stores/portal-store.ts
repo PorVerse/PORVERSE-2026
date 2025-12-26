@@ -140,7 +140,7 @@ const initialState: PortalState = {
 // ============================================================================
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const logger = (config: any) => (set: any, get: any, api: any) =>
+const logger = (config: unknown) => (set: unknown, get: unknown, api: unknown) =>
   config(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (...args: any[]) => {
@@ -162,7 +162,7 @@ const logger = (config: any) => (set: any, get: any, api: any) =>
 // ============================================================================
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const telemetry = (config: any) => (set: any, get: any, api: any) =>
+const telemetry = (config: unknown) => (set: unknown, get: unknown, api: unknown) =>
   config(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (...args: any[]) => {

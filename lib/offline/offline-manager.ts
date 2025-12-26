@@ -229,7 +229,7 @@ export class OfflineManager {
   }
 
   // Process messages coming from the Service Worker
-  private handleSWMessage(data: any) {
+  private handleSWMessage(data: unknown) {
     if (!data) {return;}
 
     if (data.type === 'SYNC_COMPLETE') {

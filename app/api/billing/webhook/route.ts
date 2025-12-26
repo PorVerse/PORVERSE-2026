@@ -16,7 +16,7 @@ async function readRawBody(req: NextRequest): Promise<string> {
   const reader = req.body?.getReader()
   if (!reader) {return ''}
   const chunks: Uint8Array[] = []
-  // @ts-ignore
+  // @ts-expect-error
 for await (const chunk of (async function* () { while (true) { const { done, value } = await reader.read(); if (done) {break;} yield value } })()) {
     chunks.push(chunk)
   }
@@ -43,10 +43,10 @@ export async function POST(req: NextRequest) {
 
     // Lazy import Supabase helper
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const mod: any = await import('@supabase/ssr').catch(() => null)
+    const mod: unknown = await import('@supabase/ssr').catch(() => null)
     const supabaseAdminKey = process.env['SUPABASE_SERVICE_ROLE_KEY']
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let supabase: any = null
+    let supabase: unknown = null
     if (mod?.createClient && supabaseAdminKey) {
       // Server-side admin client (nu folosește cookie)
       supabase = mod.createClient(process.env['NEXT_PUBLIC_SUPABASE_URL']!, supabaseAdminKey)

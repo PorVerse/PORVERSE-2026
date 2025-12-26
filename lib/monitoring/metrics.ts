@@ -11,7 +11,7 @@
  * - Business metrics tracking
  */
 
-// @ts-ignore - node-statsd doesn't have types
+// @ts-expect-error - node-statsd doesn't have types
 import { StatsD } from 'node-statsd'
 
 /**

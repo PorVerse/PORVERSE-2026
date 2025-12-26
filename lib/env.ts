@@ -83,12 +83,12 @@ export function validateEnv() {
     env = envSchema.parse(process.env)
 
     // Additional production checks
-    if (isProduction) {
-      const prodEnv = {
-        CSRF_SECRET: process.env.CSRF_SECRET,
-        UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,
-        UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
-      }
+   if (isProduction) {
+  const prodEnv = {
+    CSRF_SECRET: process.env['CSRF_SECRET'],
+    UPSTASH_REDIS_REST_URL: process.env['UPSTASH_REDIS_REST_URL'],
+    UPSTASH_REDIS_REST_TOKEN: process.env['UPSTASH_REDIS_REST_TOKEN'],
+  }
 
       productionRequirements.parse(prodEnv)
 

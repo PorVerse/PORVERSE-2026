@@ -10,6 +10,13 @@ import Link from 'next/link'
 
 type Lang = 'ro' | 'en'
 
+// DEBUG: Check env vars
+console.log('🔍 ENV CHECK:', {
+  url: process.env.NEXT_PUBLIC_SUPABASE_URL,
+  hasKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+  keyLength: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.length
+})
+
 const COPY = {
   ro: {
     title: 'Accesează Portalul',
@@ -38,12 +45,12 @@ const COPY = {
     login: 'Sign in',
     sending: 'Processing…',
     magicLink: 'Send magic link',
-    magicHint: 'You’ll receive a secure sign-in link via email.',
+    magicHint: 'You\'ll receive a secure sign-in link via email.',
     or: 'or',
     create: 'Create account',
     back: 'Back',
     forgot: 'Forgot password?',
-    successMagic: 'We’ve sent you a sign-in link via email.',
+    successMagic: 'We\'ve sent you a sign-in link via email.',
     invalidEmail: 'Please enter a valid email.',
     needPassword: 'Please enter your password.',
     wrong: 'Sign-in failed. Check your details and try again.',
@@ -66,6 +73,7 @@ function sanitizeNext(nextRaw: string | null, fallback: string) {
 function supabaseBrowser() {
   const url = process.env['NEXT_PUBLIC_SUPABASE_URL']!
   const key = process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!
+  console.log('🔧 Creating Supabase client:', { url, hasKey: !!key })
   return createBrowserClient(url, key)
 }
 
@@ -98,7 +106,9 @@ export default function LoginClient({
     if (mounted.current) {return}
     mounted.current = true
 
+    console.log('🚀 Component mounted, checking session...')
     supabase.auth.getSession().then(({ data }) => {
+      console.log('📊 Session check:', { hasSession: !!data.session })
       if (data.session) {router.replace(next)}
     })
 
@@ -108,17 +118,44 @@ export default function LoginClient({
 
   const onPasswordLogin = async (e: React.FormEvent) => {
     e.preventDefault()
+    console.log('🔐 Password login attempt...')
     setBanner(null)
 
     const emailTrim = email.trim()
-    if (!emailTrim.includes('@')) {return setBanner({ type: 'error', msg: t.invalidEmail })}
-    if (!password) {return setBanner({ type: 'error', msg: t.needPassword })}
+    if (!emailTrim.includes('@')) {
+      console.log('❌ Invalid email')
+      return setBanner({ type: 'error', msg: t.invalidEmail })
+    }
+    if (!password) {
+      console.log('❌ No password')
+      return setBanner({ type: 'error', msg: t.needPassword })
+    }
 
     setLoading(true)
+    console.log('📤 Sending login request...', { email: emailTrim })
+    
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email: emailTrim, password })
-      if (error) {return setBanner({ type: 'error', msg: t.wrong })}
+      const { data, error } = await supabase.auth.signInWithPassword({ 
+        email: emailTrim, 
+        password 
+      })
+      
+      console.log('📥 Login response:', { 
+        hasSession: !!data.session, 
+        hasUser: !!data.user,
+        error: error?.message 
+      })
+      
+      if (error) {
+        console.error('❌ Login error:', error)
+        return setBanner({ type: 'error', msg: t.wrong })
+      }
+      
+      console.log('✅ Login successful, redirecting to:', next)
       router.replace(next)
+    } catch (err) {
+      console.error('💥 Unexpected error:', err)
+      setBanner({ type: 'error', msg: t.wrong })
     } finally {
       setLoading(false)
     }
@@ -126,21 +163,39 @@ export default function LoginClient({
 
   const onMagicLink = async (e: React.FormEvent) => {
     e.preventDefault()
+    console.log('✨ Magic link attempt...')
     setBanner(null)
 
     const emailTrim = email.trim()
-    if (!emailTrim.includes('@')) {return setBanner({ type: 'error', msg: t.invalidEmail })}
+    if (!emailTrim.includes('@')) {
+      console.log('❌ Invalid email')
+      return setBanner({ type: 'error', msg: t.invalidEmail })
+    }
 
     setLoading(true)
+    console.log('📤 Sending magic link...', { email: emailTrim })
+    
     try {
       const origin = window.location.origin
       const emailRedirectTo = `${origin}/${lang}/auth/callback?next=${encodeURIComponent(next)}`
+      
+      console.log('🔗 Redirect URL:', emailRedirectTo)
+      
       const { error } = await supabase.auth.signInWithOtp({
         email: emailTrim,
         options: { emailRedirectTo },
       })
-      if (error) {return setBanner({ type: 'error', msg: t.wrong })}
+      
+      if (error) {
+        console.error('❌ Magic link error:', error)
+        return setBanner({ type: 'error', msg: t.wrong })
+      }
+      
+      console.log('✅ Magic link sent')
       setBanner({ type: 'success', msg: t.successMagic })
+    } catch (err) {
+      console.error('💥 Unexpected error:', err)
+      setBanner({ type: 'error', msg: t.wrong })
     } finally {
       setLoading(false)
     }

@@ -1,103 +1,83 @@
 /**
- * Portals API Route - PRODUCTION ENTERPRISE LEVEL
- * @module api/portals/route
- * 
- * FEATURES:
- * - CQRS pattern (Command/Query separation)
- * - Rate limiting (token bucket algorithm) - Upstash Redis
- * - Multi-layer caching (Redis + Next.js)
- * - Circuit breaker for database
- * - Distributed tracing - OpenTelemetry
- * - Structured logging
- * - Error handling with Sentry
- * - Request deduplication
- * - Optimistic concurrency control
+ * GET /api/portals
+ * Lista toate portalurile disponibile
+ * MEGA INTERSTELLAR Portal System API
  */
 
-import { trace, SpanStatusCode } from '@opentelemetry/api';
-import * as Sentry from '@sentry/nextjs';
-import { createClient } from '@supabase/supabase-js';
-import { Ratelimit } from '@upstash/ratelimit';
-import { Redis } from '@upstash/redis';
-import { NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
+import { createClient } from '@/lib/supabase/server'
+import { NextResponse } from 'next/server'
 
-// ═══════════════════════════════════════════════════════════════════════════
-// CONFIGURATION
-// ═══════════════════════════════════════════════════════════════════════════
+export async function GET(request: Request) {
+  try {
+    const supabase = await createClient()
+    const { searchParams } = new URL(request.url)
+    const includeSteps = searchParams.get('includeSteps') === 'true'
 
-const supabase = createClient(
-  process.env['NEXT_PUBLIC_SUPABASE_URL']!,
-  process.env['SUPABASE_SERVICE_ROLE_KEY']!
-);
+    // Fetch portals
+    let query = supabase
+      .from('portals')
+      .select(includeSteps ? '*, steps:portal_steps(*)' : '*')
+      .order('difficulty', { ascending: true })
 
-// Redis for caching and rate limiting
-const redis = Redis.fromEnv();
+    const { data: portals, error } = await query
 
-// Rate limiter: 100 requests per 10 seconds per IP
-const ratelimit = new Ratelimit({
-  redis,
-  limiter: Ratelimit.slidingWindow(100, '10 s'),
-  analytics: true,
-  prefix: '@upstash/ratelimit/portals',
-});
+    if (error) {
+      console.error('Error fetching portals:', error)
+      return NextResponse.json(
+        { error: 'Failed to fetch portals', details: error.message },
+        { status: 500 }
+      )
+    }
 
-const tracer = trace.getTracer('portals-api');
+    // Get user progress if authenticated
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
 
-// ═══════════════════════════════════════════════════════════════════════════
-// VALIDATION SCHEMAS (FIXED - accepts null)
-// ═══════════════════════════════════════════════════════════════════════════
+    let userProgress: any[] = []
+    if (user) {
+      const { data: progressData } = await supabase
+        .from('user_portal_progress')
+        .select('*')
+        .eq('user_id', user.id)
 
-const PortalFilterSchema = z.object({
-  category: z.enum(['awakening', 'transformation', 'mastery', 'transcendence']).nullable().optional(),
-  difficulty: z.coerce.number().int().min(1).max(5).nullable().optional(),
-  isLocked: z.coerce.boolean().nullable().optional(),
-  includeSteps: z.coerce.boolean().default(true),
-});
+      userProgress = progressData || []
+    }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// UTILITIES
-// ═══════════════════════════════════════════════════════════════════════════
-
-/**
- * Circuit Breaker for database operations
- */
-class CircuitBreaker {
-  private state: 'closed' | 'open' | 'half-open' = 'closed';
-  private failureCount = 0;
-  private lastFailureTime: number | null = null;
-  private readonly threshold = 5;
-  private readonly resetTimeout = 60000; // 60 seconds
-
-  async execute<T>(fn: () => Promise<T>): Promise<T> {
-    if (this.state === 'open') {
-      if (
-        this.lastFailureTime &&
-        Date.now() - this.lastFailureTime >= this.resetTimeout
-      ) {
-        this.state = 'half-open';
-      } else {
-        throw new Error('Circuit breaker is OPEN');
+    // Enrich portals with user progress
+    const enrichedPortals = portals?.map((portal) => {
+      const progress = userProgress.find((p) => p.portal_id === portal.id)
+      return {
+        ...portal,
+        userProgress: progress || null,
+        isStarted: !!progress,
+        isCompleted: !!progress?.completed_at,
+        progressPercent: progress
+          ? Math.round((progress.completed_steps.length / portal.steps?.length || 1) * 100)
+          : 0,
       }
-    }
+    })
 
-    try {
-      const result = await fn();
-      this.onSuccess();
-      return result;
-    } catch (error) {
-      this.onFailure();
-      throw error;
-    }
+    return NextResponse.json(
+      {
+        data: enrichedPortals,
+        count: enrichedPortals?.length || 0,
+        cached: false,
+      },
+      {
+        headers: {
+          'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=30',
+        },
+      }
+    )
+  } catch (error: any) {
+    console.error('Unexpected error in /api/portals:', error)
+    return NextResponse.json(
+      { error: 'Internal server error', details: error.message },
+      { status: 500 }
+    )
   }
-
-  private onSuccess() {
-    this.failureCount = 0;
-    this.state = 'closed';
-  }
-
-  private onFailure() {
-    this.failureCount++;
+}
     this.lastFailureTime = Date.now();
     if (this.failureCount >= this.threshold) {
       this.state = 'open';
